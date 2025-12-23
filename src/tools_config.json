@@ -1,0 +1,207 @@
+[
+    {
+        "slug": "merge-pdf",
+        "tool": "pdf",
+        "mode": "merge",
+        "title": "Merge PDF Files Online - Free & Secure",
+        "description": "Combine multiple PDF files into one document instantly. 100% private, no tracking."
+    },
+    {
+        "slug": "split-pdf",
+        "tool": "pdf",
+        "mode": "split",
+        "title": "Split PDF Pages - Extract Pages Free",
+        "description": "Separate PDF pages into individual files or extract specific ranges."
+    },
+    {
+        "slug": "compress-pdf",
+        "tool": "pdf",
+        "mode": "compress",
+        "title": "Compress PDF Online - Reduce File Size",
+        "description": "Optimize PDF file size without losing quality."
+    },
+    {
+        "slug": "pdf-to-word",
+        "tool": "pdf",
+        "mode": "pdf_to_word",
+        "title": "Convert PDF to Word (DOCX)",
+        "description": "Convert PDF documents to editable Word files."
+    },
+    {
+        "slug": "extract-tables",
+        "tool": "pdf",
+        "mode": "extract_tables",
+        "title": "Extract Tables from PDF",
+        "description": "Extract tables to CSV or Excel."
+    },
+    {
+        "slug": "jpg-to-png",
+        "tool": "image",
+        "mode": "convert",
+        "format": "png",
+        "title": "Convert JPG to PNG",
+        "description": "Convert JPEG images to transparent PNG format."
+    },
+    {
+        "slug": "png-to-jpg",
+        "tool": "image",
+        "mode": "convert",
+        "format": "jpg",
+        "title": "Convert PNG to JPG",
+        "description": "Convert PNG images to JPEG format."
+    },
+    {
+        "slug": "compress-image",
+        "tool": "image",
+        "mode": "compress",
+        "title": "Compress Images Online",
+        "description": "Compress JPG, PNG, WebP images intelligently."
+    },
+    {
+        "slug": "resize-image",
+        "tool": "image",
+        "mode": "resize",
+        "title": "Resize Image Pixels",
+        "description": "Resize images by pixels or percentage."
+    },
+    {
+        "slug": "crop-image",
+        "tool": "image",
+        "mode": "crop",
+        "title": "Crop Images Online",
+        "description": "Crop photos to exact dimensions or aspect ratios."
+    },
+    {
+        "slug": "passport-photo-maker",
+        "tool": "image",
+        "mode": "passport",
+        "title": "Passport Photo Maker",
+        "description": "Create compliant passport photos for US, UK, EU, and more."
+    },
+    {
+        "slug": "add-watermark",
+        "tool": "image",
+        "mode": "watermark",
+        "title": "Add Watermark to Images",
+        "description": "Stamp text or logo watermarks on your photos."
+    },
+    {
+        "slug": "image-color-palette",
+        "tool": "image",
+        "mode": "palette",
+        "title": "Extract Color Palette from Image",
+        "description": "Get the dominant colors from any picture."
+    },
+    {
+        "slug": "heic-to-jpg",
+        "tool": "image",
+        "mode": "heic_to_jpg",
+        "title": "HEIC to JPG",
+        "description": "Convert HEIC to JPG."
+    },
+    {
+        "slug": "pdf-diff",
+        "tool": "pdf",
+        "mode": "diff",
+        "title": "Visual PDF Diff",
+        "description": "Compare two PDFs visually."
+    },
+    {
+        "slug": "booklet-maker",
+        "tool": "pdf",
+        "mode": "booklet",
+        "title": "Booklet Maker",
+        "description": "Create printable booklets."
+    },
+    {
+        "slug": "pdf-scrubber",
+        "tool": "pdf",
+        "mode": "scrub",
+        "title": "Privacy Scrubber",
+        "description": "Remove metadata and history."
+    },
+    {
+        "slug": "pdf-redactor",
+        "tool": "pdf",
+        "mode": "redact",
+        "title": "Secure Redactor",
+        "description": "Permanently remove text."
+    },
+    {
+        "slug": "pdf-signer",
+        "tool": "pdf",
+        "mode": "sign",
+        "title": "Digital Signer",
+        "description": "Sign with digital certificate."
+    },
+    {
+        "slug": "pdf-web-optimize",
+        "tool": "pdf",
+        "mode": "optimize",
+        "title": "Web Optimize",
+        "description": "Optimize for fast web view."
+    },
+    {
+        "slug": "photo-studio",
+        "tool": "image",
+        "mode": "studio",
+        "title": "Photo Studio",
+        "description": "Advanced photo editor with layers and text."
+    },
+    {
+        "slug": "word-to-pdf",
+        "tool": "pdf",
+        "mode": "word_to_pdf",
+        "title": "Word to PDF - Convert DOCX to PDF",
+        "description": "Convert Word documents to PDF format offline."
+    },
+    {
+        "slug": "powerpoint-to-pdf",
+        "tool": "pdf",
+        "mode": "powerpoint_to_pdf",
+        "title": "PowerPoint to PDF - Convert PPTX to PDF",
+        "description": "Convert PowerPoint presentations to PDF format offline."
+    },
+    {
+        "slug": "excel-to-pdf",
+        "tool": "pdf",
+        "mode": "excel_to_pdf",
+        "title": "Excel to PDF - Convert XLSX to PDF",
+        "description": "Convert Excel spreadsheets to PDF format offline."
+    },
+    {
+        "slug": "html-to-pdf",
+        "tool": "pdf",
+        "mode": "html_to_pdf",
+        "title": "HTML to PDF - Convert HTML to PDF",
+        "description": "Convert HTML files to PDF documents offline."
+    },
+    {
+        "slug": "ocr-pdf",
+        "tool": "pdf",
+        "mode": "ocr_pdf",
+        "title": "OCR PDF - Make Scanned PDFs Searchable",
+        "description": "Add OCR text layer to scanned PDFs for searchability."
+    },
+    {
+        "slug": "pdf-to-pdfa",
+        "tool": "pdf",
+        "mode": "pdf_to_pdfa",
+        "title": "PDF to PDF/A - Convert to Archival Format",
+        "description": "Convert PDF to PDF/A archival format for long-term preservation."
+    },
+    {
+        "slug": "crop-pdf",
+        "tool": "pdf",
+        "mode": "crop",
+        "title": "Crop PDF - Trim PDF Pages",
+        "description": "Crop PDF pages to specific dimensions or remove margins."
+    },
+    {
+        "slug": "organize-pdf",
+        "tool": "pdf",
+        "mode": "organize",
+        "title": "Organize PDF - Reorder Pages",
+        "description": "Reorder and organize PDF pages in any order you want."
+    }
+]

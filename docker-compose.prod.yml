@@ -1,0 +1,43 @@
+services:
+  # Python Backend Service
+  backend:
+    build:
+      context: ./python-backend
+      dockerfile: Dockerfile
+    container_name: tools-backend
+    restart: unless-stopped
+    environment:
+      - PORT=8000
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-52428800}
+      - MAX_TOTAL_SIZE=${MAX_TOTAL_SIZE:-104857600}
+      - LEMONSQUEEZY_API_KEY=${LEMONSQUEEZY_API_KEY}
+      - BACKEND_URL=${BACKEND_URL:-http://backend:8000}
+    tmpfs:
+      - /tmp/offline_tools_api
+    networks:
+      - app-network
+
+  # Frontend Service (Next.js)
+  frontend:
+    build:
+      context: ./website
+      dockerfile: ../Dockerfile.website
+    container_name: tools-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL=${NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL}
+      - NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID=${NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID:-1167418}
+      - LEMONSQUEEZY_WEBHOOK_SECRET=${LEMONSQUEEZY_WEBHOOK_SECRET}
+      - BACKEND_URL=http://backend:8000
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
