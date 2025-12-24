@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     container_name: tools-backend
     restart: unless-stopped
+    ports:
+      - "8000:8000"
     environment:
       - PORT=8000
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
@@ -35,6 +37,7 @@ services:
       - NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID=${NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID:-1167418}
       - LEMONSQUEEZY_WEBHOOK_SECRET=${LEMONSQUEEZY_WEBHOOK_SECRET}
       - BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     networks:
       - app-network
 
