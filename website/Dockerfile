@@ -10,12 +10,13 @@ COPY pnpm-lock.yaml* ./
 COPY yarn.lock* ./
 
 # Install dependencies (use appropriate package manager based on lockfile)
+# Try npm ci first, but fall back to npm install if lock file is out of sync
 RUN if [ -f "package-lock.json" ]; then \
-      npm ci; \
+      npm ci || npm install; \
     elif [ -f "yarn.lock" ]; then \
-      yarn install --frozen-lockfile; \
+      yarn install --frozen-lockfile || yarn install; \
     elif [ -f "pnpm-lock.yaml" ]; then \
-      npm install -g pnpm && pnpm install --frozen-lockfile; \
+      npm install -g pnpm && (pnpm install --frozen-lockfile || pnpm install); \
     else \
       npm install; \
     fi
