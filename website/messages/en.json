@@ -1,0 +1,590 @@
+{
+    "NotFound": {
+        "title": "Page Not Found",
+        "desc": "The page you are looking for does not exist.",
+        "return_home": "Return to Home"
+    },
+    "DesignStudio": {
+        "templates": "Templates",
+        "text": "Text",
+        "photos": "Photos",
+        "elements": "Elements",
+        "layers": "Layers"
+    },
+    "Hero": {
+        "badge": "v1.0 · Desktop Suite + Web Demo",
+        "title": "Local Tools.\n30+ PDF & Image Tools. Offline.",
+        "subtitle": "A complete offline toolkit for PDFs and images. Merge, split, sign, redact, convert Office files, remove backgrounds and more—without ever uploading a single document. Try tools in your browser, unlock full speed and privacy on desktop.",
+        "cta_primary": "Get Desktop App (Lifetime License)",
+        "cta_secondary": "Try Tools in Your Browser",
+        "stat_offline": "100% Offline Desktop Engine",
+        "stat_privacy": "No Uploads. No Tracking.",
+        "stat_speed": "Up to 100x Faster than Web Tools"
+    },
+    "Features": {
+        "title": "Engineered for Speed & Secrecy",
+        "subtitle": "Built as a desktop-first suite with optional web previews—process gigabytes of PDFs and images locally, without relying on any cloud service.",
+        "f1_title": "Neural PDF & Image Toolkit",
+        "f1_desc": "Dozens of tools for merging, splitting, signing, redacting, converting Office files, and editing images—powered by your own hardware.",
+        "f2_title": "Ironclad Privacy",
+        "f2_desc": "100% Air-gapped compatible. No data ever leaves your machine.",
+        "f3_title": "AI Image Ops",
+        "f3_desc": "Remove backgrounds and upscale images using local ONNX models.",
+        "f4_title": "Enterprise Security",
+        "f4_desc": "Metadata scrubbing and encryption standard for sensitive ops.",
+        "f5_title": "Zero Latency",
+        "f5_desc": "No upload bars. No processing queues. Instant results."
+    },
+    "ProblemSolution": {
+        "problem_title": "Online PDF Tools Are Leaky",
+        "p1_title": "Data Exposure Risk",
+        "p1_desc": "Uploading contracts to free tools exposes them to third-party scraping and breaches.",
+        "p2_title": "Workflow Bottlenecks",
+        "p2_desc": "Dependent on wifi. Uploading 500MB files takes forever. Queues kill momentum.",
+        "p3_title": "Subscription Fatigue",
+        "p3_desc": "Paying $20/mo forever for a simple split tool? Stop the bleeding.",
+        "solution_title": "Your Offline Vault",
+        "s1_title": "Air-Gapped Security",
+        "s1_desc": "Physically impossible for data to leak. Works without ethernet/wifi.",
+        "s2_title": "Native Performance",
+        "s2_desc": "Utilize 100% of your CPU/GPU. Crunch 1000 page PDFs in milliseconds.",
+        "s3_title": "One Payment, Forever",
+        "s3_desc": "Own your tools. Lifetime license. Unlimited local processing."
+    },
+    "Pricing": {
+        "title": "One Payment. Full Offline Suite.",
+        "subtitle": "Pay once, own the full Windows desktop suite forever. Use the online tools as a free companion.",
+        "badge": "LIFETIME LICENSE",
+        "price": "$59",
+        "old_price": "$120",
+        "desc": "Full access to all PDF & image tools in the Local Tools desktop app for Windows, plus free web previews.",
+        "cta": "Get Lifetime Desktop License",
+        "f1": "All current & future PDF tools included",
+        "f2": "All current & future image tools included",
+        "f3": "Commercial use allowed on your licensed device(s)",
+        "f4": "Priority email support and regular updates",
+        "money_back": "30-Day Money Back Guarantee"
+    },
+    "ToolsPage": {
+        "merge-pdf": {
+            "h1": "Merge PDF Files",
+            "p1": "Combine your PDF files quickly in your browser. For 100% offline privacy and bulk processing, download our desktop app.",
+            "f1": "Drag & Drop Interface",
+            "f2": "Reorder Pages",
+            "f3": "Fast Cloud Processing"
+        },
+        "split-pdf": {
+            "h1": "Split PDF Files",
+            "p1": "Extract pages from your documents instantly. Need to handle sensitive files? Get the desktop tool for offline security.",
+            "f1": "Range Selection",
+            "f2": "Instant Download",
+            "f3": "Free to Use"
+        },
+        "compress-pdf": {
+            "h1": "Compress PDF Files",
+            "p1": "Reduce file size for email and upload limits. For confidential documents, use our offline desktop compressor.",
+            "f1": "High Compression Ratio",
+            "f2": "Quick Processing",
+            "f3": "No Credit Card Needed"
+        },
+        "pdf-to-word": {
+            "h1": "Convert PDF to Word",
+            "p1": "Turn PDFs into editable Word docs. Download the desktop app to convert private contracts without uploading them.",
+            "f1": "Editable Text",
+            "f2": "Preserve Layout",
+            "f3": "Cloud Conversion"
+        },
+        "pdf-to-images": {
+            "h1": "PDF to Images",
+            "p1": "Convert PDF pages to high-quality images. Use the desktop app for bulk extraction.",
+            "f1": "High DPI Support",
+            "f2": "PNG/JPG Output",
+            "f3": "Instant Conversion"
+        },
+        "images-to-pdf": {
+            "h1": "Images to PDF",
+            "p1": "Combine photos into a single PDF document. Great for receipts and portfolios.",
+            "f1": "Support Multiple Formats",
+            "f2": "Auto Formatting",
+            "f3": "Easy Sharing"
+        },
+        "protect-pdf": {
+            "h1": "Protect PDF",
+            "p1": "Encrypt your PDF with a password. For maximum security, perform this operation offline with our desktop tool.",
+            "f1": "AES 256-bit",
+            "f2": "Secure Encryption",
+            "f3": "Password Protection"
+        },
+        "unlock-pdf": {
+            "h1": "Unlock PDF",
+            "p1": "Remove passwords from your PDFs securely.",
+            "f1": "Instant Unlock",
+            "f2": "Remove Restrictions",
+            "f3": "Safe Processing"
+        },
+        "extract-tables": {
+            "h1": "Extract Tables from PDF",
+            "p1": "Automatically identify and export tables from PDF documents into Excel or CSV.",
+            "f1": "Accurate Detection",
+            "f2": "Excel & CSV Support",
+            "f3": "Batch Processing"
+        },
+        "rotate-pdf": {
+            "h1": "Rotate PDF",
+            "p1": "Rotate PDF pages permanently. Fix scans orientation in seconds.",
+            "f1": "Left/Right Rotation",
+            "f2": "All Pages",
+            "f3": "Permanent Save"
+        },
+        "remove-image-background": {
+            "h1": "Remove Image Backgrounds",
+            "p1": "Remove backgrounds from photos using cloud AI. For bulk processing and zero-data-sharing, download the desktop app.",
+            "f1": "AI Powered",
+            "f2": "Transparent PNG",
+            "f3": "One-Click Removal"
+        },
+        "convert-image": {
+            "h1": "Convert Images",
+            "p1": "Convert images between formats (JPG, PNG, WEBP). Bulk convert offline with the app.",
+            "f1": "Multi-format Support",
+            "f2": "Lossless Quality",
+            "f3": "Fast Conversion"
+        },
+        "resize-image": {
+            "h1": "Resize Images",
+            "p1": "Resize photos by pixel or percentage. Perfect for social media and web optimization.",
+            "f1": "Maintain Aspect Ratio",
+            "f2": "Pixel Precision",
+            "f3": "High Quality"
+        },
+        "compress-image": {
+            "h1": "Compress Images",
+            "p1": "Reduce image size without losing quality. Optimize web images instantly.",
+            "f1": "Smart Compression",
+            "f2": "Tiny Files",
+            "f3": "Web Ready"
+        },
+        "passport-photo": {
+            "h1": "Passport Photo Maker",
+            "p1": "Create biometric passport photos for any country.",
+            "f1": "Auto-Crop",
+            "f2": "Standard Sizes",
+            "f3": "Print Ready"
+        },
+        "grayscale-pdf": {
+            "h1": "Grayscale PDF",
+            "p1": "Convert colored PDFs to black and white to save ink.",
+            "f1": "Save Ink",
+            "f2": "High Contrast",
+            "f3": "Print Friendly"
+        },
+        "watermark-pdf": {
+            "h1": "Watermark PDF",
+            "p1": "Stamp text or images on your PDF documents.",
+            "f1": "Custom Text",
+            "f2": "Opacity Control",
+            "f3": "Brand Protection"
+        },
+        "repair-pdf": {
+            "h1": "Repair PDF",
+            "p1": "Fix corrupted or damaged PDF files.",
+            "f1": "Recover Data",
+            "f2": "Fix Errors",
+            "f3": "Restore Access"
+        },
+        "generate-icons": {
+            "h1": "Generate Icons",
+            "p1": "Create multi-size icons from any image.",
+            "f1": "Favicons",
+            "f2": "App Icons",
+            "f3": "Multiple Sizes"
+        },
+        "settings": {
+            "title": "Settings",
+            "language": "Language",
+            "language_desc": "Select interface language."
+        },
+        "extract-palette": {
+            "h1": "Get the color palette from an image.",
+            "f1": "Hex Codes",
+            "f2": "Dominant Colors",
+            "f3": "Design Ready"
+        },
+        "extract-images-from-pdf": {
+            "h1": "Extract Images from PDF",
+            "p1": "Extract all images, photos, and assets from a PDF file.",
+            "f1": "All Assets",
+            "f2": "High Quality",
+            "f3": "Zip Download"
+        },
+        "crop-image": {
+            "h1": "Crop Image",
+            "p1": "Crop your images to exact pixel dimensions or aspect ratios.",
+            "f1": "Pixel Precision",
+            "f2": "Aspect Ratio",
+            "f3": "Easy Editor"
+        },
+        "watermark-image": {
+            "h1": "Watermark Image",
+            "p1": "Add text or image watermarks to your photos.",
+            "f1": "Custom Text",
+            "f2": "Logo Support",
+            "f3": "Transparency"
+        },
+        "cta_download": "Download Offline Tool",
+        "cta_online": "Try Online Demo",
+        "why_offline": "Why use this offline?",
+        "why_desc": "Running locally ensures maximum security and speed compared to online alternatives.",
+        "screenshot_alt": "Screenshot of {tool} Interface",
+        "privacy_badge": "Privacy-First {tool}",
+        "heic-to-jpg": {
+            "h1": "HEIC to JPG Converter",
+            "p1": "Convert iPhone photos (.heic) to standard JPG format instantly.",
+            "f1": "Maintain Metadata",
+            "f2": "High Quality",
+            "f3": "Batch Support"
+        },
+        "pdf-diff": {
+            "h1": "Visual PDF Comparison",
+            "p1": "Visually compare two PDF documents to spot differences.",
+            "f1": "Side-by-Side Diff",
+            "f2": "Highlight Changes",
+            "f3": "Pixel Perfect"
+        },
+        "booklet-maker": {
+            "h1": "Create Booklet",
+            "p1": "Reorder pages for 2-up saddle-stitch printing.",
+            "f1": "Print Ready",
+            "f2": "Auto Pagination",
+            "f3": "Fold & Staple"
+        },
+        "pdf-scrubber": {
+            "h1": "Privacy Scrubber",
+            "p1": "Deep clean your PDF metadata and revision history.",
+            "f1": "Remove Metadata",
+            "f2": "Drop Editing History",
+            "f3": "Linearize"
+        },
+        "pdf-redactor": {
+            "h1": "Secure Redaction",
+            "p1": "Permanently remove sensitive text from your documents.",
+            "f1": "Search & Destroy",
+            "f2": "Permanent Removal",
+            "f3": "Sanitize Content"
+        },
+        "pdf-signer": {
+            "h1": "Digital Signer",
+            "p1": "Sign PDFs securely with your digital certificate (.pfx).",
+            "f1": "PAdES Standard",
+            "f2": "Certificate Support",
+            "f3": "Cryptographic Seal"
+        },
+        "pdf-web-optimize": {
+            "h1": "Optimize for Web",
+            "p1": "Linearize PDF for fast streaming and web viewing.",
+            "f1": "Fast Web View",
+            "f2": "Byte Serving",
+            "f3": "Instant Load"
+        },
+        "word-to-pdf": {
+            "h1": "Word to PDF",
+            "p1": "Convert Word documents to PDF format instantly.",
+            "f1": "DOCX Support",
+            "f2": "Preserve Formatting",
+            "f3": "Instant Conversion"
+        },
+        "powerpoint-to-pdf": {
+            "h1": "PowerPoint to PDF",
+            "p1": "Convert PowerPoint presentations to PDF format.",
+            "f1": "PPTX Support",
+            "f2": "Keep Layout",
+            "f3": "Fast Processing"
+        },
+        "excel-to-pdf": {
+            "h1": "Excel to PDF",
+            "p1": "Convert Excel spreadsheets to PDF format.",
+            "f1": "XLSX Support",
+            "f2": "Preserve Tables",
+            "f3": "Accurate Conversion"
+        },
+        "html-to-pdf": {
+            "h1": "HTML to PDF",
+            "p1": "Convert HTML files to PDF documents.",
+            "f1": "HTML Support",
+            "f2": "CSS Styling",
+            "f3": "Web to PDF"
+        },
+        "ocr-pdf": {
+            "h1": "OCR PDF",
+            "p1": "Make scanned PDFs searchable with OCR technology.",
+            "f1": "Text Recognition",
+            "f2": "Searchable Text",
+            "f3": "Multi-Language"
+        },
+        "pdf-to-pdfa": {
+            "h1": "PDF to PDF/A",
+            "p1": "Convert PDF to archival PDF/A format for long-term preservation.",
+            "f1": "Archival Format",
+            "f2": "Long-Term Storage",
+            "f3": "ISO Compliant"
+        }
+    },
+    "Tools": {
+        "merge-pdf": {
+            "title": "Merge PDF",
+            "desc": "Combine PDFs instantly."
+        },
+        "suite_title": "Local Tools Suite",
+        "suite_desc": "Powerful document processing that puts your privacy first.",
+        "cat_pdf": "PDF Tools",
+        "cat_image": "Image Tools",
+        "split-pdf": {
+            "title": "Split PDF",
+            "desc": "Extract pages securely."
+        },
+        "compress-pdf": {
+            "title": "Smart Compress",
+            "desc": "AI-optimized reduction."
+        },
+        "pdf-to-word": {
+            "title": "PDF to Word",
+            "desc": "OCR Conversion."
+        },
+        "pdf-to-images": {
+            "title": "PDF to Images",
+            "desc": "Extract pages as JPG."
+        },
+        "images-to-pdf": {
+            "title": "Images to PDF",
+            "desc": "Photos to document."
+        },
+        "protect-pdf": {
+            "title": "Protect PDF",
+            "desc": "Encrypt with password."
+        },
+        "unlock-pdf": {
+            "title": "Unlock PDF",
+            "desc": "Remove passwords."
+        },
+        "rotate-pdf": {
+            "title": "Rotate PDF",
+            "desc": "Fix orientation."
+        },
+        "grayscale-pdf": {
+            "title": "Grayscale PDF",
+            "desc": "Convert to B&W."
+        },
+        "watermark-pdf": {
+            "title": "Watermark PDF",
+            "desc": "Add stamp."
+        },
+        "repair-pdf": {
+            "title": "Repair PDF",
+            "desc": "Fix corrupt files."
+        },
+        "remove-image-background": {
+            "title": "Remove BG",
+            "desc": "Offline AI Removal."
+        },
+        "convert-image": {
+            "title": "Convert Image",
+            "desc": "Change format."
+        },
+        "resize-image": {
+            "title": "Resize Image",
+            "desc": "Scale dimensions."
+        },
+        "compress-image": {
+            "title": "Compress Image",
+            "desc": "Reduce size."
+        },
+        "passport-photo": {
+            "title": "Passport Photo",
+            "desc": "Make ID photos."
+        },
+        "generate-icons": {
+            "title": "Generate Icons",
+            "desc": "Create favicons."
+        },
+        "extract-palette": {
+            "title": "Extract Palette",
+            "desc": "Get colors."
+        },
+        "extract-images-from-pdf": {
+            "title": "Extract Images",
+            "desc": "Get all images."
+        },
+        "extract-tables": {
+            "title": "Extract Tables",
+            "desc": "PDF to CSV/Excel."
+        },
+        "crop-image": {
+            "title": "Crop Image",
+            "desc": "Trim photos."
+        },
+        "watermark-image": {
+            "title": "Watermark Image",
+            "desc": "Add stamp."
+        },
+        "heic-to-jpg": {
+            "title": "HEIC to JPG",
+            "desc": "Convert HEIC."
+        },
+        "pdf-diff": {
+            "title": "PDF Diff",
+            "desc": "Compare docs."
+        },
+        "booklet-maker": {
+            "title": "Booklet Maker",
+            "desc": "Print imposition."
+        },
+        "pdf-scrubber": {
+            "title": "Scrubber",
+            "desc": "Clean metadata."
+        },
+        "pdf-redactor": {
+            "title": "Redactor",
+            "desc": "Hide secrets."
+        },
+        "pdf-signer": {
+            "title": "Signer",
+            "desc": "Digital sign."
+        },
+        "pdf-web-optimize": {
+            "title": "Web Optimize",
+            "desc": "Fast loading."
+        },
+        "word-to-pdf": {
+            "title": "Word to PDF",
+            "desc": "Convert DOCX to PDF."
+        },
+        "powerpoint-to-pdf": {
+            "title": "PowerPoint to PDF",
+            "desc": "Convert PPTX to PDF."
+        },
+        "excel-to-pdf": {
+            "title": "Excel to PDF",
+            "desc": "Convert XLSX to PDF."
+        },
+        "html-to-pdf": {
+            "title": "HTML to PDF",
+            "desc": "Convert HTML to PDF."
+        },
+        "ocr-pdf": {
+            "title": "OCR PDF",
+            "desc": "Make scanned PDFs searchable."
+        },
+        "pdf-to-pdfa": {
+            "title": "PDF to PDF/A",
+            "desc": "Convert to archival format."
+        },
+        "jpg-to-png": {
+            "title": "JPG to PNG",
+            "desc": "Convert to PNG."
+        },
+        "png-to-jpg": {
+            "title": "PNG to JPG",
+            "desc": "Convert to JPG."
+        },
+        "passport-photo-maker": {
+            "title": "Passport Photo",
+            "desc": "Make ID photos."
+        },
+        "add-watermark": {
+            "title": "Watermark Image",
+            "desc": "Add stamp."
+        },
+        "image-color-palette": {
+            "title": "Extract Palette",
+            "desc": "Get colors."
+        },
+        "studio": {
+            "title": "Photo Studio",
+            "desc": "Edit photos with layers."
+        }
+    },
+    "Common": {
+        "pricing": "Pricing",
+        "features": "Features",
+        "tools": "Tools",
+        "product": "Product",
+        "legal": "Legal",
+        "privacy": "Privacy",
+        "terms": "Terms",
+        "download": "Download",
+        "download_app_short": "Download App",
+        "support": "Contacts",
+        "add_more": "Add More",
+        "replace_all": "Replace All"
+    },
+    "ToolProcessor": {
+        "status_uploading": "Uploading to Server...",
+        "status_processing": "Processing on safe server...",
+        "status_complete": "Processing Complete!",
+        "status_error": "Processing Failed",
+        "wait_upload": "Please wait while we upload your files.",
+        "wait_process": "Your files are being processed securely.",
+        "download": "Download File",
+        "download_zip": "Download All (ZIP)",
+        "try_again": "Try Another File",
+        "convert_now": "Convert Now",
+        "process_image": "Process Image",
+        "process_files": "Process Files",
+        "change_file": "Change File",
+        "selected": "Selected",
+        "watermark_settings": "Watermark Settings",
+        "wm_type_text": "Text Watermark",
+        "wm_type_image": "Image/Logo",
+        "wm_text_label": "Watermark Text",
+        "wm_opacity": "Opacity",
+        "wm_color": "Text Color",
+        "wm_size": "Font Size",
+        "wm_position": "Position",
+        "wm_upload_logo": "Upload Logo",
+        "pos_center": "Center",
+        "pos_tl": "Top Left",
+        "pos_tr": "Top Right",
+        "pos_bl": "Bottom Left",
+        "pos_br": "Bottom Right",
+        "pos_custom": "Custom (Drag Preview)",
+        "crop_options": "Crop Options",
+        "crop_btn": "Crop & Save",
+        "passport_country": "Passport Country",
+        "compression_level": "Compression Level",
+        "comp_low": "Low (High Quality)",
+        "comp_med": "Medium (Balanced)",
+        "comp_high": "High (Small Size)",
+        "resize_settings": "Resize Settings",
+        "resize_px": "Pixels",
+        "resize_pct": "Percentage",
+        "resize_width": "Width (px)",
+        "resize_height": "Height (px)",
+        "resize_percent": "Scale (%)",
+        "redact_settings": "Redaction Settings",
+        "redact_label": "Text to Redact (Case Sensitive)",
+        "sign_settings": "Digital Signature",
+        "sign_cert": "Certificate File (.pfx / .p12)",
+        "sign_pass": "Certificate Password",
+        "protect_settings": "Security Settings",
+        "protect_pass_label": "Set Password",
+        "protect_btn": "Protect PDF",
+        "unlock_pass_label": "PDF Password",
+        "unlock_btn": "Unlock PDF",
+        "heic_quality": "Quality",
+        "extract_palette": "Extracted Palette",
+        "copied": "Copied!",
+        "settings": "Settings",
+        "output_format": "Output Format",
+        "quality": "Quality",
+        "privacy_badge": "Want privacy?",
+        "desktop_app_promo": "Download the desktop app for 100% offline privacy.",
+        "cancel_op": "Cancel Operation"
+    },
+    "FileUploader": {
+        "drop_active": "Drop files here",
+        "drop_idle": "Click to upload or drag & drop",
+        "supports": "Supports PDF, PNG, JPG",
+        "limit": "Up to {count} files",
+        "file_too_large": "File is too large using the Web Version (Limit: {limit}). Download the Desktop App for unlimited size."
+    }
+}

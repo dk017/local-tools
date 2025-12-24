@@ -1,0 +1,554 @@
+{
+    "NotFound": {
+        "title": "Página no encontrada",
+        "desc": "La página que buscas no existe.",
+        "return_home": "Volver al Inicio"
+    },
+    "DesignStudio": {
+        "templates": "Plantillas",
+        "text": "Texto",
+        "photos": "Fotos",
+        "elements": "Elementos",
+        "layers": "Capas"
+    },
+    "Hero": {
+        "badge": "v1.0 Disponible para Windows",
+        "title": "IA Offline.\nTus Datos, Tu Dispositivo.",
+        "subtitle": "El primer kit de herramientas de PDF e Imagen con IA que funciona 100% en tu motor neuronal. Cero subidas a la nube. Cero riesgos.",
+        "cta_primary": "Acceso de por vida",
+        "cta_secondary": "Probar Demo",
+        "stat_offline": "IA 100% Offline",
+        "stat_privacy": "Cero Recopilación",
+        "stat_speed": "Velocidad Nativa"
+    },
+    "Features": {
+        "title": "Diseñado para Velocidad y Secreto",
+        "subtitle": "Evita la nube. Procesa gigabytes al instante en local.",
+        "f1_title": "Manipulación PDF Neuronal",
+        "f1_desc": "Une y divide a la velocidad del procesador.",
+        "f2_title": "Privacidad Blindada",
+        "f2_desc": "Compatible Air-gap. Ningún dato sale.",
+        "f3_title": "Ops de Imagen IA",
+        "f3_desc": "Quita fondos y mejora con modelos locales.",
+        "f4_title": "Seguridad Empresarial",
+        "f4_desc": "Borrado de metadatos y encriptación.",
+        "f5_title": "Latencia Cero",
+        "f5_desc": "Sin barras de carga. Resultados instantáneos."
+    },
+    "ProblemSolution": {
+        "problem_title": "La Nube tiene Fugas",
+        "p1_title": "Riesgo de Exposición",
+        "p1_desc": "Subir contratos a herramientas gratis es arriesgado.",
+        "p2_title": "Cuellos de Botella",
+        "p2_desc": "Depende del wifi. Las colas matan el ritmo.",
+        "p3_title": "Fatiga de Suscripción",
+        "p3_desc": "Deja de pagar cada mes por dividir un PDF.",
+        "solution_title": "Tu Bóveda Offline",
+        "s1_title": "Seguridad Air-Gap",
+        "s1_desc": "Físicamente imposible de filtrar.",
+        "s2_title": "Rendimiento Nativo",
+        "s2_desc": "Usa el 100% de tu CPU/GPU.",
+        "s3_title": "Un Pago, Para Siempre",
+        "s3_desc": "Licencia de por vida. Ilimitada."
+    },
+    "Pricing": {
+        "title": "Un Pago. Privacidad Infinita.",
+        "subtitle": "Paga una vez, tenlo para siempre.",
+        "badge": "LICENCIA DE POR VIDA",
+        "price": "$59",
+        "old_price": "$120",
+        "desc": "Acceso total al kit de herramientas neuronal offline.",
+        "cta": "Acceso de por Vida Seguro",
+        "f1": "Procesamiento PDF Ilimitado",
+        "f2": "Ops de Imagen IA Ilimitadas",
+        "f3": "Uso Comercial Permitido",
+        "f4": "Soporte Prioritario",
+        "money_back": "Garantía de 30 Días"
+    },
+    "ToolsPage": {
+        "merge-pdf": {
+            "h1": "Unir Archivos PDF",
+            "p1": "Combina tus archivos PDF rápidamente en tu navegador. Para privacidad 100% offline y procesamiento por lotes, descarga nuestra aplicación de escritorio.",
+            "f1": "Interfaz Arrastrar y Soltar",
+            "f2": "Reordenar Páginas",
+            "f3": "Procesamiento Cloud Rápido"
+        },
+        "split-pdf": {
+            "h1": "Dividir Archivos PDF",
+            "p1": "Extrae páginas de tus documentos al instante. ¿Necesitas manejar archivos sensibles? Obtén la herramienta de escritorio para seguridad offline.",
+            "f1": "Selección de Rango",
+            "f2": "Descarga Instantánea",
+            "f3": "Uso Gratuito"
+        },
+        "compress-pdf": {
+            "h1": "Comprimir Archivos PDF",
+            "p1": "Reduce el tamaño de archivo para email y límites de subida. Para documentos confidenciales, usa nuestro compresor de escritorio offline.",
+            "f1": "Alta Relación de Compresión",
+            "f2": "Procesamiento Rápido",
+            "f3": "No Requiere Tarjeta de Crédito"
+        },
+        "remove-image-background": {
+            "h1": "Quitar Fondo de Imagen",
+            "p1": "Elimina fondos de fotos usando IA en la nube. Para procesamiento por lotes y cero intercambio de datos, descarga la aplicación de escritorio.",
+            "f1": "Impulsado por IA",
+            "f2": "PNG Transparente",
+            "f3": "Eliminación en Un Clic"
+        },
+        "pdf-to-images": {
+            "h1": "PDF a Imágenes",
+            "p1": "Convierte páginas PDF a imágenes de alta calidad.",
+            "f1": "Soporte Alta DPI",
+            "f2": "Salida PNG/JPG",
+            "f3": "Conversión Instantánea"
+        },
+        "images-to-pdf": {
+            "h1": "Imágenes a PDF",
+            "p1": "Combina fotos en un solo documento PDF.",
+            "f1": "Soporte Múltiples Formatos",
+            "f2": "Auto Formateo",
+            "f3": "Compartir Fácil"
+        },
+        "protect-pdf": {
+            "h1": "Proteger PDF",
+            "p1": "Encripta tu PDF con contraseña.",
+            "f1": "AES 256-bit",
+            "f2": "Encriptación Segura",
+            "f3": "Protección Contraseña"
+        },
+        "unlock-pdf": {
+            "h1": "Desbloquear PDF",
+            "p1": "Elimina contraseñas de tus PDFs de forma segura.",
+            "f1": "Desbloqueo Instantáneo",
+            "f2": "Eliminar Restricciones",
+            "f3": "Procesamiento Seguro"
+        },
+        "rotate-pdf": {
+            "h1": "Rotar PDF",
+            "p1": "Rota páginas PDF permanentemente.",
+            "f1": "Rotación Izq/Der",
+            "f2": "Todas las Páginas",
+            "f3": "Guardado Permanente"
+        },
+        "convert-image": {
+            "h1": "Convertir Imágenes",
+            "p1": "Convierte imágenes entre formatos (JPG, PNG, WEBP).",
+            "f1": "Soporte Multi-formato",
+            "f2": "Calidad Sin Pérdida",
+            "f3": "Conversión Rápida"
+        },
+        "resize-image": {
+            "h1": "Redimensionar Imágenes",
+            "p1": "Redimensiona fotos por píxel o porcentaje.",
+            "f1": "Mantener Relación Aspecto",
+            "f2": "Precisión Píxel",
+            "f3": "Alta Calidad"
+        },
+        "compress-image": {
+            "h1": "Comprimir Imágenes",
+            "p1": "Reduce el tamaño de imagen sin perder calidad.",
+            "f1": "Compresión Inteligente",
+            "f2": "Archivos Pequeños",
+            "f3": "Listo para Web"
+        },
+        "passport-photo": {
+            "h1": "Creador Foto Pasaporte",
+            "p1": "Crea fotos de pasaporte biométricas.",
+            "f1": "Auto-Recorte",
+            "f2": "Tamaños Estándar",
+            "f3": "Listo para Imprimir"
+        },
+        "grayscale-pdf": {
+            "h1": "PDF en Escala de Grises",
+            "p1": "Convierte PDFs a blanco y negro.",
+            "f1": "Ahorra Tinta",
+            "f2": "Alto Contraste",
+            "f3": "Amigable Impresión"
+        },
+        "watermark-pdf": {
+            "h1": "Marca de Agua PDF",
+            "p1": "Sella texto o imágenes en tus documentos PDF.",
+            "f1": "Texto Personalizado",
+            "f2": "Control Opacidad",
+            "f3": "Protección Marca"
+        },
+        "repair-pdf": {
+            "h1": "Reparar PDF",
+            "p1": "Arregla archivos PDF corruptos o dañados.",
+            "f1": "Recuperar Datos",
+            "f2": "Arreglar Errores",
+            "f3": "Restaurar Acceso"
+        },
+        "generate-icons": {
+            "h1": "Generar Iconos",
+            "p1": "Crea iconos multi-tamaño desde cualquier imagen.",
+            "f1": "Favicons",
+            "f2": "Iconos App",
+            "f3": "Múltiples Tamaños"
+        },
+        "extract-palette": {
+            "h1": "Extraer Paleta",
+            "p1": "Obtén la paleta de colores de una imagen.",
+            "f1": "Códigos Hex",
+            "f2": "Colores Dominantes",
+            "f3": "Listo Diseño"
+        },
+        "extract-images-from-pdf": {
+            "h1": "Extraer Imágenes de PDF",
+            "p1": "Extrae todas las imágenes de un archivo PDF.",
+            "f1": "Todos los Activos",
+            "f2": "Alta Calidad",
+            "f3": "Descarga Zip"
+        },
+        "crop-image": {
+            "h1": "Recortar Imagen",
+            "p1": "Recorta tus imágenes a dimensiones exactas.",
+            "f1": "Precisión Píxel",
+            "f2": "Relación Aspecto",
+            "f3": "Editor Fácil"
+        },
+        "watermark-image": {
+            "h1": "Marca de Agua Imagen",
+            "p1": "Añade texto o imágenes a tus fotos.",
+            "f1": "Texto Personalizado",
+            "f2": "Soporte Logo",
+            "f3": "Transparencia"
+        },
+        "cta_download": "Descargar Herramienta Offline",
+        "cta_online": "Probar Demo Online",
+        "why_offline": "¿Por qué offline?",
+        "why_desc": "Ejecutar localmente asegura máxima seguridad y velocidad comparado con alternativas online.",
+        "screenshot_alt": "Captura de pantalla de la interfaz de {tool}",
+        "privacy_badge": "{tool} Privado",
+        "extract-tables": {
+            "h1": "Extract Tables from PDF",
+            "p1": "Automatically identify and export tables from PDF documents into Excel or CSV.",
+            "f1": "Accurate Detection",
+            "f2": "Excel & CSV Support",
+            "f3": "Batch Processing"
+        },
+        "heic-to-jpg": {
+            "h1": "HEIC to JPG Converter",
+            "p1": "Convert iPhone photos (.heic) to standard JPG format instantly.",
+            "f1": "Maintain Metadata",
+            "f2": "High Quality",
+            "f3": "Batch Support"
+        },
+        "pdf-diff": {
+            "h1": "Visual PDF Comparison",
+            "p1": "Visually compare two PDF documents to spot differences.",
+            "f1": "Side-by-Side Diff",
+            "f2": "Highlight Changes",
+            "f3": "Pixel Perfect"
+        },
+        "booklet-maker": {
+            "h1": "Create Booklet",
+            "p1": "Reorder pages for 2-up saddle-stitch printing.",
+            "f1": "Print Ready",
+            "f2": "Auto Pagination",
+            "f3": "Fold & Staple"
+        },
+        "pdf-scrubber": {
+            "h1": "Privacy Scrubber",
+            "p1": "Deep clean your PDF metadata and revision history.",
+            "f1": "Remove Metadata",
+            "f2": "Drop Editing History",
+            "f3": "Linearize"
+        },
+        "pdf-redactor": {
+            "h1": "Secure Redaction",
+            "p1": "Permanently remove sensitive text from your documents.",
+            "f1": "Search & Destroy",
+            "f2": "Permanent Removal",
+            "f3": "Sanitize Content"
+        },
+        "pdf-signer": {
+            "h1": "Digital Signer",
+            "p1": "Sign PDFs securely with your digital certificate (.pfx).",
+            "f1": "PAdES Standard",
+            "f2": "Certificate Support",
+            "f3": "Cryptographic Seal"
+        },
+        "pdf-web-optimize": {
+            "h1": "Optimize for Web",
+            "p1": "Linearize PDF for fast streaming and web viewing.",
+            "f1": "Fast Web View",
+            "f2": "Byte Serving",
+            "f3": "Instant Load"
+        },
+        "word-to-pdf": {
+            "h1": "Word to PDF",
+            "p1": "Convierte documentos Word al formato PDF al instante.",
+            "f1": "Soporte DOCX",
+            "f2": "Preservar formato",
+            "f3": "Conversión instantánea"
+        },
+        "powerpoint-to-pdf": {
+            "h1": "PowerPoint to PDF",
+            "p1": "Convierte presentaciones PowerPoint al formato PDF.",
+            "f1": "Soporte PPTX",
+            "f2": "Mantener diseño",
+            "f3": "Procesamiento rápido"
+        },
+        "excel-to-pdf": {
+            "h1": "Excel to PDF",
+            "p1": "Convierte hojas de cálculo Excel al formato PDF.",
+            "f1": "Soporte XLSX",
+            "f2": "Preservar tablas",
+            "f3": "Conversión precisa"
+        },
+        "html-to-pdf": {
+            "h1": "HTML to PDF",
+            "p1": "Convierte archivos HTML a documentos PDF.",
+            "f1": "Soporte HTML",
+            "f2": "Estilos CSS",
+            "f3": "Web to PDF"
+        },
+        "ocr-pdf": {
+            "h1": "OCR PDF",
+            "p1": "Haz que los PDF escaneados sean buscables con tecnología OCR.",
+            "f1": "Reconocimiento de texto",
+            "f2": "Texto buscable",
+            "f3": "Multiidioma"
+        },
+        "pdf-to-pdfa": {
+            "h1": "PDF to PDF/A",
+            "p1": "Convierte PDF al formato PDF/A de archivo para preservación a largo plazo.",
+            "f1": "Formato de archivo",
+            "f2": "Almacenamiento a largo plazo",
+            "f3": "Conforme ISO"
+        }
+    },
+    "Tools": {
+        "merge-pdf": {
+            "title": "Unir PDF",
+            "desc": "Combinar al instante."
+        },
+        "suite_title": "Suite de Herramientas Local",
+        "suite_desc": "Procesamiento de documentos potente que prioriza tu privacidad.",
+        "cat_pdf": "Herramientas PDF",
+        "cat_image": "Herramientas de Imagen",
+        "split-pdf": {
+            "title": "Dividir PDF",
+            "desc": "Extraer seguro."
+        },
+        "compress-pdf": {
+            "title": "Compresión Smart",
+            "desc": "Reducción por IA."
+        },
+        "remove-image-background": {
+            "title": "Quitar Fondo",
+            "desc": "IA Offline."
+        },
+        "pdf-to-word": {
+            "title": "PDF a Word",
+            "desc": "Conversión OCR."
+        },
+        "pdf-to-images": {
+            "title": "PDF a Imágenes",
+            "desc": "Extraer páginas como JPG."
+        },
+        "images-to-pdf": {
+            "title": "Imágenes a PDF",
+            "desc": "Fotos a documento."
+        },
+        "protect-pdf": {
+            "title": "Proteger PDF",
+            "desc": "Encriptar con contraseña."
+        },
+        "unlock-pdf": {
+            "title": "Desbloquear PDF",
+            "desc": "Quitar contraseñas."
+        },
+        "rotate-pdf": {
+            "title": "Rotar PDF",
+            "desc": "Corregir orientación."
+        },
+        "grayscale-pdf": {
+            "title": "PDF en Escala de Grises",
+            "desc": "Convertir a B&W."
+        },
+        "watermark-pdf": {
+            "title": "Marca de Agua PDF",
+            "desc": "Añadir sello."
+        },
+        "repair-pdf": {
+            "title": "Reparar PDF",
+            "desc": "Arreglar archivos corruptos."
+        },
+        "convert-image": {
+            "title": "Convertir Imagen",
+            "desc": "Cambiar formato."
+        },
+        "resize-image": {
+            "title": "Redimensionar Imagen",
+            "desc": "Escalar dimensiones."
+        },
+        "compress-image": {
+            "title": "Comprimir Imagen",
+            "desc": "Reducir tamaño."
+        },
+        "passport-photo": {
+            "title": "Foto Pasaporte",
+            "desc": "Crear fotos ID."
+        },
+        "generate-icons": {
+            "title": "Generar Iconos",
+            "desc": "Crear favicons."
+        },
+        "extract-palette": {
+            "title": "Extraer Paleta",
+            "desc": "Obtener colores."
+        },
+        "extract-images-from-pdf": {
+            "title": "Extraer Imágenes",
+            "desc": "Obtener todas las imágenes."
+        },
+        "crop-image": {
+            "title": "Recortar Imagen",
+            "desc": "Recortar fotos."
+        },
+        "watermark-image": {
+            "title": "Marca de Agua Imagen",
+            "desc": "Añadir sello."
+        },
+        "extract-tables": {
+            "title": "Extraer Tablas",
+            "desc": "PDF a CSV."
+        },
+        "heic-to-jpg": {
+            "title": "HEIC a JPG",
+            "desc": "Convertir HEIC."
+        },
+        "pdf-diff": {
+            "title": "Comparar PDF",
+            "desc": "Ver diferencias."
+        },
+        "booklet-maker": {
+            "title": "Folleto",
+            "desc": "Imposición pag."
+        },
+        "pdf-scrubber": {
+            "title": "Limpiador",
+            "desc": "Borrar metadatos."
+        },
+        "pdf-redactor": {
+            "title": "Redactor",
+            "desc": "Ocultar secretos."
+        },
+        "pdf-signer": {
+            "title": "Firmar",
+            "desc": "Firma digital."
+        },
+        "pdf-web-optimize": {
+            "title": "Optimizar Web",
+            "desc": "Carga rápida."
+        },
+        "word-to-pdf": {
+            "title": "Word to PDF",
+            "desc": "Convertir DOCX a PDF."
+        },
+        "powerpoint-to-pdf": {
+            "title": "PowerPoint to PDF",
+            "desc": "Convertir PPTX a PDF."
+        },
+        "excel-to-pdf": {
+            "title": "Excel to PDF",
+            "desc": "Convertir XLSX a PDF."
+        },
+        "html-to-pdf": {
+            "title": "HTML to PDF",
+            "desc": "Convertir HTML a PDF."
+        },
+        "ocr-pdf": {
+            "title": "OCR PDF",
+            "desc": "Hacer PDF escaneados buscables."
+        },
+        "pdf-to-pdfa": {
+            "title": "PDF to PDF/A",
+            "desc": "Convertir al formato de archivo."
+        }
+    },
+    "Common": {
+        "pricing": "Precios",
+        "features": "Características",
+        "tools": "Herramientas",
+        "product": "Producto",
+        "legal": "Legal",
+        "privacy": "Privacidad",
+        "terms": "Términos",
+        "download": "Descargar",
+        "download_app_short": "Descargar App",
+        "support": "Contacto"
+    },
+    "ToolProcessor": {
+        "status_uploading": "Subiendo al Servidor...",
+        "status_processing": "Procesando en servidor seguro...",
+        "status_complete": "Procesamiento Completado!",
+        "status_error": "Fallo en Procesamiento",
+        "wait_upload": "Por favor espera mientras subimos tus archivos.",
+        "wait_process": "Tus archivos se están procesando de forma segura.",
+        "download": "Descargar Archivo",
+        "download_zip": "Descargar Todo (ZIP)",
+        "try_again": "Probar Otro Archivo",
+        "convert_now": "Convertir Ahora",
+        "process_image": "Procesar Imagen",
+        "process_files": "Procesar Archivos",
+        "change_file": "Cambiar Archivo",
+        "selected": "Seleccionado",
+        "watermark_settings": "Configuración de Marca de Agua",
+        "wm_type_text": "Marca de Texto",
+        "wm_type_image": "Imagen/Logo",
+        "wm_text_label": "Texto de Marca",
+        "wm_opacity": "Opacidad",
+        "wm_color": "Color del Texto",
+        "wm_size": "Tamaño de Fuente",
+        "wm_position": "Posición",
+        "wm_upload_logo": "Subir Logo",
+        "pos_center": "Centro",
+        "pos_tl": "Arriba Izquierda",
+        "pos_tr": "Arriba Derecha",
+        "pos_bl": "Abajo Izquierda",
+        "pos_br": "Abajo Derecha",
+        "pos_custom": "Personalizado",
+        "crop_options": "Opciones de Recorte",
+        "crop_btn": "Recortar y Guardar",
+        "passport_country": "País del Pasaporte",
+        "compression_level": "Nivel de Compresión",
+        "comp_low": "Bajo (Alta Calidad)",
+        "comp_med": "Medio (Equilibrado)",
+        "comp_high": "Alto (Tamaño Pequeño)",
+        "resize_settings": "Configuración de Redimensión",
+        "resize_px": "Píxeles",
+        "resize_pct": "Porcentaje",
+        "resize_width": "Ancho (px)",
+        "resize_height": "Alto (px)",
+        "resize_percent": "Escala (%)",
+        "redact_settings": "Configuración de Redacción",
+        "redact_label": "Texto a Redactar (Sensible a Mayúsculas)",
+        "sign_settings": "Firma Digital",
+        "sign_cert": "Archivo de Certificado (.pfx / .p12)",
+        "sign_pass": "Contraseña de Certificado",
+        "protect_settings": "Configuración de Seguridad",
+        "protect_pass_label": "Establecer Contraseña",
+        "protect_btn": "Proteger PDF",
+        "unlock_pass_label": "Contraseña PDF",
+        "unlock_btn": "Desbloquear PDF",
+        "heic_quality": "Calidad",
+        "extract_palette": "Paleta Extraída",
+        "copied": "¡Copiado!",
+        "settings": "Configuración",
+        "output_format": "Formato de Salida",
+        "quality": "Calidad",
+        "privacy_badge": "¿Quieres privacidad?",
+        "desktop_app_promo": "Descarga la app de escritorio para privacidad 100% offline.",
+        "cancel_op": "Cancelar Operación"
+    },
+    "FileUploader": {
+        "drop_active": "Suelta archivos aquí",
+        "drop_idle": "Clic para subir o arrastrar y soltar",
+        "supports": "Soporta PDF, PNG, JPG",
+        "limit": "Hasta {count} archivos",
+        "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+    }
+}
+```

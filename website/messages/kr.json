@@ -1,0 +1,553 @@
+{
+    "NotFound": {
+        "title": "페이지를 찾을 수 없습니다",
+        "desc": "요청하신 페이지가 존재하지 않습니다.",
+        "return_home": "홈으로 돌아가기"
+    },
+    "DesignStudio": {
+        "templates": "템플릿",
+        "text": "텍스트",
+        "photos": "사진",
+        "elements": "요소",
+        "layers": "레이어"
+    },
+    "Hero": {
+        "badge": "Windows용 v1.0 출시",
+        "title": "오프라인 AI.\n당신의 데이터, 당신의 기기.",
+        "subtitle": "신경 엔진에서 100% 실행되는 최초의 AI 기반 PDF 및 이미지 툴킷. 클라우드 업로드 제로. 개인정보 위험 제로.",
+        "cta_primary": "평생 이용권 받기",
+        "cta_secondary": "온라인 데모 체험",
+        "stat_offline": "100% 오프라인 AI",
+        "stat_privacy": "데이터 수집 없음",
+        "stat_speed": "네이티브 속도"
+    },
+    "Features": {
+        "title": "속도와 보안을 위한 설계",
+        "subtitle": "클라우드 없이 로컬에서 대용량 데이터를 즉시 처리하세요.",
+        "f1_title": "AI PDF 조작",
+        "f1_desc": "프로세서 속도로 페이지 정리.",
+        "f2_title": "철통 보안",
+        "f2_desc": "완전 오프라인 호환. 데이터 유출 없음.",
+        "f3_title": "AI 이미지 처리",
+        "f3_desc": "로컬 모델로 배경 제거.",
+        "f4_title": "기업급 보안",
+        "f4_desc": "메타데이터 삭제 및 암호화.",
+        "f5_title": "지연 시간 제로",
+        "f5_desc": "업로드 대기 없음. 즉시 완료."
+    },
+    "ProblemSolution": {
+        "problem_title": "클라우드의 위험",
+        "p1_title": "노출 위험",
+        "p1_desc": "무료 도구에 업로드하면 유출 위험이 있습니다.",
+        "p2_title": "작업 병목",
+        "p2_desc": "인터넷 속도에 의존합니다.",
+        "p3_title": "구독 피로",
+        "p3_desc": "매월 결제는 이제 그만.",
+        "solution_title": "오프라인 금고",
+        "s1_title": "에어갭 보안",
+        "s1_desc": "물리적으로 유출 불가.",
+        "s2_title": "네이티브 성능",
+        "s2_desc": "PC 성능 100% 활용.",
+        "s3_title": "한 번 결제로 평생 소장",
+        "s3_desc": "평생 라이선스. 제한 없음."
+    },
+    "Pricing": {
+        "title": "한 번 결제. 무한한 프라이버시.",
+        "subtitle": "추가 비용 없음. 평생 소장.",
+        "badge": "평생 라이선스",
+        "price": "$59",
+        "old_price": "$120",
+        "desc": "Windows용 오프라인 AI 툴킷 전체 액세스.",
+        "cta": "지금 구매하기",
+        "f1": "무제한 PDF 처리",
+        "f2": "무제한 AI 이미지 처리",
+        "f3": "상업적 이용 가능",
+        "f4": "우선 지원",
+        "money_back": "30일 환불 보장"
+    },
+    "ToolsPage": {
+        "merge-pdf": {
+            "h1": "오프라인 PDF 병합",
+            "p1": "중요한 문서를 업로드하지 마세요. 오프라인 도구를 사용하여 계약서, 보고서 및 청구서를 기기에서 즉시 결합하십시오.",
+            "f1": "드래그 앤 드롭",
+            "f2": "페이지 순서 변경",
+            "f3": "100% 비공개"
+        },
+        "split-pdf": {
+            "h1": "안전한 PDF 분할",
+            "p1": "인터넷 접속 없이 PDF 문서에서 페이지를 추출하세요. 공유하기 전에 민감한 페이지를 제거하는 데 완벽합니다.",
+            "f1": "범위 선택",
+            "f2": "즉시 추출",
+            "f3": "데이터 사용 제로"
+        },
+        "compress-pdf": {
+            "h1": "로컬 PDF 압축",
+            "p1": "품질 저하 없이 업로드 제한에 맞춰 PDF 파일 크기를 줄이세요. 업로드나 다운로드를 기다릴 필요가 없습니다.",
+            "f1": "높은 압축률",
+            "f2": "대량 처리",
+            "f3": "프라이버시 보장"
+        },
+        "remove-image-background": {
+            "h1": "오프라인 배경 제거",
+            "p1": "로컬 AI 모델을 사용하여 몇 초 만에 사진에서 배경을 제거하세요. API 키, 크레딧, 업로드가 필요 없습니다.",
+            "f1": "AI 기반",
+            "f2": "무제한 사용",
+            "f3": "투명 PNG 내보내기"
+        },
+        "pdf-to-images": {
+            "h1": "PDF를 이미지로 변환",
+            "p1": "PDF 페이지를 고화질 이미지로 변환하세요.",
+            "f1": "높은 DPI 지원",
+            "f2": "PNG/JPG 출력",
+            "f3": "즉시 변환"
+        },
+        "images-to-pdf": {
+            "h1": "이미지를 PDF로 변환",
+            "p1": "사진들을 하나의 PDF 문서로 결합하세요.",
+            "f1": "다양한 포맷 지원",
+            "f2": "자동 포맷팅",
+            "f3": "간편한 공유"
+        },
+        "protect-pdf": {
+            "h1": "PDF 보호",
+            "p1": "비밀번호로 PDF를 암호화하세요.",
+            "f1": "AES 256-비트",
+            "f2": "안전한 암호화",
+            "f3": "비밀번호 보호"
+        },
+        "unlock-pdf": {
+            "h1": "PDF 잠금해제",
+            "p1": "안전하게 PDF 비밀번호를 제거하세요.",
+            "f1": "즉시 잠금해제",
+            "f2": "제한 제거",
+            "f3": "안전한 처리"
+        },
+        "rotate-pdf": {
+            "h1": "PDF 회전",
+            "p1": "PDF 페이지를 영구적으로 회전시키세요.",
+            "f1": "좌/우 회전",
+            "f2": "모든 페이지",
+            "f3": "영구 저장"
+        },
+        "convert-image": {
+            "h1": "이미지 변환",
+            "p1": "이미지 포맷을 변환하세요 (JPG, PNG, WEBP).",
+            "f1": "다양한 포맷 지원",
+            "f2": "무손실 품질",
+            "f3": "빠른 변환"
+        },
+        "resize-image": {
+            "h1": "이미지 리사이즈",
+            "p1": "픽셀 또는 퍼센트로 사진 크기를 조절하세요.",
+            "f1": "비율 유지",
+            "f2": "픽셀 정밀도",
+            "f3": "고품질"
+        },
+        "compress-image": {
+            "h1": "이미지 압축",
+            "p1": "품질 저하 없이 이미지 크기를 줄이세요.",
+            "f1": "스마트 압축",
+            "f2": "가벼운 파일",
+            "f3": "웹 최적화"
+        },
+        "passport-photo": {
+            "h1": "여권 사진 만들기",
+            "p1": "생체 인식 여권 사진을 만드세요.",
+            "f1": "자동 자르기",
+            "f2": "표준 사이즈",
+            "f3": "인쇄 준비 완료"
+        },
+        "grayscale-pdf": {
+            "h1": "PDF 흑백 변환",
+            "p1": "PDF를 흑백으로 변환하세요.",
+            "f1": "잉크 절약",
+            "f2": "높은 대비",
+            "f3": "인쇄 친화적"
+        },
+        "watermark-pdf": {
+            "h1": "PDF 워터마크",
+            "p1": "PDF 문서에 텍스트나 이미지를 도장 찍으세요.",
+            "f1": "사용자 지정 텍스트",
+            "f2": "투명도 조절",
+            "f3": "브랜드 보호"
+        },
+        "repair-pdf": {
+            "h1": "PDF 복구",
+            "p1": "손상된 PDF 파일을 복구하세요.",
+            "f1": "데이터 복구",
+            "f2": "오류 수정",
+            "f3": "접근 권한 복구"
+        },
+        "generate-icons": {
+            "h1": "아이콘 생성",
+            "p1": "어디서나 사용할 수 있는 멀티 사이즈 아이콘을 만드세요.",
+            "f1": "파비콘",
+            "f2": "앱 아이콘",
+            "f3": "다양한 사이즈"
+        },
+        "extract-palette": {
+            "h1": "팔레트 추출",
+            "p1": "이미지에서 색상 팔레트를 가져오세요.",
+            "f1": "Hex 코드",
+            "f2": "지배적인 색상",
+            "f3": "디자인 준비 완료"
+        },
+        "extract-images-from-pdf": {
+            "h1": "PDF 이미지 추출",
+            "p1": "PDF 파일에서 모든 이미지와 사진을 추출하세요.",
+            "f1": "모든 자산",
+            "f2": "고품질",
+            "f3": "Zip 다운로드"
+        },
+        "crop-image": {
+            "h1": "이미지 자르기",
+            "p1": "정확한 치수로 이미지를 자르세요.",
+            "f1": "픽셀 정밀도",
+            "f2": "종횡비",
+            "f3": "쉬운 에디터"
+        },
+        "watermark-image": {
+            "h1": "이미지 워터마크",
+            "p1": "사진에 텍스트나 이미지를 추가하세요.",
+            "f1": "사용자 지정 텍스트",
+            "f2": "로고 지원",
+            "f3": "투명도"
+        },
+        "cta_download": "오프라인 도구 다운로드",
+        "cta_online": "온라인 데모 체험",
+        "why_offline": "왜 오프라인인가요?",
+        "why_desc": "온라인 대안과 비교하여 로컬에서 실행하면 최고의 보안과 속도가 보장됩니다.",
+        "screenshot_alt": "{tool} 인터페이스 스크린샷",
+        "privacy_badge": "프라이버시 우선 {tool}",
+        "extract-tables": {
+            "h1": "Extract Tables from PDF",
+            "p1": "Automatically identify and export tables from PDF documents into Excel or CSV.",
+            "f1": "Accurate Detection",
+            "f2": "Excel & CSV Support",
+            "f3": "Batch Processing"
+        },
+        "heic-to-jpg": {
+            "h1": "HEIC to JPG Converter",
+            "p1": "Convert iPhone photos (.heic) to standard JPG format instantly.",
+            "f1": "Maintain Metadata",
+            "f2": "High Quality",
+            "f3": "Batch Support"
+        },
+        "pdf-diff": {
+            "h1": "Visual PDF Comparison",
+            "p1": "Visually compare two PDF documents to spot differences.",
+            "f1": "Side-by-Side Diff",
+            "f2": "Highlight Changes",
+            "f3": "Pixel Perfect"
+        },
+        "booklet-maker": {
+            "h1": "Create Booklet",
+            "p1": "Reorder pages for 2-up saddle-stitch printing.",
+            "f1": "Print Ready",
+            "f2": "Auto Pagination",
+            "f3": "Fold & Staple"
+        },
+        "pdf-scrubber": {
+            "h1": "Privacy Scrubber",
+            "p1": "Deep clean your PDF metadata and revision history.",
+            "f1": "Remove Metadata",
+            "f2": "Drop Editing History",
+            "f3": "Linearize"
+        },
+        "pdf-redactor": {
+            "h1": "Secure Redaction",
+            "p1": "Permanently remove sensitive text from your documents.",
+            "f1": "Search & Destroy",
+            "f2": "Permanent Removal",
+            "f3": "Sanitize Content"
+        },
+        "pdf-signer": {
+            "h1": "Digital Signer",
+            "p1": "Sign PDFs securely with your digital certificate (.pfx).",
+            "f1": "PAdES Standard",
+            "f2": "Certificate Support",
+            "f3": "Cryptographic Seal"
+        },
+        "pdf-web-optimize": {
+            "h1": "Optimize for Web",
+            "p1": "Linearize PDF for fast streaming and web viewing.",
+            "f1": "Fast Web View",
+            "f2": "Byte Serving",
+            "f3": "Instant Load"
+        },
+        "word-to-pdf": {
+            "h1": "Word to PDF",
+            "p1": "Word 문서를 PDF 형식으로 즉시 변환.",
+            "f1": "DOCX 지원",
+            "f2": "서식 유지",
+            "f3": "즉시 변환"
+        },
+        "powerpoint-to-pdf": {
+            "h1": "PowerPoint to PDF",
+            "p1": "PowerPoint 프레젠테이션을 PDF 형식으로 변환.",
+            "f1": "PPTX 지원",
+            "f2": "레이아웃 유지",
+            "f3": "빠른 처리"
+        },
+        "excel-to-pdf": {
+            "h1": "Excel to PDF",
+            "p1": "Excel 스프레드시트를 PDF 형식으로 변환.",
+            "f1": "XLSX 지원",
+            "f2": "표 유지",
+            "f3": "정확한 변환"
+        },
+        "html-to-pdf": {
+            "h1": "HTML to PDF",
+            "p1": "HTML 파일을 PDF 문서로 변환.",
+            "f1": "HTML 지원",
+            "f2": "CSS 스타일",
+            "f3": "Web to PDF"
+        },
+        "ocr-pdf": {
+            "h1": "OCR PDF",
+            "p1": "OCR 기술로 스캔 PDF를 검색 가능하게.",
+            "f1": "텍스트 인식",
+            "f2": "검색 가능 텍스트",
+            "f3": "다국어 지원"
+        },
+        "pdf-to-pdfa": {
+            "h1": "PDF to PDF/A",
+            "p1": "PDF를 장기 보존용 PDF/A 형식으로 변환.",
+            "f1": "아카이브 형식",
+            "f2": "장기 저장",
+            "f3": "ISO 준수"
+        }
+    },
+    "Tools": {
+        "merge-pdf": {
+            "title": "PDF 병합",
+            "desc": "즉시 PDF 합치기."
+        },
+        "suite_title": "로컬 도구 모음",
+        "suite_desc": "개인정보를 최우선으로 하는 강력한 문서 처리.",
+        "cat_pdf": "PDF 도구",
+        "cat_image": "이미지 도구",
+        "split-pdf": {
+            "title": "PDF 분할",
+            "desc": "안전하게 페이지 추출."
+        },
+        "compress-pdf": {
+            "title": "스마트 압축",
+            "desc": "AI 최적화 압축."
+        },
+        "remove-image-background": {
+            "title": "배경 제거",
+            "desc": "오프라인 AI 제거."
+        },
+        "pdf-to-word": {
+            "title": "PDF를 Word로",
+            "desc": "OCR 변환."
+        },
+        "pdf-to-images": {
+            "title": "PDF를 이미지로",
+            "desc": "JPG로 추출."
+        },
+        "images-to-pdf": {
+            "title": "이미지를 PDF로",
+            "desc": "사진을 문서로."
+        },
+        "protect-pdf": {
+            "title": "PDF 보호",
+            "desc": "비밀번호 암호화."
+        },
+        "unlock-pdf": {
+            "title": "PDF 잠금해제",
+            "desc": "비밀번호 제거."
+        },
+        "rotate-pdf": {
+            "title": "PDF 회전",
+            "desc": "방향 수정."
+        },
+        "grayscale-pdf": {
+            "title": "PDF 흑백 변환",
+            "desc": "흑백으로 변환."
+        },
+        "watermark-pdf": {
+            "title": "PDF 워터마크",
+            "desc": "도장 추가."
+        },
+        "repair-pdf": {
+            "title": "PDF 복구",
+            "desc": "손상된 파일 복구."
+        },
+        "convert-image": {
+            "title": "이미지 변환",
+            "desc": "포맷 변경."
+        },
+        "resize-image": {
+            "title": "이미지 리사이즈",
+            "desc": "크기 조절."
+        },
+        "compress-image": {
+            "title": "이미지 압축",
+            "desc": "용량 줄이기."
+        },
+        "passport-photo": {
+            "title": "여권 사진",
+            "desc": "ID 사진 만들기."
+        },
+        "generate-icons": {
+            "title": "아이콘 생성",
+            "desc": "파비콘 생성."
+        },
+        "extract-palette": {
+            "title": "팔레트 추출",
+            "desc": "색상 가져오기."
+        },
+        "extract-images-from-pdf": {
+            "title": "이미지 추출",
+            "desc": "모든 이미지 가져오기."
+        },
+        "crop-image": {
+            "title": "이미지 자르기",
+            "desc": "사진 자르기."
+        },
+        "watermark-image": {
+            "title": "이미지 워터마크",
+            "desc": "도장 추가."
+        },
+        "extract-tables": {
+            "title": "표 추출",
+            "desc": "PDF를 CSV/Excel로."
+        },
+        "heic-to-jpg": {
+            "title": "HEIC JPG 변환",
+            "desc": "HEIC 변환."
+        },
+        "pdf-diff": {
+            "title": "PDF 비교",
+            "desc": "문서 비교."
+        },
+        "booklet-maker": {
+            "title": "소책자 제작",
+            "desc": "제본 인쇄."
+        },
+        "pdf-scrubber": {
+            "title": "메타데이터 제거",
+            "desc": "정보 삭제."
+        },
+        "pdf-redactor": {
+            "title": "블라인드 처리",
+            "desc": "기밀 숨기기."
+        },
+        "pdf-signer": {
+            "title": "서명",
+            "desc": "디지털 서명."
+        },
+        "pdf-web-optimize": {
+            "title": "웹 최적화",
+            "desc": "빠른 로딩."
+        },
+        "word-to-pdf": {
+            "title": "Word to PDF",
+            "desc": "DOCX를 PDF로 변환."
+        },
+        "powerpoint-to-pdf": {
+            "title": "PowerPoint to PDF",
+            "desc": "PPTX를 PDF로 변환."
+        },
+        "excel-to-pdf": {
+            "title": "Excel to PDF",
+            "desc": "XLSX를 PDF로 변환."
+        },
+        "html-to-pdf": {
+            "title": "HTML to PDF",
+            "desc": "HTML을 PDF로 변환."
+        },
+        "ocr-pdf": {
+            "title": "OCR PDF",
+            "desc": "스캔 PDF를 검색 가능하게."
+        },
+        "pdf-to-pdfa": {
+            "title": "PDF to PDF/A",
+            "desc": "아카이브 형식으로 변환."
+        }
+    },
+    "Common": {
+        "pricing": "가격",
+        "features": "기능",
+        "tools": "도구",
+        "product": "제품",
+        "legal": "법적 고지",
+        "privacy": "개인정보처리방침",
+        "terms": "이용약관",
+        "download": "다운로드",
+        "download_app_short": "Download App",
+        "support": "지원"
+    },
+    "ToolProcessor": {
+        "status_uploading": "Uploading to Server...",
+        "status_processing": "Processing on safe server...",
+        "status_complete": "Processing Complete!",
+        "status_error": "Processing Failed",
+        "wait_upload": "Please wait while we upload your files.",
+        "wait_process": "Your files are being processed securely.",
+        "download": "Download File",
+        "download_zip": "Download All (ZIP)",
+        "try_again": "Try Another File",
+        "convert_now": "Convert Now",
+        "process_image": "Process Image",
+        "process_files": "Process Files",
+        "change_file": "Change File",
+        "selected": "Selected",
+        "watermark_settings": "Watermark Settings",
+        "wm_type_text": "Text Watermark",
+        "wm_type_image": "Image/Logo",
+        "wm_text_label": "Watermark Text",
+        "wm_opacity": "Opacity",
+        "wm_color": "Text Color",
+        "wm_size": "Font Size",
+        "wm_position": "Position",
+        "wm_upload_logo": "Upload Logo",
+        "pos_center": "Center",
+        "pos_tl": "Top Left",
+        "pos_tr": "Top Right",
+        "pos_bl": "Bottom Left",
+        "pos_br": "Bottom Right",
+        "pos_custom": "Custom (Drag Preview)",
+        "crop_options": "Crop Options",
+        "crop_btn": "Crop & Save",
+        "passport_country": "Passport Country",
+        "compression_level": "Compression Level",
+        "comp_low": "Low (High Quality)",
+        "comp_med": "Medium (Balanced)",
+        "comp_high": "High (Small Size)",
+        "resize_settings": "Resize Settings",
+        "resize_px": "Pixels",
+        "resize_pct": "Percentage",
+        "resize_width": "Width (px)",
+        "resize_height": "Height (px)",
+        "resize_percent": "Scale (%)",
+        "redact_settings": "Redaction Settings",
+        "redact_label": "Text to Redact (Case Sensitive)",
+        "sign_settings": "Digital Signature",
+        "sign_cert": "Certificate File (.pfx / .p12)",
+        "sign_pass": "Certificate Password",
+        "protect_settings": "Security Settings",
+        "protect_pass_label": "Set Password",
+        "protect_btn": "Protect PDF",
+        "unlock_pass_label": "PDF Password",
+        "unlock_btn": "Unlock PDF",
+        "heic_quality": "Quality",
+        "extract_palette": "Extracted Palette",
+        "copied": "Copied!",
+        "settings": "Settings",
+        "output_format": "Output Format",
+        "quality": "Quality",
+        "privacy_badge": "Want privacy?",
+        "desktop_app_promo": "Download the desktop app for 100% offline privacy.",
+        "cancel_op": "Cancel Operation"
+    },
+    "FileUploader": {
+        "drop_active": "Drop files here",
+        "drop_idle": "Click to upload or drag & drop",
+        "supports": "Supports PDF, PNG, JPG",
+        "limit": "Up to {count} files",
+        "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+    }
+}

@@ -1,0 +1,553 @@
+{
+    "NotFound": {
+        "title": "ページが見つかりません",
+        "desc": "お探しのページは存在しません。",
+        "return_home": "ホームに戻る"
+    },
+    "DesignStudio": {
+        "templates": "テンプレート",
+        "text": "テキスト",
+        "photos": "写真",
+        "elements": "要素",
+        "layers": "レイヤー"
+    },
+    "Hero": {
+        "badge": "Windows版 v1.0 利用可能",
+        "title": "オフラインPDF＆画像ツール。\nあなたのデータ、あなたのデバイス。",
+        "subtitle": "プライバシー重視のドキュメント用ツールキット。クラウドアップロードなしで、結合、分割、編集、変換を瞬時に行います。プライバシーは譲れません。",
+        "cta_primary": "永久ライセンスを入手",
+        "cta_secondary": "オンラインデモを試す",
+        "stat_offline": "100% オフラインエンジン",
+        "stat_privacy": "データ収集ゼロ",
+        "stat_speed": "ネイティブ速度"
+    },
+    "Features": {
+        "title": "スピードと秘密保持のために設計",
+        "subtitle": "クラウドを回避。ギガバイト単位のデータを瞬時にローカル処理。",
+        "f1_title": "AI PDF操作",
+        "f1_desc": "CPU速度でページを整理。",
+        "f2_title": "鉄壁のプライバシー",
+        "f2_desc": "完全オフライン対応。データ流出なし。",
+        "f3_title": "AI画像処理",
+        "f3_desc": "ローカルモデルで背景削除。",
+        "f4_title": "企業レベルのセキュリティ",
+        "f4_desc": "メタデータ削除と暗号化。",
+        "f5_title": "ゼロ・レイテンシ",
+        "f5_desc": "待ち時間なし。瞬時に完了。"
+    },
+    "ProblemSolution": {
+        "problem_title": "クラウドのリスク",
+        "p1_title": "漏洩リスク",
+        "p1_desc": "無料ツールへのアップロードは危険です。",
+        "p2_title": "作業の遅延",
+        "p2_desc": "アップロード待ち時間で作業が止まります。",
+        "p3_title": "サブスクリプション",
+        "p3_desc": "毎月の支払いはもう不要です。",
+        "solution_title": "オフラインの金庫",
+        "s1_title": "エアギャップ・セキュリティ",
+        "s1_desc": "物理的に漏洩不可能。",
+        "s2_title": "ネイティブ性能",
+        "s2_desc": "PCの性能をフル活用。",
+        "s3_title": "一度の支払いでずっと使える",
+        "s3_desc": "永久ライセンス。制限なし。"
+    },
+    "Pricing": {
+        "title": "一度の支払い。無限の安心。",
+        "subtitle": "追加費用なし。永久所有。",
+        "badge": "永久ライセンス",
+        "price": "$59",
+        "old_price": "$120",
+        "desc": "Windows用オフラインAIツールキットへの完全アクセス。",
+        "cta": "今すぐ購入",
+        "f1": "無制限のPDF処理",
+        "f2": "無制限のAI画像処理",
+        "f3": "商用利用可能",
+        "f4": "優先サポート",
+        "money_back": "30日間返金保証"
+    },
+    "ToolsPage": {
+        "merge-pdf": {
+            "h1": "PDFファイルを結合",
+            "p1": "ブラウザですばやくPDFファイルを結合します。100%オフラインのプライバシーと一括処理が必要な場合は、デスクトップアプリをダウンロードしてください。",
+            "f1": "ドラッグアンドドロップ",
+            "f2": "ページの並べ替え",
+            "f3": "高速クラウド処理"
+        },
+        "split-pdf": {
+            "h1": "PDFファイルを分割",
+            "p1": "ドキュメントからページを瞬時に抽出します。機密ファイルを扱う必要がありますか？ オフラインセキュリティのためにデスクトップツールを入手してください。",
+            "f1": "範囲選択",
+            "f2": "即時ダウンロード",
+            "f3": "無料で使用可能"
+        },
+        "compress-pdf": {
+            "h1": "PDFファイルを圧縮",
+            "p1": "メールやアップロード制限のためにファイルサイズを縮小します。機密文書には、オフラインのデスクトップ圧縮ツールを使用してください。",
+            "f1": "高い圧縮率",
+            "f2": "迅速な処理",
+            "f3": "クレジットカード不要"
+        },
+        "remove-image-background": {
+            "h1": "画像の背景を削除",
+            "p1": "クラウドAIを使用して写真から背景を削除します。一括処理やデータ共有ゼロのためには、デスクトップアプリをダウンロードしてください。",
+            "f1": "AI搭載",
+            "f2": "透明PNG",
+            "f3": "ワンクリック削除"
+        },
+        "pdf-to-images": {
+            "h1": "PDFを画像に変換",
+            "p1": "PDFページを高画質の画像に変換します。",
+            "f1": "高DPI対応",
+            "f2": "PNG/JPG出力",
+            "f3": "瞬時変換"
+        },
+        "images-to-pdf": {
+            "h1": "画像をPDFに変換",
+            "p1": "写真を一つのPDFドキュメントに結合します。",
+            "f1": "複数フォーマット対応",
+            "f2": "自動フォーマット",
+            "f3": "簡単共有"
+        },
+        "protect-pdf": {
+            "h1": "PDFを保護",
+            "p1": "パスワードでPDFを暗号化します。",
+            "f1": "AES 256-bit",
+            "f2": "安全な暗号化",
+            "f3": "パスワード保護"
+        },
+        "unlock-pdf": {
+            "h1": "PDF保護解除",
+            "p1": "PDFからパスワードを安全に削除します。",
+            "f1": "瞬時解除",
+            "f2": "制限解除",
+            "f3": "安全な処理"
+        },
+        "rotate-pdf": {
+            "h1": "PDF回転",
+            "p1": "PDFページを永続的に回転させます。",
+            "f1": "左右回転",
+            "f2": "全ページ",
+            "f3": "永続保存"
+        },
+        "convert-image": {
+            "h1": "画像変換",
+            "p1": "画像フォーマットを変換します (JPG, PNG, WEBP)。",
+            "f1": "複数フォーマット",
+            "f2": "ロスレス品質",
+            "f3": "高速変換"
+        },
+        "resize-image": {
+            "h1": "画像リサイズ",
+            "p1": "ピクセルまたはパーセンテージで写真をリサイズします。",
+            "f1": "アスペクト比保持",
+            "f2": "ピクセル精度",
+            "f3": "高品質"
+        },
+        "compress-image": {
+            "h1": "画像圧縮",
+            "p1": "品質を落とさずに画像サイズを削減します。",
+            "f1": "スマート圧縮",
+            "f2": "軽量ファイル",
+            "f3": "Web対応"
+        },
+        "passport-photo": {
+            "h1": "証明写真作成",
+            "p1": "生体認証対応の証明写真を作成します。",
+            "f1": "自動切り抜き",
+            "f2": "標準サイズ",
+            "f3": "印刷対応"
+        },
+        "grayscale-pdf": {
+            "h1": "PDFグレースケール",
+            "p1": "PDFを白黒に変換します。",
+            "f1": "インク節約",
+            "f2": "高コントラスト",
+            "f3": "印刷に最適"
+        },
+        "watermark-pdf": {
+            "h1": "PDF透かし",
+            "p1": "PDFドキュメントにテキストや画像をスタンプします。",
+            "f1": "カスタムテキスト",
+            "f2": "透明度調整",
+            "f3": "ブランド保護"
+        },
+        "repair-pdf": {
+            "h1": "PDF修復",
+            "p1": "破損したPDFファイルを修復します。",
+            "f1": "データ復旧",
+            "f2": "エラー修正",
+            "f3": "アクセス復元"
+        },
+        "generate-icons": {
+            "h1": "アイコン生成",
+            "p1": "画像からマルチサイズのアイコンを作成します。",
+            "f1": "ファビコン",
+            "f2": "アプリアイコン",
+            "f3": "複数サイズ"
+        },
+        "extract-palette": {
+            "h1": "パレット抽出",
+            "p1": "画像からカラーパレットを取得します。",
+            "f1": "Hexコード",
+            "f2": "主要色",
+            "f3": "デザイン対応"
+        },
+        "extract-images-from-pdf": {
+            "h1": "PDFから画像抽出",
+            "p1": "PDFファイルから全ての画像と写真を抽出します。",
+            "f1": "全アセット",
+            "f2": "高品質",
+            "f3": "Zipダウンロード"
+        },
+        "crop-image": {
+            "h1": "画像切り抜き",
+            "p1": "画像を正確な寸法で切り抜きます。",
+            "f1": "ピクセル精度",
+            "f2": "アスペクト比",
+            "f3": "簡単編集"
+        },
+        "watermark-image": {
+            "h1": "画像透かし",
+            "p1": "写真にテキストや画像を追加します。",
+            "f1": "カスタムテキスト",
+            "f2": "ロゴ対応",
+            "f3": "透明度"
+        },
+        "cta_download": "オフラインツールをダウンロード",
+        "cta_online": "オンラインデモを試す",
+        "why_offline": "なぜオフラインなのか？",
+        "why_desc": "オンラインの代替手段と比較して、ローカルで実行することで最大限のセキュリティと速度が保証されます。",
+        "screenshot_alt": "{tool} インターフェースのスクリーンショット",
+        "privacy_badge": "プライバシー優先 {tool}",
+        "extract-tables": {
+            "h1": "Extract Tables from PDF",
+            "p1": "Automatically identify and export tables from PDF documents into Excel or CSV.",
+            "f1": "Accurate Detection",
+            "f2": "Excel & CSV Support",
+            "f3": "Batch Processing"
+        },
+        "heic-to-jpg": {
+            "h1": "HEIC to JPG Converter",
+            "p1": "Convert iPhone photos (.heic) to standard JPG format instantly.",
+            "f1": "Maintain Metadata",
+            "f2": "High Quality",
+            "f3": "Batch Support"
+        },
+        "pdf-diff": {
+            "h1": "Visual PDF Comparison",
+            "p1": "Visually compare two PDF documents to spot differences.",
+            "f1": "Side-by-Side Diff",
+            "f2": "Highlight Changes",
+            "f3": "Pixel Perfect"
+        },
+        "booklet-maker": {
+            "h1": "Create Booklet",
+            "p1": "Reorder pages for 2-up saddle-stitch printing.",
+            "f1": "Print Ready",
+            "f2": "Auto Pagination",
+            "f3": "Fold & Staple"
+        },
+        "pdf-scrubber": {
+            "h1": "Privacy Scrubber",
+            "p1": "Deep clean your PDF metadata and revision history.",
+            "f1": "Remove Metadata",
+            "f2": "Drop Editing History",
+            "f3": "Linearize"
+        },
+        "pdf-redactor": {
+            "h1": "Secure Redaction",
+            "p1": "Permanently remove sensitive text from your documents.",
+            "f1": "Search & Destroy",
+            "f2": "Permanent Removal",
+            "f3": "Sanitize Content"
+        },
+        "pdf-signer": {
+            "h1": "Digital Signer",
+            "p1": "Sign PDFs securely with your digital certificate (.pfx).",
+            "f1": "PAdES Standard",
+            "f2": "Certificate Support",
+            "f3": "Cryptographic Seal"
+        },
+        "pdf-web-optimize": {
+            "h1": "Optimize for Web",
+            "p1": "Linearize PDF for fast streaming and web viewing.",
+            "f1": "Fast Web View",
+            "f2": "Byte Serving",
+            "f3": "Instant Load"
+        },
+        "word-to-pdf": {
+            "h1": "Word to PDF",
+            "p1": "Word文書をPDF形式に瞬時に変換。",
+            "f1": "DOCX対応",
+            "f2": "書式保持",
+            "f3": "即座変換"
+        },
+        "powerpoint-to-pdf": {
+            "h1": "PowerPoint to PDF",
+            "p1": "PowerPointプレゼンテーションをPDF形式に変換。",
+            "f1": "PPTX対応",
+            "f2": "レイアウト保持",
+            "f3": "高速処理"
+        },
+        "excel-to-pdf": {
+            "h1": "Excel to PDF",
+            "p1": "ExcelスプレッドシートをPDF形式に変換。",
+            "f1": "XLSX対応",
+            "f2": "表保持",
+            "f3": "正確変換"
+        },
+        "html-to-pdf": {
+            "h1": "HTML to PDF",
+            "p1": "HTMLファイルをPDF文書に変換。",
+            "f1": "HTML対応",
+            "f2": "CSSスタイル",
+            "f3": "Web to PDF"
+        },
+        "ocr-pdf": {
+            "h1": "OCR PDF",
+            "p1": "OCR技術でスキャンPDFを検索可能に。",
+            "f1": "文字認識",
+            "f2": "検索可能テキスト",
+            "f3": "多言語対応"
+        },
+        "pdf-to-pdfa": {
+            "h1": "PDF to PDF/A",
+            "p1": "PDFを長期保存用PDF/A形式に変換。",
+            "f1": "アーカイブ形式",
+            "f2": "長期保存",
+            "f3": "ISO準拠"
+        }
+    },
+    "Tools": {
+        "merge-pdf": {
+            "title": "PDF結合",
+            "desc": "瞬時にPDFを結合。"
+        },
+        "suite_title": "ローカルツールスイート",
+        "suite_desc": "プライバシー最優先の強力なドキュメント処理。",
+        "cat_pdf": "PDFツール",
+        "cat_image": "画像ツール",
+        "split-pdf": {
+            "title": "PDF分割",
+            "desc": "安全にページを抽出。"
+        },
+        "compress-pdf": {
+            "title": "スマート圧縮",
+            "desc": "AI最適化による削減。"
+        },
+        "remove-image-background": {
+            "title": "背景削除",
+            "desc": "オフラインAI削除。"
+        },
+        "pdf-to-word": {
+            "title": "PDFをWordへ",
+            "desc": "OCR変換。"
+        },
+        "pdf-to-images": {
+            "title": "PDFを画像へ",
+            "desc": "JPGとして抽出。"
+        },
+        "images-to-pdf": {
+            "title": "画像をPDFへ",
+            "desc": "写真をドキュメントへ。"
+        },
+        "protect-pdf": {
+            "title": "PDF保護",
+            "desc": "パスワードで暗号化。"
+        },
+        "unlock-pdf": {
+            "title": "PDF解除",
+            "desc": "パスワード削除。"
+        },
+        "rotate-pdf": {
+            "title": "PDF回転",
+            "desc": "向きを修正。"
+        },
+        "grayscale-pdf": {
+            "title": "PDFグレースケール",
+            "desc": "白黒に変換。"
+        },
+        "watermark-pdf": {
+            "title": "PDF透か",
+            "desc": "スタンプ追加。"
+        },
+        "repair-pdf": {
+            "title": "PDF修復",
+            "desc": "破損ファイルを修復。"
+        },
+        "convert-image": {
+            "title": "画像変換",
+            "desc": "形式を変更。"
+        },
+        "resize-image": {
+            "title": "画像リサイズ",
+            "desc": "サイズ変更。"
+        },
+        "compress-image": {
+            "title": "画像圧縮",
+            "desc": "サイズ削減。"
+        },
+        "passport-photo": {
+            "title": "証明写真",
+            "desc": "ID写真作成。"
+        },
+        "generate-icons": {
+            "title": "アイコン生成",
+            "desc": "ファビコン作成。"
+        },
+        "extract-palette": {
+            "title": "パレット抽出",
+            "desc": "色を取得。"
+        },
+        "extract-images-from-pdf": {
+            "title": "画像抽出",
+            "desc": "全ての画像を取得。"
+        },
+        "crop-image": {
+            "title": "画像切り抜き",
+            "desc": "写真をトリミング。"
+        },
+        "watermark-image": {
+            "title": "画像透かし",
+            "desc": "スタンプ追加。"
+        },
+        "extract-tables": {
+            "title": "表抽出",
+            "desc": "PDFからCSV/Excel."
+        },
+        "heic-to-jpg": {
+            "title": "HEIC JPG変換",
+            "desc": "HEICを変換."
+        },
+        "pdf-diff": {
+            "title": "PDF比較",
+            "desc": "文書を比較."
+        },
+        "booklet-maker": {
+            "title": "小冊子作成",
+            "desc": "面付け印刷."
+        },
+        "pdf-scrubber": {
+            "title": "メタデータ削除",
+            "desc": "情報を削除."
+        },
+        "pdf-redactor": {
+            "title": "墨消し",
+            "desc": "機密隠し."
+        },
+        "pdf-signer": {
+            "title": "署名",
+            "desc": "電子署名."
+        },
+        "pdf-web-optimize": {
+            "title": "Web最適化",
+            "desc": "高速読み込み."
+        },
+        "word-to-pdf": {
+            "title": "Word to PDF",
+            "desc": "DOCXをPDFに変換。"
+        },
+        "powerpoint-to-pdf": {
+            "title": "PowerPoint to PDF",
+            "desc": "PPTXをPDFに変換。"
+        },
+        "excel-to-pdf": {
+            "title": "Excel to PDF",
+            "desc": "XLSXをPDFに変換。"
+        },
+        "html-to-pdf": {
+            "title": "HTML to PDF",
+            "desc": "HTMLをPDFに変換。"
+        },
+        "ocr-pdf": {
+            "title": "OCR PDF",
+            "desc": "スキャンPDFを検索可能に。"
+        },
+        "pdf-to-pdfa": {
+            "title": "PDF to PDF/A",
+            "desc": "アーカイブ形式に変換。"
+        }
+    },
+    "Common": {
+        "pricing": "価格",
+        "features": "機能",
+        "tools": "ツール",
+        "product": "製品",
+        "legal": "法的情報",
+        "privacy": "プライバシー",
+        "terms": "利用規約",
+        "download": "ダウンロード",
+        "download_app_short": "アプリをダウンロード",
+        "support": "サポート"
+    },
+    "ToolProcessor": {
+        "status_uploading": "Uploading to Server...",
+        "status_processing": "Processing on safe server...",
+        "status_complete": "Processing Complete!",
+        "status_error": "Processing Failed",
+        "wait_upload": "Please wait while we upload your files.",
+        "wait_process": "Your files are being processed securely.",
+        "download": "Download File",
+        "download_zip": "Download All (ZIP)",
+        "try_again": "Try Another File",
+        "convert_now": "Convert Now",
+        "process_image": "Process Image",
+        "process_files": "Process Files",
+        "change_file": "Change File",
+        "selected": "Selected",
+        "watermark_settings": "Watermark Settings",
+        "wm_type_text": "Text Watermark",
+        "wm_type_image": "Image/Logo",
+        "wm_text_label": "Watermark Text",
+        "wm_opacity": "Opacity",
+        "wm_color": "Text Color",
+        "wm_size": "Font Size",
+        "wm_position": "Position",
+        "wm_upload_logo": "Upload Logo",
+        "pos_center": "Center",
+        "pos_tl": "Top Left",
+        "pos_tr": "Top Right",
+        "pos_bl": "Bottom Left",
+        "pos_br": "Bottom Right",
+        "pos_custom": "Custom (Drag Preview)",
+        "crop_options": "Crop Options",
+        "crop_btn": "Crop & Save",
+        "passport_country": "Passport Country",
+        "compression_level": "Compression Level",
+        "comp_low": "Low (High Quality)",
+        "comp_med": "Medium (Balanced)",
+        "comp_high": "High (Small Size)",
+        "resize_settings": "Resize Settings",
+        "resize_px": "Pixels",
+        "resize_pct": "Percentage",
+        "resize_width": "Width (px)",
+        "resize_height": "Height (px)",
+        "resize_percent": "Scale (%)",
+        "redact_settings": "Redaction Settings",
+        "redact_label": "Text to Redact (Case Sensitive)",
+        "sign_settings": "Digital Signature",
+        "sign_cert": "Certificate File (.pfx / .p12)",
+        "sign_pass": "Certificate Password",
+        "protect_settings": "Security Settings",
+        "protect_pass_label": "Set Password",
+        "protect_btn": "Protect PDF",
+        "unlock_pass_label": "PDF Password",
+        "unlock_btn": "Unlock PDF",
+        "heic_quality": "Quality",
+        "extract_palette": "Extracted Palette",
+        "copied": "Copied!",
+        "settings": "Settings",
+        "output_format": "Output Format",
+        "quality": "Quality",
+        "privacy_badge": "Want privacy?",
+        "desktop_app_promo": "Download the desktop app for 100% offline privacy.",
+        "cancel_op": "Cancel Operation"
+    },
+    "FileUploader": {
+        "drop_active": "Drop files here",
+        "drop_idle": "Click to upload or drag & drop",
+        "supports": "Supports PDF, PNG, JPG",
+        "limit": "Up to {count} files",
+        "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+    }
+}
