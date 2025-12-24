@@ -22,7 +22,7 @@ services:
   frontend:
     build:
       context: ./website
-      dockerfile: ../Dockerfile.website
+      dockerfile: Dockerfile
     container_name: tools-frontend
     restart: unless-stopped
     ports:
