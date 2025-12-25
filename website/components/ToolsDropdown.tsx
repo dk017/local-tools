@@ -111,6 +111,7 @@ export function ToolsDropdown() {
                         transition={{ duration: 0.2 }}
                         onMouseLeave={() => setIsOpen(false)}
                         className="absolute top-full left-0 mt-2 w-[800px] max-w-[calc(100vw-2rem)] bg-background border border-white/10 rounded-xl shadow-2xl p-6 z-50"
+                        style={{ left: 0, right: 'auto' }}
                     >
                         <div className="grid grid-cols-4 gap-6">
                             {categories.map((category, catIndex) => (

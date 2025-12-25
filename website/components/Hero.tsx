@@ -49,6 +49,16 @@ export function Hero() {
                     >
                         <Link
                             href="#pricing"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                const el = document.getElementById('pricing');
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth' });
+                                } else {
+                                    // If not on homepage, navigate first then scroll
+                                    window.location.href = '/#pricing';
+                                }
+                            }}
                             className="group relative px-8 py-4 bg-primary text-black rounded-xl font-bold text-lg transition-all hover:scale-105 active:scale-95 shadow-[0_0_50px_-10px_rgba(0,243,255,0.4)] overflow-hidden"
                         >
                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
