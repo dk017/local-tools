@@ -7,6 +7,14 @@ import { useTranslations } from "next-intl";
 export function Pricing() {
   const t = useTranslations("Pricing");
 
+  // Get checkout URL - NEXT_PUBLIC_ vars are embedded at build time
+  const checkoutUrl = process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL || "#";
+
+  // Debug: Log to console (remove in production)
+  if (typeof window !== "undefined") {
+    console.log("Checkout URL:", checkoutUrl);
+  }
+
   return (
     <section className="py-20 px-6 max-w-7xl mx-auto" id="pricing">
       <div className="text-center mb-16">
@@ -38,7 +46,7 @@ export function Pricing() {
           <p className="text-muted-foreground mb-8 text-sm">{t("desc")}</p>
 
           <a
-            href={process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL || "#"}
+            href={checkoutUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full text-center py-4 bg-primary hover:bg-cyan-400 text-black rounded-xl font-bold text-lg transition-all shadow-[0_0_30px_-10px_rgba(0,243,255,0.4)] mb-8 hover:scale-[1.02] active:scale-[0.98]"
