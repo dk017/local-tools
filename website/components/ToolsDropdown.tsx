@@ -105,13 +105,15 @@ export function ToolsDropdown() {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 10, x: '-50%' }}
+                        animate={{ opacity: 1, y: 0, x: '-50%' }}
+                        exit={{ opacity: 0, y: 10, x: '-50%' }}
                         transition={{ duration: 0.2 }}
                         onMouseLeave={() => setIsOpen(false)}
-                        className="absolute top-full left-0 mt-2 w-[800px] max-w-[calc(100vw-2rem)] bg-background border border-white/10 rounded-xl shadow-2xl p-6 z-50"
-                        style={{ left: 0, right: 'auto' }}
+                        className="fixed top-16 left-1/2 mt-2 w-[800px] bg-background border border-white/10 rounded-xl shadow-2xl p-6 z-50"
+                        style={{ 
+                            maxWidth: 'calc(100vw - 4rem)'
+                        }}
                     >
                         <div className="grid grid-cols-4 gap-6">
                             {categories.map((category, catIndex) => (
