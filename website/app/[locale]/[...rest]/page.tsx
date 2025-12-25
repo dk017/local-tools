@@ -1,18 +1,17 @@
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { TOOL_SLUGS } from '../../../lib/slugs';
-import { useLocale } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
-export default function NotFoundPage({ params }: { params: { rest: string[] } }) {
-    const t = useTranslations('NotFound');
-    const locale = useLocale();
+export default async function NotFoundPage({ params }: { params: Promise<{ rest: string[]; locale: string }> }) {
+    const { rest, locale } = await params;
+    const t = await getTranslations('NotFound');
 
     // Smart Redirect Logic
     // Check if any part of the path matches a known tool slug
     // Specifically looking for the last segment which might be the tool name
-    if (params.rest && params.rest.length > 0) {
-        const potentialSlug = params.rest[params.rest.length - 1];
+    if (rest && rest.length > 0) {
+        const potentialSlug = rest[rest.length - 1];
 
         if (TOOL_SLUGS.includes(potentialSlug)) {
             // Redirect to the correct tool URL

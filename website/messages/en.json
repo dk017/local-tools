@@ -13,9 +13,9 @@
     },
     "Hero": {
         "badge": "v1.0 · Desktop Suite + Web Demo",
-        "title": "Local Tools.\n30+ PDF & Image Tools. Offline.",
-        "subtitle": "A complete offline toolkit for PDFs and images. Merge, split, sign, redact, convert Office files, remove backgrounds and more—without ever uploading a single document. Try tools in your browser, unlock full speed and privacy on desktop.",
-        "cta_primary": "Get Desktop App (Lifetime License)",
+        "title": "Your Data, Your Device.",
+        "subtitle": "Process PDFs and images 100% offline. No uploads, no tracking, unlimited speed.",
+        "cta_primary": "Get Annual Desktop License",
         "cta_secondary": "Try Tools in Your Browser",
         "stat_offline": "100% Offline Desktop Engine",
         "stat_privacy": "No Uploads. No Tracking.",
@@ -49,16 +49,16 @@
         "s2_title": "Native Performance",
         "s2_desc": "Utilize 100% of your CPU/GPU. Crunch 1000 page PDFs in milliseconds.",
         "s3_title": "One Payment, Forever",
-        "s3_desc": "Own your tools. Lifetime license. Unlimited local processing."
+        "s3_desc": "Own your tools. Annual subscription. Unlimited local processing."
     },
     "Pricing": {
         "title": "One Payment. Full Offline Suite.",
         "subtitle": "Pay once, own the full Windows desktop suite forever. Use the online tools as a free companion.",
-        "badge": "LIFETIME LICENSE",
+        "badge": "ANNUAL LICENSE",
         "price": "$59",
         "old_price": "$120",
         "desc": "Full access to all PDF & image tools in the Local Tools desktop app for Windows, plus free web previews.",
-        "cta": "Get Lifetime Desktop License",
+        "cta": "Get Annual Desktop License",
         "f1": "All current & future PDF tools included",
         "f2": "All current & future image tools included",
         "f3": "Commercial use allowed on your licensed device(s)",
@@ -327,6 +327,62 @@
             "f1": "Archival Format",
             "f2": "Long-Term Storage",
             "f3": "ISO Compliant"
+        },
+        "delete-pages": {
+            "h1": "Delete Pages from PDF",
+            "p1": "Remove unwanted pages from your PDF documents.",
+            "f1": "Select Pages",
+            "f2": "Quick Removal",
+            "f3": "Preserve Quality"
+        },
+        "page-numbers": {
+            "h1": "Add Page Numbers to PDF",
+            "p1": "Add page numbers to your PDF documents with customizable formatting.",
+            "f1": "Custom Formatting",
+            "f2": "Position Control",
+            "f3": "Multiple Styles"
+        },
+        "extract-text": {
+            "h1": "Extract Text from PDF",
+            "p1": "Extract text content from PDF files for editing or analysis.",
+            "f1": "Text Extraction",
+            "f2": "Preserve Formatting",
+            "f3": "Batch Processing"
+        },
+        "remove-metadata": {
+            "h1": "Remove Metadata from PDF",
+            "p1": "Remove hidden metadata and personal information from PDF files for privacy.",
+            "f1": "Privacy Protection",
+            "f2": "Clean Files",
+            "f3": "Remove Tracking"
+        },
+        "flatten-pdf": {
+            "h1": "Flatten PDF",
+            "p1": "Flatten form fields and annotations in PDF documents to prevent editing.",
+            "f1": "Form Flattening",
+            "f2": "Annotation Lock",
+            "f3": "Secure Documents"
+        },
+        "photo-studio": {
+            "h1": "Photo Studio",
+            "p1": "Advanced photo editor with layers, text, and design tools.",
+            "f1": "Layer Support",
+            "f2": "Text Tools",
+            "f3": "Design Elements"
+        },
+        "grid-split": {
+            "h1": "Grid Split Images",
+            "p1": "Split images into a grid of smaller images for social media or thumbnails.",
+            "f1": "Custom Grid",
+            "f2": "Batch Processing",
+            "f3": "Multiple Formats"
+        },
+        "remove-image-metadata": {
+            "h1": "Remove Image Metadata",
+            "p1": "Remove EXIF data and other metadata from images for privacy.",
+            "f1": "EXIF Removal",
+            "f2": "Privacy Protection",
+            "f3": "Clean Images"
         }
     },
     "Tools": {
@@ -377,6 +433,14 @@
         "watermark-pdf": {
             "title": "Watermark PDF",
             "desc": "Add stamp."
+        },
+        "crop-pdf": {
+            "title": "Crop PDF",
+            "desc": "Trim pages."
+        },
+        "organize-pdf": {
+            "title": "Organize PDF",
+            "desc": "Reorder pages."
         },
         "repair-pdf": {
             "title": "Repair PDF",
@@ -477,6 +541,38 @@
         "pdf-to-pdfa": {
             "title": "PDF to PDF/A",
             "desc": "Convert to archival format."
+        },
+        "delete-pages": {
+            "title": "Delete Pages",
+            "desc": "Remove pages."
+        },
+        "page-numbers": {
+            "title": "Add Page Numbers",
+            "desc": "Number pages."
+        },
+        "extract-text": {
+            "title": "Extract Text",
+            "desc": "Get text content."
+        },
+        "remove-metadata": {
+            "title": "Remove Metadata",
+            "desc": "Clean PDF data."
+        },
+        "flatten-pdf": {
+            "title": "Flatten PDF",
+            "desc": "Flatten forms."
+        },
+        "photo-studio": {
+            "title": "Photo Studio",
+            "desc": "Edit with layers."
+        },
+        "grid-split": {
+            "title": "Grid Split",
+            "desc": "Split into grid."
+        },
+        "remove-image-metadata": {
+            "title": "Remove Image Metadata",
+            "desc": "Clean EXIF data."
         },
         "jpg-to-png": {
             "title": "JPG to PNG",

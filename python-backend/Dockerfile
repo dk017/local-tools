@@ -5,11 +5,13 @@ WORKDIR /app
 # Install system dependencies
 # libgl1 and libglib2.0 are for opencv/image processing
 # tesseract-ocr for OCR PDF functionality
+# poppler-utils for pdf2image (PDF to image conversion)
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
     tesseract-ocr \
     tesseract-ocr-eng \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies

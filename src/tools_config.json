@@ -203,5 +203,12 @@
         "mode": "organize",
         "title": "Organize PDF - Reorder Pages",
         "description": "Reorder and organize PDF pages in any order you want."
+    },
+    {
+        "slug": "remove-image-background",
+        "tool": "image",
+        "mode": "remove_bg",
+        "title": "Remove Background",
+        "description": "AI-powered background removal for images."
     }
 ]

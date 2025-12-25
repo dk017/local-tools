@@ -89,6 +89,22 @@ function getApiEndpoint(slug: string) {
       return "/api/pdf/crop";
     case "organize-pdf":
       return "/api/pdf/organize";
+    case "delete-pages":
+      return "/api/pdf/delete_pages";
+    case "page-numbers":
+      return "/api/pdf/page_numbers";
+    case "extract-text":
+      return "/api/pdf/extract_text";
+    case "remove-metadata":
+      return "/api/pdf/remove_metadata";
+    case "flatten-pdf":
+      return "/api/pdf/flatten";
+    case "photo-studio":
+      return "/api/image/design";
+    case "grid-split":
+      return "/api/image/grid_split";
+    case "remove-image-metadata":
+      return "/api/image/remove_metadata";
 
     default:
       return `/api/pdf/${slug.replace("-pdf", "")}`;
@@ -184,7 +200,10 @@ export default async function ToolPage({
     slug === "passport-photo" ||
     slug === "extract-palette" ||
     slug === "design-studio" ||
-    slug === "generate-icons"
+    slug === "generate-icons" ||
+    slug === "photo-studio" ||
+    slug === "grid-split" ||
+    slug === "remove-image-metadata"
   ) {
     acceptedTypes = { "image/*": [".png", ".jpg", ".jpeg", ".webp"] };
   }

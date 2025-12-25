@@ -271,7 +271,11 @@ async def image_endpoint(
             with zipfile.ZipFile(zip_path, 'w') as zipf:
                 for file in processed_files:
                     zipf.write(file, os.path.basename(file))
-            return FileResponse(zip_path, filename=zip_filename)
+            return FileResponse(
+                zip_path, 
+                filename=zip_filename,
+                media_type="application/zip"
+            )
 
     except HTTPException as he:
         raise he
@@ -308,7 +312,9 @@ async def pdf_endpoint(
     libreoffice_path: Optional[str] = Form(None),
     width: Optional[float] = Form(None),
     height: Optional[float] = Form(None),
-    page_order: Optional[str] = Form(None)
+    page_order: Optional[str] = Form(None),
+    angle: Optional[float] = Form(None),
+    page: Optional[int] = Form(None)
 ):
     """Endpoint matching server.py format for website compatibility."""
     # Validate total size of all files
@@ -354,7 +360,9 @@ async def pdf_endpoint(
         "libreoffice_path": libreoffice_path,
         "width": width,
         "height": height,
-        "page_order": page_order
+        "page_order": page_order,
+        "angle": angle,
+        "page": page
     }
 
     # Handle split/preview specifically where we might need file path
@@ -362,6 +370,12 @@ async def pdf_endpoint(
         if not saved_files:
             raise HTTPException(status_code=400, detail="No files uploaded for preview/split")
         payload["file"] = saved_files[0]
+        # For preview, pass the action type from the original request
+        if action == "preview":
+            # The actual transformation action should be passed as a parameter
+            # We'll use the action from the URL path, but allow override via mode
+            preview_action = mode or "preview"
+            payload["action"] = preview_action
 
     try:
         result = await run_in_threadpool(pdf_tools.handle_pdf_action, action, payload)
@@ -388,7 +402,11 @@ async def pdf_endpoint(
                 for file in processed_files:
                     zipf.write(file, os.path.basename(file))
 
-            return FileResponse(zip_path, filename=zip_filename)
+            return FileResponse(
+                zip_path, 
+                filename=zip_filename,
+                media_type="application/zip"
+            )
 
     except HTTPException as he:
         raise he

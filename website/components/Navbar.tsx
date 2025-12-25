@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Shield, Download } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ToolsDropdown } from './ToolsDropdown';
 
 export function Navbar() {
     const t = useTranslations('Common');
@@ -34,8 +35,15 @@ export function Navbar() {
 
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
                     <Link href="/#features" className="hover:text-primary transition-colors">{t('features')}</Link>
+                    <ToolsDropdown />
                     <Link href="/#pricing" className="hover:text-primary transition-colors">{t('pricing')}</Link>
-                    <Link href={`/${locale}/tools`} className="hover:text-primary transition-colors">{t('tools')}</Link>
+                </div>
+
+                {/* Mobile: Show Tools link instead of dropdown */}
+                <div className="md:hidden">
+                    <Link href={`/${locale}/tools`} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                        Tools
+                    </Link>
                 </div>
 
                 <div className="flex items-center gap-4">

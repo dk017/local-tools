@@ -15,10 +15,9 @@ export default function ActivationWrapper({ children }: { children: React.ReactN
     const checkLicense = async () => {
         try {
             // If we are on the web, we don't need to check license (Free Trial logic)
-            // BUT, checking window.__TAURI__ might not be enough if we want "Web" to be unaware.
-            // Assuming this code runs in both.
             if (!isTauri()) {
                 setLoading(false);
+                setIsLocked(false);
                 return;
             }
 
@@ -43,13 +42,26 @@ export default function ActivationWrapper({ children }: { children: React.ReactN
     };
 
     useEffect(() => {
+        // Check immediately if we're on web (no async needed)
+        if (!isTauri()) {
+            setLoading(false);
+            setIsLocked(false);
+            return;
+        }
         checkLicense();
         // Optional: Poll every few minutes?
     }, []);
 
     if (loading) {
-        // Simple loading state
-        return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+        // Better loading state with spinner
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                    <p className="text-muted-foreground text-sm">Initializing...</p>
+                </div>
+            </div>
+        );
     }
 
     if (isLocked) {

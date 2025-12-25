@@ -3,6 +3,7 @@ import logging
 import os
 import io
 import platform
+import base64
 import fitz  # PyMuPDF
 from pypdf import PdfWriter, PdfReader
 import pdfplumber
@@ -117,8 +118,176 @@ def handle_pdf_action(action, payload):
         return crop_pdf(payload)
     elif action == "organize" or action == "reorder_pages":
         return organize_pdf(payload)
+    elif action == "preview":
+        return preview_pdf(payload)
     else:
         raise ValueError(f"Unknown PDF action: {action}")
+
+# ============================================================================
+# PDF PREVIEW FUNCTION
+# ============================================================================
+
+def preview_pdf(payload):
+    """
+    Generate preview image for PDF transformations.
+    Returns base64-encoded image of the first page with applied transformation.
+    """
+    file_path = payload.get("file") or (payload.get("files", [None])[0] if payload.get("files") else None)
+    if not file_path:
+        return {"image": None, "page_count": 0, "errors": ["No file provided"]}
+    
+    if not os.path.exists(file_path):
+        return {"image": None, "page_count": 0, "errors": [f"File not found: {file_path}"]}
+    
+    action = payload.get("action", "preview")
+    page_num = payload.get("page", 0)
+    
+    doc = None
+    try:
+        doc = fitz.open(file_path)
+        page_count = len(doc)
+        
+        if page_count == 0:
+            return {"image": None, "page_count": 0, "errors": ["PDF has no pages"]}
+        
+        # Ensure page_num is valid
+        page_num = max(0, min(page_num, page_count - 1))
+        page = doc[page_num]
+        
+        # Apply transformation based on action
+        if action == "rotate":
+            angle = float(payload.get("angle", 0))
+            # Normalize angle to 0-360 range
+            angle = angle % 360
+            if angle < 0:
+                angle += 360
+            
+            # Round to nearest 90 degrees for set_rotation (which only supports 0, 90, 180, 270)
+            # This matches the actual rotate_pdf function behavior
+            if angle < 45:
+                rotation_deg = 0
+            elif angle < 135:
+                rotation_deg = 90
+            elif angle < 225:
+                rotation_deg = 180
+            elif angle < 315:
+                rotation_deg = 270
+            else:
+                rotation_deg = 0
+            
+            # Create a temporary page with rotation
+            temp_doc = fitz.open()
+            temp_page = temp_doc.new_page(width=page.rect.width, height=page.rect.height)
+            # Copy content from original page
+            temp_page.show_pdf_page(temp_page.rect, doc, page_num)
+            # Apply rotation
+            temp_page.set_rotation(rotation_deg)
+            # Get pixmap with 2x zoom for preview
+            pix = temp_page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            temp_doc.close()
+        elif action == "crop":
+            x = payload.get("x", 0)
+            y = payload.get("y", 0)
+            width = payload.get("width")
+            height = payload.get("height")
+            
+            # Get original page dimensions
+            rect = page.rect
+            
+            # If width/height not specified, use full page
+            if width is None:
+                width = rect.width - x
+            if height is None:
+                height = rect.height - y
+            
+            # Create crop rectangle
+            crop_rect = fitz.Rect(x, y, x + width, y + height)
+            # Clamp to page bounds
+            crop_rect = crop_rect & rect
+            
+            # Get pixmap of cropped area
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=crop_rect)
+        elif action == "watermark":
+            # Create a temporary page with watermark
+            temp_doc = fitz.open()
+            temp_page = temp_doc.new_page(width=page.rect.width, height=page.rect.height)
+            temp_page.show_pdf_page(temp_page.rect, doc, page_num)
+            
+            watermark_type = payload.get("watermark_type", "text")
+            text = payload.get("text", "CONFIDENTIAL")
+            opacity = payload.get("opacity", 0.5)
+            watermark_file = payload.get("watermark_file")
+            color = payload.get("color", "gray")
+            font_size = payload.get("font_size", 72)
+            position = payload.get("position", "center")
+            
+            rect = temp_page.rect
+            
+            if watermark_type == "text":
+                # Parse color
+                if color == "gray":
+                    fill_color = (0.5, 0.5, 0.5)
+                elif color == "red":
+                    fill_color = (1, 0, 0)
+                elif color == "blue":
+                    fill_color = (0, 0, 1)
+                else:
+                    fill_color = (0.5, 0.5, 0.5)
+                
+                # Calculate position
+                if position == "center":
+                    point = fitz.Point(rect.width / 2, rect.height / 2)
+                elif position == "top-left":
+                    point = fitz.Point(50, 50)
+                elif position == "top-right":
+                    point = fitz.Point(rect.width - 50, 50)
+                elif position == "bottom-left":
+                    point = fitz.Point(50, rect.height - 50)
+                elif position == "bottom-right":
+                    point = fitz.Point(rect.width - 50, rect.height - 50)
+                else:
+                    point = fitz.Point(rect.width / 2, rect.height / 2)
+                
+                temp_page.insert_text(point, text, fontsize=font_size, color=fill_color,
+                                     render_mode=3, opacity=opacity)
+            elif watermark_type == "image" and watermark_file and os.path.exists(watermark_file):
+                img_rect = fitz.Rect(0, 0, rect.width, rect.height)
+                temp_page.insert_image(img_rect, filename=watermark_file, opacity=opacity)
+            
+            pix = temp_page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            temp_doc.close()
+        elif action == "grayscale":
+            # Get pixmap and convert to grayscale
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            gray_pix = fitz.Pixmap(pix, 0)  # 0 = grayscale
+            pix = gray_pix
+        else:
+            # Default preview - just show the page
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+        
+        # Convert to base64
+        img_data = pix.tobytes("png")
+        base64_img = base64.b64encode(img_data).decode()
+        
+        # Cleanup
+        pix = None
+        if doc:
+            doc.close()
+        
+        return {
+            "image": f"data:image/png;base64,{base64_img}",
+            "page_count": page_count,
+            "errors": []
+        }
+    except Exception as e:
+        logger.error(f"Error generating preview: {e}", exc_info=True)
+        if doc:
+            doc.close()
+        return {
+            "image": None,
+            "page_count": 0,
+            "errors": [str(e)]
+        }
 
 # ============================================================================
 # PDF MANIPULATION FUNCTIONS
@@ -435,6 +604,27 @@ def rotate_pdf(payload):
     angle = payload.get("angle", 90)  # 90, 180, 270
     pages = payload.get("pages", "")  # Optional: specific pages
 
+    # Convert angle to int and normalize to valid values (0, 90, 180, 270)
+    try:
+        angle = int(float(angle))  # Handle both string and float inputs
+        # Normalize to 0-360 range
+        angle = angle % 360
+        if angle < 0:
+            angle += 360
+        # Round to nearest 90 degrees (PyMuPDF only supports 0, 90, 180, 270)
+        if angle < 45:
+            angle = 0
+        elif angle < 135:
+            angle = 90
+        elif angle < 225:
+            angle = 180
+        elif angle < 315:
+            angle = 270
+        else:
+            angle = 0
+    except (ValueError, TypeError):
+        angle = 90  # Default to 90 degrees if invalid
+
     processed_files = []
     errors = []
 
@@ -463,7 +653,7 @@ def rotate_pdf(payload):
 
             for page_num in range(len(doc)):
                 if page_list is None or page_num in page_list:
-                    doc[page_num].set_rotation(angle)
+                    doc[page_num].set_rotation(int(angle))  # Ensure it's an int
 
             doc.save(output_path)
             doc.close()
@@ -1448,10 +1638,29 @@ def ocr_pdf(payload):
 
                 # Create new PDF with OCR text
                 ocr_doc = fitz.open()
+                total_pages = len(images)
+                logger.info(f"Processing {total_pages} pages for OCR")
 
-                for img in images:
-                    # Perform OCR
-                    ocr_text = pytesseract.image_to_string(img, lang=language)
+                for page_idx, img in enumerate(images):
+                    logger.info(f"Processing page {page_idx + 1}/{total_pages}")
+                    
+                    # Perform OCR with detailed data (bounding boxes)
+                    ocr_data = None
+                    ocr_text = ""
+                    try:
+                        # Get OCR data with bounding boxes for accurate text positioning
+                        ocr_data = pytesseract.image_to_data(img, lang=language, output_type=pytesseract.Output.DICT)
+                        ocr_text = pytesseract.image_to_string(img, lang=language)
+                        logger.info(f"OCR extracted {len(ocr_text)} characters from page {page_idx + 1}")
+                    except Exception as ocr_err:
+                        logger.error(f"OCR failed for page {page_idx + 1}: {ocr_err}")
+                        # Fallback: try simple OCR without detailed data
+                        try:
+                            ocr_text = pytesseract.image_to_string(img, lang=language)
+                            logger.info(f"Fallback OCR extracted {len(ocr_text)} characters")
+                        except Exception as fallback_err:
+                            logger.error(f"Fallback OCR also failed: {fallback_err}")
+                            ocr_text = ""
 
                     # Create new page
                     page = ocr_doc.new_page(width=img.width, height=img.height)
@@ -1463,23 +1672,88 @@ def ocr_pdf(payload):
                     page.insert_image(page.rect, stream=img_bytes.getvalue())
 
                     # Add invisible text layer (for searchability)
-                    # Note: This is a simplified implementation. For production OCR PDFs,
-                    # you would need to position text accurately using OCR bounding boxes.
+                    text_added = False
                     if ocr_text.strip():
-                        # Split text into lines and add them
-                        lines = ocr_text.split('\n')
-                        line_height = img.height / max(len(lines), 1)
-                        for i, line in enumerate(lines[:100]):  # Limit lines for performance
-                            if line.strip():
-                                y_pos = i * line_height + 20
-                                text_point = fitz.Point(10, min(y_pos, page.rect.height - 10))
-                                # Use render_mode=3 (invisible) to make text searchable but not visible
-                                page.insert_text(text_point, line.strip(), fontsize=12,
-                                               color=(1, 1, 1), render_mode=3)
+                        if ocr_data and len(ocr_data.get('text', [])) > 0:
+                            # Use OCR bounding boxes for accurate text positioning
+                            n_boxes = len(ocr_data['text'])
+                            logger.info(f"Found {n_boxes} text boxes from OCR")
+                            for i in range(n_boxes):
+                                text = ocr_data['text'][i].strip()
+                                conf = int(ocr_data['conf'][i]) if ocr_data['conf'][i] else 0
+                                if text and conf > 0:  # Confidence > 0
+                                    x = ocr_data['left'][i]
+                                    y = ocr_data['top'][i]
+                                    w = ocr_data['width'][i]
+                                    h = ocr_data['height'][i]
+                                    
+                                    # Convert to PDF coordinates (OCR uses top-left, PyMuPDF uses bottom-left)
+                                    pdf_y = img.height - y - h
+                                    
+                                    # Insert invisible text (render_mode=3) for searchability
+                                    try:
+                                        page.insert_text(
+                                            fitz.Point(x, pdf_y + h),
+                                            text,
+                                            fontsize=max(8, min(h * 0.8, 12)),
+                                            color=(1, 1, 1),  # White (invisible on white background)
+                                            render_mode=3  # Invisible but searchable
+                                        )
+                                        text_added = True
+                                    except Exception as text_err:
+                                        logger.warning(f"Failed to insert text at position ({x}, {pdf_y}): {text_err}")
+                                        # Fallback: simple text insertion
+                                        try:
+                                            page.insert_text(
+                                                fitz.Point(x, pdf_y + h),
+                                                text[:50],  # Limit length
+                                                fontsize=10,
+                                                color=(1, 1, 1),
+                                                render_mode=3
+                                            )
+                                            text_added = True
+                                        except:
+                                            pass
+                        
+                        # Fallback: add text as lines if bounding boxes failed
+                        if not text_added:
+                            logger.info("Using fallback text positioning (lines)")
+                            lines = [l.strip() for l in ocr_text.split('\n') if l.strip()]
+                            if lines:
+                                line_height = img.height / max(len(lines), 1)
+                                line_idx = 0
+                                for line in lines[:200]:  # Limit lines for performance
+                                    y_pos = line_idx * line_height + 20
+                                    text_point = fitz.Point(10, min(y_pos, page.rect.height - 10))
+                                    # Use render_mode=3 (invisible) to make text searchable but not visible
+                                    try:
+                                        page.insert_text(
+                                            text_point,
+                                            line[:100],  # Limit line length
+                                            fontsize=12,
+                                            color=(1, 1, 1),
+                                            render_mode=3
+                                        )
+                                        text_added = True
+                                    except Exception as line_err:
+                                        logger.warning(f"Failed to insert line {line_idx}: {line_err}")
+                                    line_idx += 1
+                    
+                    if text_added:
+                        logger.info(f"Successfully added searchable text to page {page_idx + 1}")
+                    else:
+                        logger.warning(f"No text was added to page {page_idx + 1}")
 
                 ocr_doc.save(output_path)
                 ocr_doc.close()
-                processed_files.append(output_path)
+                
+                # Verify output file was created
+                if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                    logger.info(f"OCR PDF saved successfully: {output_path} ({os.path.getsize(output_path)} bytes)")
+                    processed_files.append(output_path)
+                else:
+                    logger.error(f"OCR PDF file was not created or is empty: {output_path}")
+                    errors.append({"file": file_path, "error": "OCR processing completed but output file was not created"})
 
             except ImportError:
                 errors.append({"file": file_path, "error": "Python packages required. Install with: pip install pytesseract pdf2image"})

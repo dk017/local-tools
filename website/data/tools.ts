@@ -229,4 +229,52 @@ export const tools = [
     description: "Reorder and organize PDF pages in any order you want.",
     icon: "layers",
   },
+  {
+    slug: "delete-pages",
+    title: "Delete Pages",
+    description: "Remove specific pages from PDF documents.",
+    icon: "x-circle",
+  },
+  {
+    slug: "page-numbers",
+    title: "Add Page Numbers",
+    description: "Add page numbers to PDF documents.",
+    icon: "hash",
+  },
+  {
+    slug: "extract-text",
+    title: "Extract Text",
+    description: "Extract text content from PDF files.",
+    icon: "type",
+  },
+  {
+    slug: "remove-metadata",
+    title: "Remove Metadata",
+    description: "Remove metadata and hidden information from PDF files.",
+    icon: "shield",
+  },
+  {
+    slug: "flatten-pdf",
+    title: "Flatten PDF",
+    description: "Flatten form fields and annotations in PDF documents.",
+    icon: "layers",
+  },
+  {
+    slug: "photo-studio",
+    title: "Photo Studio",
+    description: "Advanced photo editor with layers and text.",
+    icon: "palette",
+  },
+  {
+    slug: "grid-split",
+    title: "Grid Split",
+    description: "Split images into a grid of smaller images.",
+    icon: "grid",
+  },
+  {
+    slug: "remove-image-metadata",
+    title: "Remove Image Metadata",
+    description: "Remove EXIF and other metadata from images.",
+    icon: "shield",
+  },
 ];

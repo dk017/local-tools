@@ -20,6 +20,19 @@ export const TOOL_SLUGS = [
     'pdf-redactor',
     'pdf-signer',
     'pdf-web-optimize',
+    'crop-pdf',
+    'organize-pdf',
+    'word-to-pdf',
+    'powerpoint-to-pdf',
+    'excel-to-pdf',
+    'html-to-pdf',
+    'ocr-pdf',
+    'pdf-to-pdfa',
+    'delete-pages',
+    'page-numbers',
+    'extract-text',
+    'remove-metadata',
+    'flatten-pdf',
     // Image Tools
     'remove-image-background',
     'convert-image',
@@ -30,5 +43,8 @@ export const TOOL_SLUGS = [
     'extract-palette',
     'crop-image',
     'watermark-image',
-    'heic-to-jpg'
+    'heic-to-jpg',
+    'photo-studio',
+    'grid-split',
+    'remove-image-metadata'
 ];

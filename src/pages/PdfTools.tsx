@@ -17,6 +17,7 @@ import {
   Unlock,
   Shield,
   RotateCw,
+  RotateCcw,
   Stamp,
   Hash,
   FileType2,
@@ -306,30 +307,74 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
-  // Fetch Preview for specific modes
-  // Fetch Preview for specific modes
-  React.useEffect(() => {
-    if ((mode === "watermark" || mode === "page_numbers") && files.length > 0) {
+  // Debounce timer ref for preview
+  const previewDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+  // Cache for preview images
+  const previewCacheRef = React.useRef<Map<string, string>>(new Map());
+
+  // Generate cache key from params
+  const getCacheKey = React.useCallback((params: any): string => {
+    const sortedParams = Object.keys(params)
+      .sort()
+      .map((key) => `${key}:${params[key]}`)
+      .join("|");
+    const fileId = files.length > 0 ? (IS_TAURI ? files[0].path : files[0].name) : "";
+    return `${fileId}|${mode}|${sortedParams}`;
+  }, [files, mode]);
+
+  // Fetch preview with parameters
+  const fetchPreview = React.useCallback(async (params: any, debounceMs: number = 300) => {
+    if (files.length === 0) return;
+    
+    // Check cache first
+    const cacheKey = getCacheKey(params);
+    const cachedPreview = previewCacheRef.current.get(cacheKey);
+    if (cachedPreview) {
+      setPreviewSrc(cachedPreview);
+      return;
+    }
+    
+    // Clear previous debounce timer
+    if (previewDebounceRef.current) {
+      clearTimeout(previewDebounceRef.current);
+    }
+    
+    // Set new debounce timer
+    previewDebounceRef.current = setTimeout(async () => {
+      setIsLoadingPreview(true);
       const target = files[0];
-      // If web, usePython sends the file. If desktop, sends path.
-      // For simple parity, we pass 'file' as the object, usePython handles it
       const actualPayload = {
         file: IS_TAURI ? target.path : target.file,
         page: 0,
+        action: mode,
+        ...params,
       };
 
-      execute("pdf_tools", "preview", actualPayload)
-        .then((res: any) => {
-          if (res.image) {
-            setPreviewSrc(res.image);
+      try {
+        const res = await execute("pdf_tools", "preview", actualPayload);
+        if (res.image) {
+          // Cache the result
+          previewCacheRef.current.set(cacheKey, res.image);
+          // Limit cache size to prevent memory issues
+          if (previewCacheRef.current.size > 20) {
+            const firstKey = previewCacheRef.current.keys().next().value;
+            if (firstKey) {
+              previewCacheRef.current.delete(firstKey);
+            }
           }
-        })
-        .catch((err: any) => console.error("Preview failed", err));
-    } else {
-      setPreviewSrc(null);
-    }
-  }, [mode, files]);
+          setPreviewSrc(res.image);
+        } else if (res.errors && res.errors.length > 0) {
+          console.error("Preview error:", res.errors);
+        }
+      } catch (err: any) {
+        console.error("Preview failed", err);
+      } finally {
+        setIsLoadingPreview(false);
+      }
+    }, debounceMs);
+  }, [files, mode, execute, getCacheKey]);
 
   // Load previews for thumbnails
   React.useEffect(() => {
@@ -412,6 +457,34 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
   // Organize Settings
   const [pageOrder, setPageOrder] = useState("");
+
+  // Fetch Preview for specific modes (moved after variable declarations)
+  React.useEffect(() => {
+    if ((mode === "watermark" || mode === "page_numbers" || mode === "rotate" || mode === "crop") && files.length > 0) {
+      if (mode === "rotate") {
+        fetchPreview({ angle: rotationAngle }, 0);
+      } else if (mode === "crop") {
+        fetchPreview({ x: cropX, y: cropY, width: cropWidth, height: cropHeight }, 0);
+      } else {
+        // Default preview for watermark and page_numbers
+        const target = files[0];
+        const actualPayload = {
+          file: IS_TAURI ? target.path : target.file,
+          page: 0,
+        };
+
+        execute("pdf_tools", "preview", actualPayload)
+          .then((res: any) => {
+            if (res.image) {
+              setPreviewSrc(res.image);
+            }
+          })
+          .catch((err: any) => console.error("Preview failed", err));
+      }
+    } else {
+      setPreviewSrc(null);
+    }
+  }, [mode, files, rotationAngle, cropX, cropY, cropWidth, cropHeight, fetchPreview, execute]);
 
   const tools = [
     {
@@ -656,11 +729,6 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
   const handleSelectFiles = async (append: boolean = false) => {
     const isImageInput = mode === "images_to_pdf";
-    const isOfficeInput =
-      mode === "word_to_pdf" ||
-      mode === "powerpoint_to_pdf" ||
-      mode === "excel_to_pdf";
-    const isHtmlInput = mode === "html_to_pdf";
 
     let acceptTypes: string[] = ["pdf"];
     let description = "PDF Files";
@@ -1151,14 +1219,68 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
             {mode === "rotate" && (
               <div className="space-y-4">
+                {/* Preview Display */}
+                {previewSrc && files.length > 0 && (
+                  <div className="mb-6 relative bg-secondary/50 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
+                    {isLoadingPreview ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Updating preview...</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={previewSrc}
+                        alt="PDF Preview"
+                        className="max-w-full max-h-[300px] object-contain rounded-lg shadow-lg"
+                      />
+                    )}
+                  </div>
+                )}
+
                 <label className="text-sm font-medium text-foreground">
-                  Rotation (Clockwise)
+                  Rotation
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                
+                {/* Interactive Rotate Controls */}
+                <div className="flex items-center gap-4 justify-center">
+                  <button
+                    onClick={() => {
+                      const newAngle = (rotationAngle - 90) % 360;
+                      setRotationAngle(newAngle);
+                      fetchPreview({ angle: newAngle }, 0);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-lg transition-all"
+                  >
+                    <RotateCcw size={18} />
+                    <span>Left</span>
+                  </button>
+                  
+                  <div className="px-6 py-2 bg-primary/20 border border-primary/30 rounded-lg font-bold text-primary min-w-[80px] text-center">
+                    {rotationAngle}°
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      const newAngle = (rotationAngle + 90) % 360;
+                      setRotationAngle(newAngle);
+                      fetchPreview({ angle: newAngle }, 0);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-lg transition-all"
+                  >
+                    <RotateCw size={18} />
+                    <span>Right</span>
+                  </button>
+                </div>
+
+                {/* Quick Select Buttons */}
+                <div className="grid grid-cols-3 gap-2 mt-4">
                   {[90, 180, 270].map((deg) => (
                     <button
                       key={deg}
-                      onClick={() => setRotationAngle(deg)}
+                      onClick={() => {
+                        setRotationAngle(deg);
+                        fetchPreview({ angle: deg }, 0);
+                      }}
                       className={cn(
                         "px-3 py-2 text-xs rounded-lg transition-all border",
                         rotationAngle === deg
@@ -1419,6 +1541,31 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
             {mode === "crop" && (
               <div className="space-y-4">
+                {/* Preview Display */}
+                {previewSrc && files.length > 0 && (
+                  <div className="mb-6 relative bg-secondary/50 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
+                    {isLoadingPreview ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Updating preview...</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={previewSrc}
+                        alt="PDF Preview"
+                        className="max-w-full max-h-[300px] object-contain rounded-lg shadow-lg"
+                      />
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 mb-2">
+                  <Crop size={16} />
+                  <label className="text-sm font-medium text-foreground">
+                    Crop Settings
+                  </label>
+                </div>
+
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">
                     X (Left Margin)
@@ -1426,7 +1573,11 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                   <input
                     type="number"
                     value={cropX}
-                    onChange={(e) => setCropX(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      setCropX(val);
+                      fetchPreview({ x: val, y: cropY, width: cropWidth, height: cropHeight });
+                    }}
                     placeholder="0"
                     min="0"
                     className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
@@ -1439,7 +1590,11 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                   <input
                     type="number"
                     value={cropY}
-                    onChange={(e) => setCropY(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      setCropY(val);
+                      fetchPreview({ x: cropX, y: val, width: cropWidth, height: cropHeight });
+                    }}
                     placeholder="0"
                     min="0"
                     className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
@@ -1452,11 +1607,11 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                   <input
                     type="number"
                     value={cropWidth || ""}
-                    onChange={(e) =>
-                      setCropWidth(
-                        e.target.value ? parseFloat(e.target.value) : null
-                      )
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value ? parseFloat(e.target.value) : null;
+                      setCropWidth(val);
+                      fetchPreview({ x: cropX, y: cropY, width: val, height: cropHeight });
+                    }}
                     placeholder="Required"
                     min="1"
                     className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
@@ -1469,11 +1624,11 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                   <input
                     type="number"
                     value={cropHeight || ""}
-                    onChange={(e) =>
-                      setCropHeight(
-                        e.target.value ? parseFloat(e.target.value) : null
-                      )
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value ? parseFloat(e.target.value) : null;
+                      setCropHeight(val);
+                      fetchPreview({ x: cropX, y: cropY, width: cropWidth, height: val });
+                    }}
                     placeholder="Required"
                     min="1"
                     className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"

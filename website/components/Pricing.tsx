@@ -38,10 +38,7 @@ export function Pricing() {
           <p className="text-muted-foreground mb-8 text-sm">{t("desc")}</p>
 
           <a
-            href={
-              process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL ||
-              `https://${process.env.NEXT_PUBLIC_LEMONSQUEEZY_STORE || "yourstore"}.lemonsqueezy.com/checkout/buy/${process.env.NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID || "your-variant-id"}`
-            }
+            href={process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL || "#"}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full text-center py-4 bg-primary hover:bg-cyan-400 text-black rounded-xl font-bold text-lg transition-all shadow-[0_0_30px_-10px_rgba(0,243,255,0.4)] mb-8 hover:scale-[1.02] active:scale-[0.98]"

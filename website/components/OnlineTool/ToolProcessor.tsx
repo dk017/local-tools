@@ -20,6 +20,9 @@ import {
   Book,
   GitCompare,
   Archive,
+  RotateCw,
+  RotateCcw,
+  Crop,
 } from "lucide-react";
 import Cropper, { Area } from "react-easy-crop";
 import dynamic from "next/dynamic";
@@ -195,6 +198,8 @@ export function ToolProcessor({
   // Crop State (Visual)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewParams, setPreviewParams] = useState<any>({});
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -250,12 +255,90 @@ export function ToolProcessor({
   // PDF Organize State
   const [pageOrder, setPageOrder] = useState<string>("");
 
+  // PDF Rotate State
+  const [rotationAngle, setRotationAngle] = useState<number>(0);
+
   const onCropComplete = (croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
     setCropX(croppedAreaPixels.x);
     setCropY(croppedAreaPixels.y);
     setCropWidth(croppedAreaPixels.width);
     setCropHeight(croppedAreaPixels.height);
+  };
+
+  // Debounce timer ref for preview
+  const previewDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  // Cache for preview images
+  const previewCacheRef = useRef<Map<string, string>>(new Map());
+
+  // Generate cache key from params
+  const getCacheKey = (params: any): string => {
+    const sortedParams = Object.keys(params)
+      .sort()
+      .map((key) => `${key}:${params[key]}`)
+      .join("|");
+    return `${previewFile?.name || ""}|${toolSlug}|${sortedParams}`;
+  };
+
+  // Fetch preview with parameters
+  const fetchPreview = async (params: any, debounceMs: number = 300) => {
+    if (!previewFile) return;
+    
+    // Check cache first
+    const cacheKey = getCacheKey(params);
+    const cachedPreview = previewCacheRef.current.get(cacheKey);
+    if (cachedPreview) {
+      setPreviewUrl(cachedPreview);
+      setPreviewParams(params);
+      return;
+    }
+    
+    // Clear previous debounce timer
+    if (previewDebounceRef.current) {
+      clearTimeout(previewDebounceRef.current);
+    }
+    
+    // Set new debounce timer
+    previewDebounceRef.current = setTimeout(async () => {
+      setIsLoadingPreview(true);
+      const formData = new FormData();
+      formData.append("files", previewFile);
+      const actionType = toolSlug.replace("-pdf", "").replace("-image", "");
+      formData.append("mode", actionType);
+      formData.append("page", "0");
+      
+      // Add params to formData (excluding action as it comes from mode)
+      Object.keys(params).forEach((key) => {
+        if (key !== "action" && params[key] !== null && params[key] !== undefined) {
+          formData.append(key, params[key].toString());
+        }
+      });
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/pdf/preview`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.image) {
+          // Cache the result
+          previewCacheRef.current.set(cacheKey, data.image);
+          // Limit cache size to prevent memory issues
+          if (previewCacheRef.current.size > 20) {
+            const firstKey = previewCacheRef.current.keys().next().value;
+            previewCacheRef.current.delete(firstKey);
+          }
+          setPreviewUrl(data.image);
+          setPreviewParams(params);
+        } else if (data.errors && data.errors.length > 0) {
+          console.error("Preview error:", data.errors);
+        }
+      } catch (e) {
+        console.error("Preview failed", e);
+      } finally {
+        setIsLoadingPreview(false);
+      }
+    }, debounceMs);
   };
 
   const handleFileSelect = (files: File[]) => {
@@ -317,7 +400,7 @@ export function ToolProcessor({
       return;
     }
 
-    // Auto-preview for Watermark Tools and Manual Process Tools
+    // Auto-preview for tools that need preview
     if (
       (toolSlug === "watermark-pdf" ||
         toolSlug === "watermark-image" ||
@@ -325,7 +408,10 @@ export function ToolProcessor({
         toolSlug === "protect-pdf" ||
         toolSlug === "unlock-pdf" ||
         toolSlug === "pdf-signer" ||
-        toolSlug === "pdf-redactor") &&
+        toolSlug === "pdf-redactor" ||
+        toolSlug === "rotate-pdf" ||
+        toolSlug === "crop-pdf" ||
+        toolSlug === "grayscale-pdf") &&
       files.length > 0
     ) {
       const file = files[0];
@@ -348,22 +434,31 @@ export function ToolProcessor({
         // We don't set previewUrl, effectively kept null
       } else {
         // Server-side preview for PDF
-        // We need to upload it to get a preview image
-        const fd = new FormData();
-        fd.append("files", file);
-        // Use preview action
-        fetch(`${API_BASE_URL}/api/pdf/preview`, {
-          method: "POST",
-          body: fd,
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.image) {
-              setPreviewUrl(data.image);
-              setPreviewFile(file);
-            }
+        setPreviewFile(file);
+        // Load initial preview based on tool type
+        if (toolSlug === "rotate-pdf") {
+          fetchPreview({ angle: 0 }, 0); // No debounce for initial load
+        } else if (toolSlug === "crop-pdf") {
+          // Load initial preview without crop (will show full page)
+          fetchPreview({}, 0);
+        } else if (toolSlug === "grayscale-pdf") {
+          fetchPreview({}, 0);
+        } else {
+          // Default preview for other PDF tools
+          const fd = new FormData();
+          fd.append("files", file);
+          fetch(`${API_BASE_URL}/api/pdf/preview`, {
+            method: "POST",
+            body: fd,
           })
-          .catch((e) => console.error("Preview failed", e));
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.image) {
+                setPreviewUrl(data.image);
+              }
+            })
+            .catch((e) => console.error("Preview failed", e));
+        }
       }
     }
     handleFiles(files);
@@ -482,6 +577,11 @@ export function ToolProcessor({
     }
     if (toolSlug === "heic-to-jpg") {
       formData.append("quality", heicQuality.toString());
+    }
+
+    // PDF Rotate Params
+    if (toolSlug === "rotate-pdf") {
+      formData.append("angle", rotationAngle.toString());
     }
 
     // PDF Crop Params
@@ -615,20 +715,42 @@ export function ToolProcessor({
 
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="?([^"]+)"?/);
-        if (match && match[1]) filename = match[1];
+        if (match && match[1]) {
+          filename = match[1];
+          // Decode URL-encoded filename if needed
+          try {
+            filename = decodeURIComponent(filename);
+          } catch {
+            // If decoding fails, use as-is
+          }
+        }
       } else {
         // Fallback: determine extension from content type or tool
         const nameWithoutExt =
           files[0].name.substring(0, files[0].name.lastIndexOf(".")) ||
           files[0].name;
 
-        if (contentType === "application/zip") {
+        // Check for ZIP files by content type or tool type
+        if (contentType === "application/zip" || 
+            contentType === "application/x-zip-compressed" ||
+            toolSlug === "split-pdf" ||
+            toolSlug === "extract-images-from-pdf" ||
+            toolSlug === "pdf-to-images") {
           filename = `processed_${nameWithoutExt}.zip`;
         } else if (toolSlug === "images-to-pdf" || toolSlug === "merge-pdf") {
           filename = `processed_${nameWithoutExt}.pdf`;
         } else if (toolSlug === "pdf-to-word") {
           filename = `processed_${nameWithoutExt}.docx`;
         }
+      }
+
+      // Final check: if filename doesn't have extension but we know it should be ZIP
+      if ((toolSlug === "split-pdf" || 
+           toolSlug === "extract-images-from-pdf" || 
+           toolSlug === "pdf-to-images") && 
+          !filename.toLowerCase().endsWith(".zip")) {
+        const nameWithoutExt = filename.substring(0, filename.lastIndexOf(".")) || filename;
+        filename = `${nameWithoutExt}.zip`;
       }
 
       setFileName(filename);
@@ -711,11 +833,12 @@ export function ToolProcessor({
         </div>
       )}
 
-      {/* Default Uploader (Hidden if staged files exist) */}
+      {/* Default Uploader (Hidden if staged files exist or preview is active) */}
       {stagedFiles.length === 0 &&
         status !== "complete" &&
         status !== "processing" &&
-        status !== "uploading" && (
+        status !== "uploading" &&
+        !(previewFile && (toolSlug === "rotate-pdf" || toolSlug === "crop-pdf")) && (
           <FileUploader
             onFilesSelected={handleFileSelect}
             accept={acceptedFileTypes}
@@ -949,95 +1072,233 @@ export function ToolProcessor({
               </div>
             )}
 
-            {/* Crop PDF Options */}
+            {/* Crop PDF Options with Preview */}
             {toolSlug === "crop-pdf" && (
-              <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10">
-                <h3 className="text-lg font-bold mb-4">Crop Settings</h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        X (Left Margin)
-                      </label>
-                      <input
-                        type="number"
-                        value={pdfCropX}
-                        onChange={(e) =>
-                          setPdfCropX(parseFloat(e.target.value) || 0)
-                        }
-                        placeholder="0"
-                        min="0"
-                        className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                      />
+              <div className="mb-8">
+                {previewUrl && previewFile ? (
+                  <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                      <Crop size={20} /> Crop PDF
+                    </h3>
+                    
+                    {/* Preview Display */}
+                    <div className="mb-6 relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[400px]">
+                      {isLoadingPreview ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Updating preview...</span>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <img
+                            src={previewUrl}
+                            alt="PDF Preview"
+                            className="max-w-full max-h-[400px] object-contain rounded-lg shadow-lg"
+                          />
+                          {/* Crop overlay indicator */}
+                          {(pdfCropWidth !== null && pdfCropHeight !== null) && (
+                            <div
+                              className="absolute border-2 border-primary bg-primary/10 pointer-events-none"
+                              style={{
+                                left: `${(pdfCropX / (previewUrl ? 800 : 1)) * 100}%`,
+                                top: `${(pdfCropY / (previewUrl ? 600 : 1)) * 100}%`,
+                                width: `${(pdfCropWidth / (previewUrl ? 800 : 1)) * 100}%`,
+                                height: `${(pdfCropHeight / (previewUrl ? 600 : 1)) * 100}%`,
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        Y (Top Margin)
-                      </label>
-                      <input
-                        type="number"
-                        value={pdfCropY}
-                        onChange={(e) =>
-                          setPdfCropY(parseFloat(e.target.value) || 0)
-                        }
-                        placeholder="0"
-                        min="0"
-                        className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                      />
+
+                    {/* Crop Controls */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            X (Left Margin)
+                          </label>
+                          <input
+                            type="number"
+                            value={pdfCropX}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setPdfCropX(val);
+                              fetchPreview({ x: val, y: pdfCropY, width: pdfCropWidth, height: pdfCropHeight });
+                            }}
+                            placeholder="0"
+                            min="0"
+                            className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            Y (Top Margin)
+                          </label>
+                          <input
+                            type="number"
+                            value={pdfCropY}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setPdfCropY(val);
+                              fetchPreview({ x: pdfCropX, y: val, width: pdfCropWidth, height: pdfCropHeight });
+                            }}
+                            placeholder="0"
+                            min="0"
+                            className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            Width *
+                          </label>
+                          <input
+                            type="number"
+                            value={pdfCropWidth || ""}
+                            onChange={(e) => {
+                              const val = e.target.value ? parseFloat(e.target.value) : null;
+                              setPdfCropWidth(val);
+                              fetchPreview({ x: pdfCropX, y: pdfCropY, width: val, height: pdfCropHeight });
+                            }}
+                            placeholder="Required"
+                            min="1"
+                            className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            Height *
+                          </label>
+                          <input
+                            type="number"
+                            value={pdfCropHeight || ""}
+                            onChange={(e) => {
+                              const val = e.target.value ? parseFloat(e.target.value) : null;
+                              setPdfCropHeight(val);
+                              fetchPreview({ x: pdfCropX, y: pdfCropY, width: pdfCropWidth, height: val });
+                            }}
+                            placeholder="Required"
+                            min="1"
+                            className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Pages (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={pdfCropPages}
+                          onChange={(e) => setPdfCropPages(e.target.value)}
+                          placeholder="1-5 or 1,3,5 (leave empty for all)"
+                          className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Comma separated or ranges. Leave empty to crop all pages.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t border-white/10">
+                      <div className="text-xs text-muted-foreground mb-4">
+                        {t("selected")}: <span className="text-white">{previewFile.name}</span>
+                      </div>
+                      <button
+                        onClick={() => previewFile && handleFiles([previewFile])}
+                        disabled={pdfCropWidth === null || pdfCropHeight === null}
+                        className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Crop size={16} /> Apply Crop
+                      </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        Width *
-                      </label>
-                      <input
-                        type="number"
-                        value={pdfCropWidth || ""}
-                        onChange={(e) =>
-                          setPdfCropWidth(
-                            e.target.value ? parseFloat(e.target.value) : null
-                          )
-                        }
-                        placeholder="Required"
-                        min="1"
-                        className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        Height *
-                      </label>
-                      <input
-                        type="number"
-                        value={pdfCropHeight || ""}
-                        onChange={(e) =>
-                          setPdfCropHeight(
-                            e.target.value ? parseFloat(e.target.value) : null
-                          )
-                        }
-                        placeholder="Required"
-                        min="1"
-                        className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                      />
+                ) : (
+                  <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+                    <h3 className="text-lg font-bold mb-4">Crop Settings</h3>
+                    <div className="text-center text-muted-foreground py-8">
+                      Upload a PDF file to see preview and crop options
                     </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      Pages (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={pdfCropPages}
-                      onChange={(e) => setPdfCropPages(e.target.value)}
-                      placeholder="1-5 or 1,3,5 (leave empty for all)"
-                      className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Comma separated or ranges. Leave empty to crop all pages.
-                    </p>
+                )}
+              </div>
+            )}
+
+            {/* Rotate PDF Options with Preview */}
+            {toolSlug === "rotate-pdf" && (
+              <div className="mb-8">
+                {previewUrl && previewFile ? (
+                  <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                      <RotateCw size={20} /> Rotate PDF
+                    </h3>
+                    
+                    {/* Preview Display */}
+                    <div className="mb-6 relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[400px]">
+                      {isLoadingPreview ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Updating preview...</span>
+                        </div>
+                      ) : (
+                        <img
+                          src={previewUrl}
+                          alt="PDF Preview"
+                          className="max-w-full max-h-[400px] object-contain rounded-lg shadow-lg"
+                        />
+                      )}
+                    </div>
+
+                    {/* Rotate Controls */}
+                    <div className="flex items-center gap-4 justify-center">
+                      <button
+                        onClick={() => {
+                          const newAngle = (rotationAngle - 90) % 360;
+                          setRotationAngle(newAngle);
+                          fetchPreview({ angle: newAngle });
+                        }}
+                        className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl transition-all hover:scale-105"
+                      >
+                        <RotateCcw size={20} />
+                        <span>Rotate Left</span>
+                      </button>
+                      
+                      <div className="px-6 py-3 bg-primary/20 border border-primary/30 rounded-xl font-bold text-primary min-w-[100px] text-center">
+                        {rotationAngle}°
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          const newAngle = (rotationAngle + 90) % 360;
+                          setRotationAngle(newAngle);
+                          fetchPreview({ angle: newAngle });
+                        }}
+                        className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl transition-all hover:scale-105"
+                      >
+                        <RotateCw size={20} />
+                        <span>Rotate Right</span>
+                      </button>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t border-white/10">
+                      <div className="text-xs text-muted-foreground mb-4">
+                        {t("selected")}: <span className="text-white">{previewFile.name}</span>
+                      </div>
+                      <button
+                        onClick={() => previewFile && handleFiles([previewFile])}
+                        className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                      >
+                        <RotateCw size={16} /> Apply Rotation
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-6 bg-white/5 rounded-xl border border-white/10 text-center text-muted-foreground">
+                    Upload a PDF file to see preview and rotate options
+                  </div>
+                )}
               </div>
             )}
 

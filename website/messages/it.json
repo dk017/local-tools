@@ -8,9 +8,9 @@
     },
     "Hero": {
         "badge": "v1.0 Disponibile per Windows",
-        "title": "IA Offline.\nI Tuoi Dati, Il Tuo Dispositivo.",
-        "subtitle": "Il primo toolkit PDF e Immagini con IA che gira al 100% sul tuo motore neurale. Zero upload cloud. Zero rischi privacy.",
-        "cta_primary": "Accesso a Vita",
+        "title": "I Tuoi Dati, Il Tuo Dispositivo.",
+        "subtitle": "Elabora PDF e immagini 100% offline. Nessun caricamento, nessun tracciamento, velocità illimitata.",
+        "cta_primary": "Ottieni Licenza Annuale",
         "cta_secondary": "Prova Demo",
         "stat_offline": "IA 100% Offline",
         "stat_privacy": "Zero Raccolta Dati",
@@ -44,16 +44,16 @@
         "s2_title": "Performance Nativa",
         "s2_desc": "Usa il 100% della tua CPU/GPU.",
         "s3_title": "Un Pagamento, Per Sempre",
-        "s3_desc": "Licenza a vita. Illimitata."
+        "s3_desc": "Abbonamento annuale. Illimitato."
     },
     "Pricing": {
         "title": "Un Pagamento. Privacy Infinita.",
         "subtitle": "Paga una volta, possiedi per sempre.",
-        "badge": "LICENZA A VITA",
+        "badge": "LICENZA ANNUALE",
         "price": "$59",
         "old_price": "$120",
         "desc": "Accesso completo al toolkit neuronale offline.",
-        "cta": "Accesso a Vita Sicuro",
+        "cta": "Ottieni Licenza Annuale",
         "f1": "Elaborazione PDF Illimitata",
         "f2": "Ops Immagini IA Illimitate",
         "f3": "Uso Comercial Consentito",
@@ -311,6 +311,62 @@
             "f1": "Formato archiviazione",
             "f2": "Archiviazione a lungo termine",
             "f3": "Conforme ISO"
+        },
+        "delete-pages": {
+            "h1": "Elimina pagine dal PDF",
+            "p1": "Rimuovi pagine indesiderate dai tuoi documenti PDF.",
+            "f1": "Seleziona pagine",
+            "f2": "Rimozione rapida",
+            "f3": "Preserva qualità"
+        },
+        "page-numbers": {
+            "h1": "Aggiungi numeri di pagina al PDF",
+            "p1": "Aggiungi numeri di pagina ai tuoi documenti PDF con formattazione personalizzabile.",
+            "f1": "Formattazione personalizzata",
+            "f2": "Controllo posizione",
+            "f3": "Stili multipli"
+        },
+        "extract-text": {
+            "h1": "Estrai testo dal PDF",
+            "p1": "Estrai contenuto testuale dai file PDF per modifica o analisi.",
+            "f1": "Estrazione testo",
+            "f2": "Preserva formattazione",
+            "f3": "Elaborazione batch"
+        },
+        "remove-metadata": {
+            "h1": "Rimuovi metadati dal PDF",
+            "p1": "Rimuovi metadati nascosti e informazioni personali dai file PDF per la privacy.",
+            "f1": "Protezione privacy",
+            "f2": "File puliti",
+            "f3": "Rimuovi tracciamento"
+        },
+        "flatten-pdf": {
+            "h1": "Appiattisci PDF",
+            "p1": "Appiattisci campi modulo e annotazioni nei documenti PDF per prevenire la modifica.",
+            "f1": "Appiattimento modulo",
+            "f2": "Blocco annotazioni",
+            "f3": "Documenti sicuri"
+        },
+        "photo-studio": {
+            "h1": "Studio fotografico",
+            "p1": "Editor fotografico avanzato con livelli, testo e strumenti di design.",
+            "f1": "Supporto livelli",
+            "f2": "Strumenti testo",
+            "f3": "Elementi design"
+        },
+        "grid-split": {
+            "h1": "Dividi immagine in griglia",
+            "p1": "Dividi immagini in una griglia di immagini più piccole per social media o miniature.",
+            "f1": "Griglia personalizzata",
+            "f2": "Elaborazione batch",
+            "f3": "Formati multipli"
+        },
+        "remove-image-metadata": {
+            "h1": "Rimuovi metadati immagine",
+            "p1": "Rimuovi dati EXIF e altri metadati dalle immagini per la privacy.",
+            "f1": "Rimozione EXIF",
+            "f2": "Protezione privacy",
+            "f3": "Immagini pulite"
         }
     },
     "Tools": {
@@ -370,6 +426,14 @@
         "watermark-pdf": {
             "title": "Watermark PDF",
             "desc": "Aggiungi timbro."
+        },
+        "crop-pdf": {
+            "title": "Ritaglia PDF",
+            "desc": "Ritaglia pagine."
+        },
+        "organize-pdf": {
+            "title": "Organizza PDF",
+            "desc": "Riordina pagine."
         },
         "repair-pdf": {
             "title": "Ripara PDF",
@@ -466,6 +530,38 @@
         "pdf-to-pdfa": {
             "title": "PDF to PDF/A",
             "desc": "Converti in formato archiviazione."
+        },
+        "delete-pages": {
+            "title": "Elimina pagine",
+            "desc": "Rimuovi pagine."
+        },
+        "page-numbers": {
+            "title": "Aggiungi numeri",
+            "desc": "Numera pagine."
+        },
+        "extract-text": {
+            "title": "Estrai testo",
+            "desc": "Ottieni contenuto testo."
+        },
+        "remove-metadata": {
+            "title": "Rimuovi metadati",
+            "desc": "Pulisci dati PDF."
+        },
+        "flatten-pdf": {
+            "title": "Appiattisci PDF",
+            "desc": "Appiattisci moduli."
+        },
+        "photo-studio": {
+            "title": "Studio fotografico",
+            "desc": "Modifica con livelli."
+        },
+        "grid-split": {
+            "title": "Divisione griglia",
+            "desc": "Dividi in griglia."
+        },
+        "remove-image-metadata": {
+            "title": "Rimuovi metadati immagine",
+            "desc": "Pulisci dati EXIF."
         }
     },
     "Common": {

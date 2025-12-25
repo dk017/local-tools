@@ -30,7 +30,7 @@
       "binaries/tesseract/tesseract"
     ],
     "resources": [
-      "binaries/tesseract/tessdata/**"
+      "binaries/tesseract/tessdata/eng.traineddata"
     ],
     "icon": [
       "icons/32x32.png",

@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "bundle:tesseract:win": "powershell -ExecutionPolicy Bypass -File scripts/bundle_tesseract.ps1",
+    "bundle:tesseract:unix": "bash scripts/bundle_tesseract.sh",
+    "tauri:build": "npm run bundle:tesseract:win && tauri build"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

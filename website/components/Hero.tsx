@@ -18,19 +18,6 @@ export function Hero() {
             <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
                 <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
 
-                    {/* Badge */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold text-primary mb-8 shadow-[0_0_20px_-5px_rgba(0,243,255,0.3)] backdrop-blur-sm"
-                    >
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                        </span>
-                        {t('badge')}
-                    </motion.div>
-
                     {/* Headline */}
                     <motion.h1
                         initial={{ opacity: 0, y: 30 }}
@@ -38,12 +25,8 @@ export function Hero() {
                         transition={{ delay: 0.1 }}
                         className="text-6xl md:text-8xl font-bold tracking-tighter mb-8 leading-tight"
                     >
-                        <span className="bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/50">
-                            Offline AI.
-                        </span>
-                        <br />
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary animate-gradient-x bg-[length:200%_auto]">
-                            Your Data, Your Device.
+                            {t('title')}
                         </span>
                     </motion.h1>
 

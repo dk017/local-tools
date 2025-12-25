@@ -13,9 +13,9 @@
     },
     "Hero": {
         "badge": "v1.0 Disponible pour Windows",
-        "title": "IA Hors Ligne.\nVos Données, Votre Appareil.",
-        "subtitle": "La première boîte à outils PDF et Image alimentée par l'IA qui fonctionne à 100% sur votre moteur neuronal. Zéro upload cloud. Zéro risque.",
-        "cta_primary": "Accès à Vie",
+        "title": "Vos Données, Votre Appareil.",
+        "subtitle": "Traitez les PDF et images 100% hors ligne. Aucun téléchargement, aucun suivi, vitesse illimitée.",
+        "cta_primary": "Obtenir Licence Annuelle",
         "cta_secondary": "Essai Gratuit",
         "stat_offline": "IA 100% Hors Ligne",
         "stat_privacy": "Zéro Collecte",
@@ -49,16 +49,16 @@
         "s2_title": "Performance Native",
         "s2_desc": "Utilisez 100% de votre CPU/GPU.",
         "s3_title": "Paiement Unique",
-        "s3_desc": "Licence à vie. Illimitée."
+        "s3_desc": "Abonnement annuel. Illimité."
     },
     "Pricing": {
         "title": "Un Paiement. Confidentialité Infinie.",
         "subtitle": "Payez une fois, possédez pour toujours.",
-        "badge": "LICENCE À VIE",
+        "badge": "LICENCE ANNUELLE",
         "price": "$59",
         "old_price": "$120",
         "desc": "Accès complet à la boîte à outils neuronale hors ligne.",
-        "cta": "Accès à Vie Sécurisé",
+        "cta": "Obtenir Licence Annuelle",
         "f1": "Traitement PDF Illimité",
         "f2": "Opérations Image IA Illimitées",
         "f3": "Usage Commercial Autorisé",
@@ -316,6 +316,62 @@
             "f1": "Format d'archivage",
             "f2": "Stockage à long terme",
             "f3": "Conforme ISO"
+        },
+        "delete-pages": {
+            "h1": "Supprimer des pages du PDF",
+            "p1": "Supprimez les pages indésirables de vos documents PDF.",
+            "f1": "Sélection de pages",
+            "f2": "Suppression rapide",
+            "f3": "Préserver la qualité"
+        },
+        "page-numbers": {
+            "h1": "Ajouter des numéros de page au PDF",
+            "p1": "Ajoutez des numéros de page à vos documents PDF avec un formatage personnalisable.",
+            "f1": "Formatage personnalisé",
+            "f2": "Contrôle de position",
+            "f3": "Plusieurs styles"
+        },
+        "extract-text": {
+            "h1": "Extraire le texte du PDF",
+            "p1": "Extrayez le contenu textuel des fichiers PDF pour l'édition ou l'analyse.",
+            "f1": "Extraction de texte",
+            "f2": "Préserver le formatage",
+            "f3": "Traitement par lots"
+        },
+        "remove-metadata": {
+            "h1": "Supprimer les métadonnées du PDF",
+            "p1": "Supprimez les métadonnées cachées et les informations personnelles des fichiers PDF pour la confidentialité.",
+            "f1": "Protection de la vie privée",
+            "f2": "Fichiers propres",
+            "f3": "Supprimer le suivi"
+        },
+        "flatten-pdf": {
+            "h1": "Aplatir le PDF",
+            "p1": "Aplatissez les champs de formulaire et les annotations dans les documents PDF pour empêcher l'édition.",
+            "f1": "Aplatissement de formulaire",
+            "f2": "Verrouillage d'annotation",
+            "f3": "Documents sécurisés"
+        },
+        "photo-studio": {
+            "h1": "Studio photo",
+            "p1": "Éditeur photo avancé avec calques, texte et outils de design.",
+            "f1": "Support des calques",
+            "f2": "Outils de texte",
+            "f3": "Éléments de design"
+        },
+        "grid-split": {
+            "h1": "Diviser l'image en grille",
+            "p1": "Divisez les images en une grille de petites images pour les réseaux sociaux ou les miniatures.",
+            "f1": "Grille personnalisée",
+            "f2": "Traitement par lots",
+            "f3": "Plusieurs formats"
+        },
+        "remove-image-metadata": {
+            "h1": "Supprimer les métadonnées d'image",
+            "p1": "Supprimez les données EXIF et autres métadonnées des images pour la confidentialité.",
+            "f1": "Suppression EXIF",
+            "f2": "Protection de la vie privée",
+            "f3": "Images propres"
         }
     },
     "Tools": {
@@ -370,6 +426,14 @@
         "watermark-pdf": {
             "title": "Filigrane PDF",
             "desc": "Ajouter un tampon."
+        },
+        "crop-pdf": {
+            "title": "Recadrer PDF",
+            "desc": "Recadrer les pages."
+        },
+        "organize-pdf": {
+            "title": "Organiser PDF",
+            "desc": "Réorganiser les pages."
         },
         "repair-pdf": {
             "title": "Réparer PDF",
@@ -466,6 +530,38 @@
         "pdf-to-pdfa": {
             "title": "PDF to PDF/A",
             "desc": "Convertir au format d'archivage."
+        },
+        "delete-pages": {
+            "title": "Supprimer des pages",
+            "desc": "Supprimer des pages."
+        },
+        "page-numbers": {
+            "title": "Ajouter des numéros",
+            "desc": "Numéroter les pages."
+        },
+        "extract-text": {
+            "title": "Extraire le texte",
+            "desc": "Obtenir le contenu texte."
+        },
+        "remove-metadata": {
+            "title": "Supprimer les métadonnées",
+            "desc": "Nettoyer les données PDF."
+        },
+        "flatten-pdf": {
+            "title": "Aplatir le PDF",
+            "desc": "Aplatir les formulaires."
+        },
+        "photo-studio": {
+            "title": "Studio photo",
+            "desc": "Éditer avec des calques."
+        },
+        "grid-split": {
+            "title": "Division en grille",
+            "desc": "Diviser en grille."
+        },
+        "remove-image-metadata": {
+            "title": "Supprimer les métadonnées d'image",
+            "desc": "Nettoyer les données EXIF."
         }
     },
     "Common": {

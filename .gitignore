@@ -38,10 +38,13 @@ __pycache__/
 # Build artifacts
 build/
 build_new/
+dist/
 *.pkg
 *.exe
 *.dll
 *.pyd
+*.tar.gz
+*.spec
 
 # Tauri binaries
 src-tauri/binaries/
@@ -51,3 +54,24 @@ src-tauri/target/
 .env
 .env.local
 .env*.local
+
+# Development scripts
+develop.ps1
+develop.sh
+
+# Debug and test files
+*_debug.txt
+*_debug.log
+debug_*.py
+test_*.py
+*_test.py
+
+# Archive files
+*.tar.gz
+*.zip
+*.rar
+
+# Old/unused configs (keep nginx.prod.conf and docker-compose.prod.yml)
+nginx.conf
+Dockerfile.frontend
+Dockerfile.website
