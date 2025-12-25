@@ -326,7 +326,9 @@ export function ToolProcessor({
           // Limit cache size to prevent memory issues
           if (previewCacheRef.current.size > 20) {
             const firstKey = previewCacheRef.current.keys().next().value;
-            previewCacheRef.current.delete(firstKey);
+            if (firstKey) {
+              previewCacheRef.current.delete(firstKey);
+            }
           }
           setPreviewUrl(data.image);
           setPreviewParams(params);
