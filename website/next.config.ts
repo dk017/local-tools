@@ -5,9 +5,6 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   output: "standalone", // For Docker deployment
-  serverActions: {
-    bodySizeLimit: "50mb", // Increase body size limit for file uploads
-  },
   /* config options here */
 };
 
