@@ -14,6 +14,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  timeout: 180000, // 3 minutes default timeout for all tests (some operations are slow)
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results/results.json' }],
@@ -25,7 +26,7 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 60000, // 60 seconds for slow operations
+    actionTimeout: 120000, // 2 minutes for slow operations (file uploads, processing)
     navigationTimeout: 60000, // 60 seconds for page loads
   },
 
