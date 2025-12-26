@@ -45,29 +45,31 @@ export default defineConfig({
   ],
 
   // Run your local dev server before starting the tests
-  // Note: If servers are already running, Playwright will reuse them (reuseExistingServer: true)
-  // The wrapper scripts handle "port already in use" gracefully
-  webServer: [
-    {
-      command: process.platform === 'win32' 
-        ? 'powershell -ExecutionPolicy Bypass -File ./start-backend.ps1'
-        : 'cd ../python-backend && python -m uvicorn api:app --host 0.0.0.0 --port 8000',
-      url: 'http://localhost:8000/',
-      reuseExistingServer: !process.env.CI, // Reuse if already running (local dev only)
-      timeout: 120000,
-      stdout: 'ignore',
-      stderr: 'pipe',
-    },
-    {
-      command: process.platform === 'win32'
-        ? 'powershell -ExecutionPolicy Bypass -File ./start-frontend.ps1'
-        : 'cd ../website && npm run dev',
-      url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI, // Reuse if already running (local dev only)
-      timeout: 120000,
-      stdout: 'ignore',
-      stderr: 'pipe',
-    },
-  ],
+  // In CI, servers are started manually in GitHub Actions workflow
+  // Locally, Playwright will start them automatically
+  ...(process.env.CI ? {} : {
+    webServer: [
+      {
+        command: process.platform === 'win32' 
+          ? 'powershell -ExecutionPolicy Bypass -File ./start-backend.ps1'
+          : 'cd ../python-backend && python -m uvicorn api:app --host 0.0.0.0 --port 8000',
+        url: 'http://localhost:8000/',
+        reuseExistingServer: true, // Reuse if already running
+        timeout: 120000,
+        stdout: 'ignore',
+        stderr: 'pipe',
+      },
+      {
+        command: process.platform === 'win32'
+          ? 'powershell -ExecutionPolicy Bypass -File ./start-frontend.ps1'
+          : 'cd ../website && npm run dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: true, // Reuse if already running
+        timeout: 120000,
+        stdout: 'ignore',
+        stderr: 'pipe',
+      },
+    ],
+  }),
 });
 
