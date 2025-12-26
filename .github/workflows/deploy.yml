@@ -62,15 +62,22 @@ jobs:
           MAX_FILE_SIZE: "52428800"
           MAX_TOTAL_SIZE: "104857600"
 
-      - name: Start frontend server
+      - name: Install frontend dependencies
         run: |
           cd website
-          npm install
-          npm run build
-          PORT=3000 npm start &
+          # Install all dependencies including devDependencies (needed for build)
+          # Don't set NODE_ENV=production here, so devDependencies are installed
+          npm ci || npm install
+
+      - name: Build and start frontend server
+        run: |
+          cd website
+          # Build with dev dependencies available (tailwindcss, postcss, etc.)
+          NODE_ENV=production npm run build
+          # Start production server
+          PORT=3000 NODE_ENV=production npm start &
           sleep 15
         env:
-          NODE_ENV: production
           NEXT_PUBLIC_API_URL: http://localhost:8000
           NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: https://test.lemonsqueezy.com/checkout/buy/test
 
