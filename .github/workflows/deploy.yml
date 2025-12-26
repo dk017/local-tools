@@ -54,9 +54,18 @@ jobs:
         run: |
           cd python-backend
           python -m uvicorn api:app --host 0.0.0.0 --port 8000 &
-          sleep 5
-          # Verify backend is running
-          curl -f http://localhost:8000/ || exit 1
+          echo "Waiting for backend to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/ > /dev/null 2>&1; then
+              echo "Backend is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Backend failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 1
+          done
         env:
           CORS_ORIGINS: "*"
           MAX_FILE_SIZE: "52428800"
@@ -76,10 +85,28 @@ jobs:
           NODE_ENV=production npm run build
           # Start production server
           PORT=3000 NODE_ENV=production npm start &
-          sleep 15
+          echo "Waiting for frontend to start..."
+          for i in {1..60}; do
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Frontend failed to start after 60 attempts"
+              exit 1
+            fi
+            sleep 1
+          done
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
           NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: https://test.lemonsqueezy.com/checkout/buy/test
+
+      - name: Verify servers are running
+        run: |
+          echo "Verifying servers..."
+          curl -f http://localhost:8000/ || (echo "Backend not accessible" && exit 1)
+          curl -f http://localhost:3000/ || (echo "Frontend not accessible" && exit 1)
+          echo "Both servers are ready!"
 
       - name: Run integration tests
         run: |
