@@ -1,0 +1,30 @@
+{
+  "name": "offline-tools-tests",
+  "version": "1.0.0",
+  "description": "Integration test suite for offline-tools",
+  "scripts": {
+    "test": "playwright test",
+    "test:web": "playwright test --config=playwright.config.ts",
+    "test:desktop": "playwright test --config=playwright.desktop.config.ts",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed",
+    "test:update-snapshots": "playwright test --update-snapshots",
+    "test:report": "playwright show-report test-results/html",
+    "install:browsers": "playwright install",
+    "install:deps": "playwright install-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.33.0",
+    "adm-zip": "^0.5.10",
+    "@types/adm-zip": "^0.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

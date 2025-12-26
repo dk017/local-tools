@@ -1,0 +1,28 @@
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Output files
+outputs/
+*.zip
+*.pdf
+*.jpg
+*.png
+*.webp
+
+# Node modules
+node_modules/
+
+# TypeScript
+*.tsbuildinfo
+dist/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
