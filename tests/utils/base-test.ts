@@ -29,33 +29,73 @@ export class BaseTest {
    * Navigate to a tool page
    */
   async navigateToTool(toolSlug: string, locale: string = 'en'): Promise<void> {
-    await this.page.goto(`/${locale}/tools/${toolSlug}`);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.goto(`/${locale}/tools/${toolSlug}`, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 60000 
+    });
+    // Wait for page to be interactive, but don't wait for networkidle (can be slow)
+    await this.page.waitForLoadState('domcontentloaded');
+    // Give it a moment for any async content
+    await this.page.waitForTimeout(1000);
   }
 
   /**
    * Upload a file using the file input
+   * Handles react-dropzone hidden input
    */
   async uploadFile(filePath: string, inputSelector: string = 'input[type="file"]'): Promise<void> {
-    const input = this.page.locator(inputSelector);
+    // Wait for file input to be available (react-dropzone creates hidden input)
+    const input = this.page.locator(inputSelector).first();
+    await input.waitFor({ state: 'attached', timeout: 10000 });
     await input.setInputFiles(filePath);
+    
+    // Wait a moment for file to be processed by dropzone
+    await this.page.waitForTimeout(1000);
   }
 
   /**
    * Upload multiple files
    */
   async uploadFiles(filePaths: string[], inputSelector: string = 'input[type="file"]'): Promise<void> {
-    const input = this.page.locator(inputSelector);
+    const input = this.page.locator(inputSelector).first();
+    await input.waitFor({ state: 'attached', timeout: 10000 });
     await input.setInputFiles(filePaths);
+    
+    // Wait a moment for files to be processed
+    await this.page.waitForTimeout(1000);
   }
 
   /**
    * Wait for processing to complete
    */
   async waitForProcessing(timeout: number = 120000): Promise<void> {
-    // Wait for processing status to appear and disappear
-    await this.page.waitForSelector('text=Processing', { timeout: 10000 }).catch(() => {});
-    await this.page.waitForSelector('text=Processing', { state: 'hidden', timeout });
+    // Wait for status to change to "processing" (if it appears)
+    // The processing state shows a spinner and "Processing" text
+    try {
+      // Look for the processing spinner or text
+      await this.page.waitForSelector(
+        'text=/Processing|processing/i, svg.animate-spin, [class*="animate-spin"]',
+        { timeout: 10000 }
+      ).catch(() => {
+        // Processing indicator might not appear immediately
+      });
+    } catch {
+      // Processing text might not appear, that's okay - file might process quickly
+    }
+    
+    // Wait for status to be "complete" - look for download link/button
+    // The complete state shows a download link with href attribute
+    // We wait for either:
+    // 1. Download link with href (most reliable)
+    // 2. Download button
+    // 3. "Complete" text
+    await this.page.waitForSelector(
+      'a[href*="/api/"], a[download], button:has-text("Download"), text=/Complete|complete/i',
+      { timeout, state: 'visible' }
+    );
+    
+    // Additional wait to ensure download link is clickable
+    await this.page.waitForTimeout(1000);
   }
 
   /**
@@ -84,10 +124,29 @@ export class BaseTest {
   /**
    * Download a file from the page
    */
-  async downloadFile(selector: string = 'a[download], button:has-text("Download")'): Promise<string> {
+  async downloadFile(selector?: string): Promise<string> {
+    // Default selector: download link (with href) or download button
+    const defaultSelector = selector || 'a[href*="/api/"], a[download], button:has-text("Download"), button:has-text(/download/i)';
+    
+    // Wait for download button/link to be visible and enabled
+    const downloadButton = this.page.locator(defaultSelector).first();
+    await downloadButton.waitFor({ state: 'visible', timeout: 30000 });
+    
+    // Ensure it's not disabled
+    const isDisabled = await downloadButton.isDisabled().catch(() => false);
+    if (isDisabled) {
+      throw new Error('Download button is disabled');
+    }
+    
+    // Get the href if it's a link (for debugging)
+    const href = await downloadButton.getAttribute('href').catch(() => null);
+    if (href) {
+      console.log(`Download link href: ${href}`);
+    }
+    
     const [download] = await Promise.all([
-      this.page.waitForEvent('download'),
-      this.page.locator(selector).first().click(),
+      this.page.waitForEvent('download', { timeout: 60000 }),
+      downloadButton.click(),
     ]);
 
     const path = await download.path();

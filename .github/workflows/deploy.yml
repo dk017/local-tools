@@ -86,7 +86,8 @@ jobs:
           cd tests
           # Create directories for test results
           mkdir -p test-results/html test-results/outputs
-          npm run test:web -- --reporter=list
+          # Use npx to ensure playwright is found
+          npx playwright test --config=playwright.config.ts --reporter=list
         env:
           CI: true
           WEB_BASE_URL: http://localhost:3000

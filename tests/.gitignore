@@ -6,10 +6,12 @@ playwright/.cache/
 # Output files
 outputs/
 *.zip
-*.pdf
-*.jpg
-*.png
-*.webp
+
+# Test fixtures (optional - uncomment if you don't want to commit test files)
+# fixtures/images/*
+# fixtures/pdfs/*
+# !fixtures/images/.gitkeep
+# !fixtures/pdfs/.gitkeep
 
 # Node modules
 node_modules/

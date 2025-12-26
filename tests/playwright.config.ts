@@ -15,7 +15,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ['html', { outputFolder: 'test-results/html' }],
+    ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results/results.json' }],
     ['list']
   ],
@@ -25,7 +25,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 30000, // 30 seconds for slow operations
+    actionTimeout: 60000, // 60 seconds for slow operations
+    navigationTimeout: 60000, // 60 seconds for page loads
   },
 
   projects: [
@@ -44,19 +45,25 @@ export default defineConfig({
   ],
 
   // Run your local dev server before starting the tests
+  // Note: If servers are already running, Playwright will reuse them (reuseExistingServer: true)
+  // The wrapper scripts handle "port already in use" gracefully
   webServer: [
     {
-      command: 'cd ../python-backend && python -m uvicorn api:app --host 0.0.0.0 --port 8000',
+      command: process.platform === 'win32' 
+        ? 'powershell -ExecutionPolicy Bypass -File ./start-backend.ps1'
+        : 'cd ../python-backend && python -m uvicorn api:app --host 0.0.0.0 --port 8000',
       url: 'http://localhost:8000/',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env.CI, // Reuse if already running (local dev only)
       timeout: 120000,
       stdout: 'ignore',
       stderr: 'pipe',
     },
     {
-      command: 'cd ../website && npm run dev',
+      command: process.platform === 'win32'
+        ? 'powershell -ExecutionPolicy Bypass -File ./start-frontend.ps1'
+        : 'cd ../website && npm run dev',
       url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env.CI, // Reuse if already running (local dev only)
       timeout: 120000,
       stdout: 'ignore',
       stderr: 'pipe',

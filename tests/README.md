@@ -49,6 +49,10 @@ npm install
 npx playwright install
 ```
 
+**Important:** You must run both commands:
+- `npm install` - Installs Playwright and test libraries
+- `npx playwright install` - Downloads browser binaries (~300MB, one-time)
+
 ### 2. Prepare Test Fixtures
 
 Place test files in `tests/fixtures/`:

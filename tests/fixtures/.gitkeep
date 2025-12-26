@@ -1,0 +1,5 @@
+# This file ensures the fixtures directory is tracked by git
+# Add your test files (images, PDFs) to the subdirectories:
+# - fixtures/images/
+# - fixtures/pdfs/
+

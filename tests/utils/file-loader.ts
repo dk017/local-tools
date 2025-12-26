@@ -26,6 +26,29 @@ export class FileLoader {
   }
 
   /**
+   * Get fixture path with fallback options
+   * Tries the primary path first, then falls back to alternatives
+   */
+  getFixturePathWithFallback(primaryPath: string, fallbackPaths: string[]): string {
+    try {
+      return this.getFixturePath(primaryPath);
+    } catch {
+      // Try fallback paths
+      for (const fallback of fallbackPaths) {
+        try {
+          return this.getFixturePath(fallback);
+        } catch {
+          continue;
+        }
+      }
+      // If all fail, throw error with all attempted paths
+      throw new Error(
+        `Fixture file not found. Tried: ${primaryPath}, ${fallbackPaths.join(', ')}`
+      );
+    }
+  }
+
+  /**
    * Read a fixture file as a Buffer
    */
   readFixture(relativePath: string): Buffer {
