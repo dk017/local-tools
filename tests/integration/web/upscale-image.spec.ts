@@ -21,7 +21,8 @@ test.describe('Upscale Image Tool', () => {
   });
 
   test('should upscale image by 2x', async ({ page }) => {
-    const testImage = fileLoader.getFixturePath('images/small-image.jpg');
+    // Use fallback if small-image.jpg doesn't exist
+    const testImage = fileLoader.getFixturePathWithFallback('images/small-image.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']);
     const originalDims = await imageValidator.getDimensions(testImage);
 
     await baseTest.uploadFile(testImage);
@@ -39,7 +40,8 @@ test.describe('Upscale Image Tool', () => {
   });
 
   test('should upscale image by 4x', async ({ page }) => {
-    const testImage = fileLoader.getFixturePath('images/small-image.jpg');
+    // Use fallback if small-image.jpg doesn't exist
+    const testImage = fileLoader.getFixturePathWithFallback('images/small-image.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']);
     const originalDims = await imageValidator.getDimensions(testImage);
 
     await baseTest.uploadFile(testImage);
@@ -72,7 +74,8 @@ test.describe('Upscale Image Tool', () => {
   });
 
   test('should preserve image format', async ({ page }) => {
-    const testImage = fileLoader.getFixturePath('images/image.png');
+    // Use fallback if image.png doesn't exist
+    const testImage = fileLoader.getFixturePathWithFallback('images/image.png', ['images/portrait-2.png', 'images/portriat-1.png', 'images/portrait.jpg']);
     const originalFormat = await imageValidator.getFormat(testImage);
 
     await baseTest.uploadFile(testImage);

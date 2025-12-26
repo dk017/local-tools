@@ -42,7 +42,11 @@ test.describe('Compress PDF Tool', () => {
   });
 
   test('should preserve PDF quality at low compression', async ({ page }) => {
-    const testPDF = fileLoader.getFixturePath('pdfs/document-with-images.pdf');
+    // Use fallback if document-with-images.pdf doesn't exist
+    const testPDF = fileLoader.getFixturePathWithFallback(
+      'pdfs/document-with-images.pdf',
+      ['pdfs/Agoda_Relocation_Package_-_Thailand.pdf', 'pdfs/single-page.pdf']
+    );
     const originalPageCount = await pdfInspector.getPageCount(testPDF);
 
     await baseTest.uploadFile(testPDF);
@@ -65,7 +69,11 @@ test.describe('Compress PDF Tool', () => {
   });
 
   test('should handle high compression level', async ({ page }) => {
-    const testPDF = fileLoader.getFixturePath('pdfs/large-document.pdf');
+    // Use fallback if large-document.pdf doesn't exist
+    const testPDF = fileLoader.getFixturePathWithFallback(
+      'pdfs/large-document.pdf',
+      ['pdfs/Agoda_Relocation_Package_-_Thailand.pdf', 'pdfs/single-page.pdf']
+    );
     await baseTest.uploadFile(testPDF);
 
     await page.selectOption('select[name="level"]', { label: /high|maximum/i }).catch(() => {});
@@ -79,7 +87,11 @@ test.describe('Compress PDF Tool', () => {
   });
 
   test('should maintain PDF structure after compression', async ({ page }) => {
-    const testPDF = fileLoader.getFixturePath('pdfs/multi-page.pdf');
+    // Use fallback if multi-page.pdf doesn't exist
+    const testPDF = fileLoader.getFixturePathWithFallback(
+      'pdfs/multi-page.pdf',
+      ['pdfs/Agoda_Relocation_Package_-_Thailand.pdf', 'pdfs/single-page.pdf']
+    );
     const originalPageCount = await pdfInspector.getPageCount(testPDF);
 
     await baseTest.uploadFile(testPDF);

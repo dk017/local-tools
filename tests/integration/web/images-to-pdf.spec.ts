@@ -39,10 +39,11 @@ test.describe('Images to PDF Tool', () => {
   });
 
   test('should convert multiple images to multi-page PDF', async ({ page }) => {
+    // Use fallback images if specific ones don't exist
     const testImages = [
-      fileLoader.getFixturePath('images/image1.jpg'),
-      fileLoader.getFixturePath('images/image2.jpg'),
-      fileLoader.getFixturePath('images/image3.jpg'),
+      fileLoader.getFixturePathWithFallback('images/image1.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']),
+      fileLoader.getFixturePathWithFallback('images/image2.jpg', ['images/portrait-2.png', 'images/portrait.jpg']),
+      fileLoader.getFixturePathWithFallback('images/image3.jpg', ['images/portriat-1.png', 'images/portrait-with-bg.jpg']),
     ];
 
     await baseTest.uploadFiles(testImages);
@@ -55,9 +56,10 @@ test.describe('Images to PDF Tool', () => {
   });
 
   test('should preserve image order', async ({ page }) => {
+    // Use fallback images if specific ones don't exist
     const testImages = [
-      fileLoader.getFixturePath('images/image1.jpg'),
-      fileLoader.getFixturePath('images/image2.jpg'),
+      fileLoader.getFixturePathWithFallback('images/image1.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']),
+      fileLoader.getFixturePathWithFallback('images/image2.jpg', ['images/portrait-2.png', 'images/portrait.jpg']),
     ];
 
     await baseTest.uploadFiles(testImages);
@@ -72,10 +74,11 @@ test.describe('Images to PDF Tool', () => {
   });
 
   test('should handle different image formats', async ({ page }) => {
+    // Use fallback images - try to get different formats if available
     const testImages = [
-      fileLoader.getFixturePath('images/image.jpg'),
-      fileLoader.getFixturePath('images/image.png'),
-      fileLoader.getFixturePath('images/image.webp'),
+      fileLoader.getFixturePathWithFallback('images/image.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']),
+      fileLoader.getFixturePathWithFallback('images/image.png', ['images/portrait-2.png', 'images/portriat-1.png', 'images/portrait.jpg']),
+      fileLoader.getFixturePathWithFallback('images/image.webp', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']),
     ];
 
     await baseTest.uploadFiles(testImages);

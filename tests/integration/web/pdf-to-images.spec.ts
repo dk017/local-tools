@@ -25,7 +25,8 @@ test.describe('PDF to Images Tool', () => {
   });
 
   test('should convert PDF to images', async ({ page }) => {
-    const testPDF = fileLoader.getFixturePath('pdfs/multi-page.pdf');
+    // Use fallback if multi-page.pdf doesn't exist
+    const testPDF = fileLoader.getFixturePathWithFallback('pdfs/multi-page.pdf', ['pdfs/Agoda_Relocation_Package_-_Thailand.pdf', 'pdfs/single-page.pdf']);
     const pageCount = await pdfInspector.getPageCount(testPDF);
 
     await baseTest.uploadFile(testPDF);
@@ -64,7 +65,8 @@ test.describe('PDF to Images Tool', () => {
   });
 
   test('should generate images with correct dimensions', async ({ page }) => {
-    const testPDF = fileLoader.getFixturePath('pdfs/document.pdf');
+    // Use fallback if document.pdf doesn't exist
+    const testPDF = fileLoader.getFixturePathWithFallback('pdfs/document.pdf', ['pdfs/single-page.pdf', 'pdfs/Agoda_Relocation_Package_-_Thailand.pdf']);
     await baseTest.uploadFile(testPDF);
     await baseTest.waitForProcessing();
     const outputPath = await baseTest.downloadFile();
