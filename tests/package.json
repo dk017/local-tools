@@ -5,6 +5,7 @@
   "scripts": {
     "test": "npx playwright test",
     "test:web": "npx playwright test --config=playwright.config.ts",
+    "test:web:local": "npx playwright test --config=playwright.config.local.ts",
     "test:desktop": "npx playwright test --config=playwright.desktop.config.ts",
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",

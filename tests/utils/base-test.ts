@@ -72,11 +72,13 @@ export class BaseTest {
     // Wait for status to change to "processing" (if it appears)
     // The processing state shows a spinner and "Processing" text
     try {
-      // Look for the processing spinner or text
-      await this.page.waitForSelector(
-        'text=/Processing|processing/i, svg.animate-spin, [class*="animate-spin"]',
-        { timeout: 10000 }
-      ).catch(() => {
+      // Look for the processing spinner or text using locator
+      const processingText = this.page.locator('text=/Processing|processing/i').first();
+      const spinner = this.page.locator('svg.animate-spin, [class*="animate-spin"]').first();
+      await Promise.race([
+        processingText.waitFor({ state: 'visible', timeout: 10000 }),
+        spinner.waitFor({ state: 'visible', timeout: 10000 })
+      ]).catch(() => {
         // Processing indicator might not appear immediately
       });
     } catch {
@@ -85,14 +87,35 @@ export class BaseTest {
     
     // Wait for status to be "complete" - look for download link/button
     // The complete state shows a download link with href attribute
-    // We wait for either:
-    // 1. Download link with href (most reliable)
-    // 2. Download button
-    // 3. "Complete" text
-    await this.page.waitForSelector(
-      'a[href*="/api/"], a[download], button:has-text("Download"), text=/Complete|complete/i',
-      { timeout, state: 'visible' }
-    );
+    // Try multiple selectors until one is found
+    const downloadSelectors = [
+      'a[href*="/api/"]',           // Download link with API href
+      'a[download]',                // Download link with download attribute
+      'a:has-text("Download")',     // Download link with "Download" text
+      'a:has-text("Download ZIP")', // Download link with "Download ZIP" text
+      'button:has-text("Download")', // Download button
+    ];
+    
+    let found = false;
+    for (const selector of downloadSelectors) {
+      try {
+        await this.page.waitForSelector(selector, { timeout: timeout / downloadSelectors.length, state: 'visible' });
+        found = true;
+        break;
+      } catch {
+        // Try next selector
+        continue;
+      }
+    }
+    
+    if (!found) {
+      // Last resort: look for "Complete" text or green checkmark
+      try {
+        await this.page.locator('text=/Complete|complete/i, svg[class*="CheckCircle"]').first().waitFor({ state: 'visible', timeout: 5000 });
+      } catch {
+        throw new Error('Processing did not complete - download link/button not found');
+      }
+    }
     
     // Additional wait to ensure download link is clickable
     await this.page.waitForTimeout(1000);
@@ -102,9 +125,30 @@ export class BaseTest {
    * Wait for download button/link to appear
    */
   async waitForDownload(timeout: number = 120000): Promise<string> {
-    // Wait for download link/button
-    const downloadButton = this.page.locator('a[download], button:has-text("Download"), text=/download/i').first();
-    await downloadButton.waitFor({ state: 'visible', timeout });
+    // Try multiple selectors to find download link/button
+    const downloadSelectors = [
+      'a[href*="/api/"]',           // Download link with API href
+      'a[download]',                // Download link with download attribute
+      'a:has-text("Download")',     // Download link with "Download" text
+      'a:has-text("Download ZIP")', // Download link with "Download ZIP" text
+      'button:has-text("Download")', // Download button
+    ];
+    
+    let downloadButton = null;
+    for (const sel of downloadSelectors) {
+      try {
+        const button = this.page.locator(sel).first();
+        await button.waitFor({ state: 'visible', timeout: timeout / downloadSelectors.length });
+        downloadButton = button;
+        break;
+      } catch {
+        continue;
+      }
+    }
+    
+    if (!downloadButton) {
+      throw new Error('Download button/link not found');
+    }
 
     // Get download URL
     const href = await downloadButton.getAttribute('href');
@@ -125,12 +169,52 @@ export class BaseTest {
    * Download a file from the page
    */
   async downloadFile(selector?: string): Promise<string> {
-    // Default selector: download link (with href) or download button
-    const defaultSelector = selector || 'a[href*="/api/"], a[download], button:has-text("Download"), button:has-text(/download/i)';
+    // If specific selector provided, use it
+    if (selector) {
+      const downloadButton = this.page.locator(selector).first();
+      await downloadButton.waitFor({ state: 'visible', timeout: 30000 });
+      
+      const isDisabled = await downloadButton.isDisabled().catch(() => false);
+      if (isDisabled) {
+        throw new Error('Download button is disabled');
+      }
+      
+      const [download] = await Promise.all([
+        this.page.waitForEvent('download', { timeout: 60000 }),
+        downloadButton.click(),
+      ]);
+
+      const path = await download.path();
+      if (!path) {
+        throw new Error('Download failed - no file path');
+      }
+      return path;
+    }
     
-    // Wait for download button/link to be visible and enabled
-    const downloadButton = this.page.locator(defaultSelector).first();
-    await downloadButton.waitFor({ state: 'visible', timeout: 30000 });
+    // Try multiple selectors to find download link/button
+    const downloadSelectors = [
+      'a[href*="/api/"]',           // Download link with API href
+      'a[download]',                // Download link with download attribute
+      'a:has-text("Download")',     // Download link with "Download" text
+      'a:has-text("Download ZIP")', // Download link with "Download ZIP" text
+      'button:has-text("Download")', // Download button
+    ];
+    
+    let downloadButton = null;
+    for (const sel of downloadSelectors) {
+      try {
+        const button = this.page.locator(sel).first();
+        await button.waitFor({ state: 'visible', timeout: 5000 });
+        downloadButton = button;
+        break;
+      } catch {
+        continue;
+      }
+    }
+    
+    if (!downloadButton) {
+      throw new Error('Download button/link not found');
+    }
     
     // Ensure it's not disabled
     const isDisabled = await downloadButton.isDisabled().catch(() => false);

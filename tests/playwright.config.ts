@@ -46,15 +46,15 @@ export default defineConfig({
 
   // Run your local dev server before starting the tests
   // In CI, servers are started manually in GitHub Actions workflow
-  // Locally, Playwright will start them automatically
+  // Locally, Playwright will reuse existing servers if they're running
   ...(process.env.CI ? {} : {
     webServer: [
       {
         command: process.platform === 'win32' 
           ? 'powershell -ExecutionPolicy Bypass -File ./start-backend.ps1'
-          : 'cd ../python-backend && python -m uvicorn api:app --host 0.0.0.0 --port 8000',
+          : 'cd ../python-backend && python -m uvicorn api:app --host 0.0.0.0 --port 8000 || true',
         url: 'http://localhost:8000/',
-        reuseExistingServer: true, // Reuse if already running
+        reuseExistingServer: true, // Reuse if already running - this is key!
         timeout: 120000,
         stdout: 'ignore',
         stderr: 'pipe',
@@ -62,9 +62,9 @@ export default defineConfig({
       {
         command: process.platform === 'win32'
           ? 'powershell -ExecutionPolicy Bypass -File ./start-frontend.ps1'
-          : 'cd ../website && npm run dev',
+          : 'cd ../website && npm run dev || true',
         url: 'http://localhost:3000',
-        reuseExistingServer: true, // Reuse if already running
+        reuseExistingServer: true, // Reuse if already running - this is key!
         timeout: 120000,
         stdout: 'ignore',
         stderr: 'pipe',
