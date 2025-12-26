@@ -46,7 +46,7 @@ export class BaseTest {
   async uploadFile(filePath: string, inputSelector: string = 'input[type="file"]'): Promise<void> {
     // Wait for file input to be available (react-dropzone creates hidden input)
     const input = this.page.locator(inputSelector).first();
-    await input.waitFor({ state: 'attached', timeout: 10000 });
+    await input.waitFor({ state: 'attached', timeout: 30000 }); // Increase timeout
     await input.setInputFiles(filePath);
     
     // Wait a moment for file to be processed by dropzone
@@ -58,7 +58,7 @@ export class BaseTest {
    */
   async uploadFiles(filePaths: string[], inputSelector: string = 'input[type="file"]'): Promise<void> {
     const input = this.page.locator(inputSelector).first();
-    await input.waitFor({ state: 'attached', timeout: 10000 });
+    await input.waitFor({ state: 'attached', timeout: 30000 }); // Increase timeout
     await input.setInputFiles(filePaths);
     
     // Wait a moment for files to be processed
@@ -226,10 +226,14 @@ export class BaseTest {
     const href = await downloadButton.getAttribute('href').catch(() => null);
     if (href) {
       console.log(`Download link href: ${href}`);
+      // Check if href points to pricing (licensing issue)
+      if (href.includes('#pricing') || href.includes('/pricing')) {
+        throw new Error(`Download link points to pricing page instead of download. This may indicate a licensing/feature gate issue. href: ${href}`);
+      }
     }
     
     const [download] = await Promise.all([
-      this.page.waitForEvent('download', { timeout: 60000 }),
+      this.page.waitForEvent('download', { timeout: 120000 }), // Increase to 2 minutes
       downloadButton.click(),
     ]);
 

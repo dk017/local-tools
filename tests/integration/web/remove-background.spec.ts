@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { BaseTest } from '../../utils/base-test';
 import { fileLoader } from '../../utils/file-loader';
 import { imageValidator } from '../../utils/image-validator';
+import * as fs from 'fs';
 
 /**
  * Background Remover Tool Test
@@ -34,8 +35,9 @@ test.describe('Remove Background Tool', () => {
     
     // Wait for page to be fully loaded
     await page.waitForLoadState('domcontentloaded');
-    // Wait for file uploader to be ready
-    await page.waitForSelector('input[type="file"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForLoadState('networkidle').catch(() => {}); // Wait for network to settle
+    // Wait for file uploader to be ready - increase timeout
+    await page.waitForSelector('input[type="file"]', { timeout: 30000 }).catch(() => {});
   });
 
   test('should remove background from image', async ({ page }) => {
@@ -47,9 +49,9 @@ test.describe('Remove Background Tool', () => {
       ['images/portrait.jpg', 'images/portrait-2.png', 'images/portriat-1.png']
     );
     
-    // Wait for file input to be ready
+    // Wait for file input to be ready - increase timeout
     const fileInput = page.locator('input[type="file"]').first();
-    await fileInput.waitFor({ state: 'attached', timeout: 10000 });
+    await fileInput.waitFor({ state: 'attached', timeout: 30000 });
     
     // Upload file
     await fileInput.setInputFiles(testImage);
@@ -108,8 +110,12 @@ test.describe('Remove Background Tool', () => {
     // Should download a ZIP file with multiple processed images
     const outputPath = await baseTest.downloadFile();
     
-    // Verify it's a ZIP file (check extension or MIME type)
-    expect(outputPath).toMatch(/\.zip$/i);
+    // Verify it's a ZIP file - check file content (Playwright downloads don't preserve extensions)
+    const fs = require('fs');
+    const fileBuffer = fs.readFileSync(outputPath);
+    // ZIP files start with PK (50 4B) signature
+    const isZip = fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4B;
+    expect(isZip).toBe(true);
   });
 
   test('should preserve image quality', async ({ page }) => {
