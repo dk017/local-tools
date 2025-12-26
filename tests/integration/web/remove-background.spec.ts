@@ -111,7 +111,6 @@ test.describe('Remove Background Tool', () => {
     const outputPath = await baseTest.downloadFile();
     
     // Verify it's a ZIP file - check file content (Playwright downloads don't preserve extensions)
-    const fs = require('fs');
     const fileBuffer = fs.readFileSync(outputPath);
     // ZIP files start with PK (50 4B) signature
     const isZip = fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4B;
