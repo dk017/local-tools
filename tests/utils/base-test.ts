@@ -66,6 +66,34 @@ export class BaseTest {
   }
 
   /**
+   * Click the process button for batch operations (Merge PDF, Convert to PDF, etc.)
+   * This is needed when multiple files are staged and need to be processed
+   */
+  async clickProcessButton(): Promise<void> {
+    // Look for "Merge PDF" or "Convert to PDF" button
+    const processButtonSelectors = [
+      'button:has-text("Merge PDF")',
+      'button:has-text("Convert to PDF")',
+      'button:has-text("Process")',
+    ];
+    
+    for (const selector of processButtonSelectors) {
+      try {
+        const button = this.page.locator(selector).first();
+        await button.waitFor({ state: 'visible', timeout: 5000 });
+        await button.click();
+        // Wait a moment for processing to start
+        await this.page.waitForTimeout(500);
+        return;
+      } catch {
+        continue;
+      }
+    }
+    
+    // If no button found, it might not be a batch operation - that's okay
+  }
+
+  /**
    * Wait for processing to complete
    */
   async waitForProcessing(timeout: number = 120000): Promise<void> {
@@ -192,19 +220,26 @@ export class BaseTest {
     }
     
     // Try multiple selectors to find download link/button
+    // Exclude links that point to pricing pages
     const downloadSelectors = [
-      'a[href*="/api/"]',           // Download link with API href
-      'a[download]',                // Download link with download attribute
-      'a:has-text("Download")',     // Download link with "Download" text
-      'a:has-text("Download ZIP")', // Download link with "Download ZIP" text
-      'button:has-text("Download")', // Download button
+      'a[href*="blob:"]',                                                           // Blob URL (preferred - actual download URL)
+      'a[href*="/api/"]:not([href*="pricing"]):not([href*="#pricing"])',           // Download link with API href (exclude pricing)
+      'a[download]:not([href*="pricing"]):not([href*="#pricing"])',                // Download link with download attribute (exclude pricing)
+      'a:has-text("Download"):not([href*="pricing"]):not([href*="#pricing"])',     // Download link with "Download" text (exclude pricing)
+      'a:has-text("Download ZIP"):not([href*="pricing"]):not([href*="#pricing"])', // Download link with "Download ZIP" text (exclude pricing)
+      'button:has-text("Download")', // Download button (buttons don't have href)
     ];
     
     let downloadButton = null;
     for (const sel of downloadSelectors) {
       try {
         const button = this.page.locator(sel).first();
-        await button.waitFor({ state: 'visible', timeout: 5000 });
+        await button.waitFor({ state: 'visible', timeout: 10000 }); // Increase timeout
+        // Double-check href doesn't point to pricing
+        const href = await button.getAttribute('href').catch(() => null);
+        if (href && (href.includes('#pricing') || href.includes('/pricing'))) {
+          continue; // Skip this button if it points to pricing
+        }
         downloadButton = button;
         break;
       } catch {
@@ -216,18 +251,57 @@ export class BaseTest {
       throw new Error('Download button/link not found');
     }
     
+    // Wait for download URL to be ready (blob URL or valid href)
+    // First ensure processing is complete - wait for status indicators
+    try {
+      await this.page.waitForSelector('text=/Complete|complete/i, svg[class*="CheckCircle"]', { timeout: 5000, state: 'visible' }).catch(() => {});
+    } catch {
+      // Status indicator might not be visible, continue anyway
+    }
+    
+    // Now check download URL - only 2 attempts to fail fast
+    let href = await downloadButton.getAttribute('href').catch(() => null);
+    let attempts = 0;
+    const maxAttempts = 2;
+    
+    while (attempts < maxAttempts) {
+      href = await downloadButton.getAttribute('href').catch(() => null);
+      if (href) {
+        console.log(`Download link href (attempt ${attempts + 1}): ${href}`);
+        
+        // Check if href points to pricing (licensing issue)
+        if (href.includes('#pricing') || href.includes('/pricing')) {
+          throw new Error(`Download link points to pricing page instead of download. This may indicate a licensing/feature gate issue. href: ${href}`);
+        }
+        
+        // If it's a blob URL or API URL, it's ready
+        if (href.startsWith('blob:') || href.includes('/api/')) {
+          console.log(`Download URL is ready: ${href}`);
+          break;
+        }
+      }
+      
+      // Wait 1 second before next check (only if not last attempt)
+      if (attempts < maxAttempts - 1) {
+        await this.page.waitForTimeout(1000);
+      }
+      attempts++;
+    }
+    
+    // Final check - if still a placeholder, throw error with helpful message
+    href = await downloadButton.getAttribute('href').catch(() => null);
+    if (!href || href === '#download' || (href.startsWith('#') && !href.startsWith('blob:') && href.length < 20)) {
+      throw new Error(`Download link href is still a placeholder. href: ${href}. Possible causes: 1) Process button not clicked (for batch ops like merge-pdf/images-to-pdf), 2) Backend didn't complete, 3) Timing issue.`);
+    }
+    
+    if (!href.startsWith('blob:') && !href.includes('/api/')) {
+      throw new Error(`Download link href is not a valid download URL. href: ${href}`);
+    }
+    
     // Ensure it's not disabled
     const isDisabled = await downloadButton.isDisabled().catch(() => false);
     if (isDisabled) {
       throw new Error('Download button is disabled');
-    }
-    
-    // Get the href if it's a link (for debugging)
-    const href = await downloadButton.getAttribute('href').catch(() => null);
-    if (href) {
-      console.log(`Download link href: ${href}`);
-      // Note: Pricing redirects are handled by individual tests that need to skip
-      // We don't throw here to allow tests to handle it gracefully
     }
     
     const [download] = await Promise.all([
@@ -325,7 +399,10 @@ export class BaseTest {
    */
   async assertImageFormat(imagePath: string, expectedFormat: string): Promise<void> {
     const format = await this.imageValidator.getFormat(imagePath);
-    expect(format.toLowerCase()).toBe(expectedFormat.toLowerCase());
+    // Normalize format: "jpg" and "jpeg" are the same
+    const normalizedFormat = format.toLowerCase().replace('jpeg', 'jpg');
+    const normalizedExpected = expectedFormat.toLowerCase().replace('jpeg', 'jpg');
+    expect(normalizedFormat).toBe(normalizedExpected);
   }
 
   /**
@@ -336,8 +413,8 @@ export class BaseTest {
     compressedPath: string,
     minReductionPercent: number = 10
   ): Promise<void> {
-    const originalSize = this.fileLoader.getFileSize(originalPath);
-    const compressedSize = this.fileLoader.getFileSize(compressedPath);
+    const originalSize = this.fileLoader.getFileSize(originalPath, true);
+    const compressedSize = this.fileLoader.getFileSize(compressedPath, true);
     const reductionPercent = ((originalSize - compressedSize) / originalSize) * 100;
     
     expect(reductionPercent).toBeGreaterThanOrEqual(minReductionPercent);

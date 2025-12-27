@@ -356,6 +356,27 @@
             "f2": "Clean Files",
             "f3": "Remove Tracking"
         },
+        "extract-metadata": {
+            "h1": "Extract PDF Metadata",
+            "p1": "View and extract metadata information from PDF files including title, author, creation date, and more.",
+            "f1": "Complete Information",
+            "f2": "Easy to Read",
+            "f3": "Privacy Awareness"
+        },
+        "extract-form-data": {
+            "h1": "Extract Form Data from PDF",
+            "p1": "Extract form field data from PDF forms to CSV or Excel. Works with both fillable and flattened forms.",
+            "f1": "CSV & Excel Export",
+            "f2": "All Field Types",
+            "f3": "Flattened Form Support"
+        },
+        "reorder-pages": {
+            "h1": "Reorder PDF Pages",
+            "p1": "Reorder PDF pages using drag-and-drop or numeric input. Perfect for organizing documents offline.",
+            "f1": "Drag & Drop",
+            "f2": "Numeric Input",
+            "f3": "Offline Privacy"
+        },
         "flatten-pdf": {
             "h1": "Flatten PDF",
             "p1": "Flatten form fields and annotations in PDF documents to prevent editing.",
@@ -557,6 +578,18 @@
         "remove-metadata": {
             "title": "Remove Metadata",
             "desc": "Clean PDF data."
+        },
+        "extract-metadata": {
+            "title": "Extract Metadata",
+            "desc": "View PDF info."
+        },
+        "extract-form-data": {
+            "title": "Extract Form Data",
+            "desc": "Forms to CSV/Excel."
+        },
+        "reorder-pages": {
+            "title": "Reorder Pages",
+            "desc": "Organize PDF pages."
         },
         "flatten-pdf": {
             "title": "Flatten PDF",

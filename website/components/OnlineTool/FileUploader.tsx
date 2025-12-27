@@ -22,15 +22,43 @@ export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className 
 
     // Environment Check
     const isDesktop = typeof window !== 'undefined' && '__TAURI__' in window;
-    // 50MB Limit for Web, Unlimited for Desktop
-    const MAX_SIZE = isDesktop ? Infinity : 50 * 1024 * 1024;
+    
+    // Determine file type from accept prop
+    const isImageTool = accept && (
+        Object.keys(accept).some(key => key.startsWith('image/')) ||
+        Object.values(accept).some(exts => exts.some(ext => /\.(jpg|jpeg|png|webp|gif|bmp|heic|heif)$/i.test(ext)))
+    );
+    const isPdfTool = accept && (
+        Object.keys(accept).some(key => key === 'application/pdf') ||
+        Object.values(accept).some(exts => exts.some(ext => /\.pdf$/i.test(ext)))
+    );
+    
+    // File size limits: Web only (Desktop is unlimited)
+    // Images: 3MB, PDFs: 5MB for web version
+    let MAX_SIZE: number;
+    let sizeLimitText: string;
+    
+    if (isDesktop) {
+        MAX_SIZE = Infinity;
+        sizeLimitText = 'Unlimited';
+    } else if (isImageTool) {
+        MAX_SIZE = 3 * 1024 * 1024; // 3MB
+        sizeLimitText = '3MB';
+    } else if (isPdfTool) {
+        MAX_SIZE = 5 * 1024 * 1024; // 5MB
+        sizeLimitText = '5MB';
+    } else {
+        // Fallback for unknown types
+        MAX_SIZE = 5 * 1024 * 1024; // 5MB default
+        sizeLimitText = '5MB';
+    }
 
     const onDropRejected = useCallback((fileRejections: any[]) => {
         const file = fileRejections[0];
         if (file?.errors[0]?.code === 'file-too-large') {
-            alert(t('file_too_large', { limit: '50MB' }));
+            alert(t('file_too_large', { limit: sizeLimitText }));
         }
-    }, [t]);
+    }, [t, sizeLimitText]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,

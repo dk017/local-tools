@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
-import { ArrowRight, Layers, FileImage, Files, Scissors, Minimize2, FileText, Lock, LockOpen, RotateCw, Palette, Stamp, Wrench, ImageMinus, Workflow, BoxSelect, SquareUser, Grid3x3, Crop, FileSpreadsheet, GitCompare, Book, ShieldAlert, Eraser, PenTool, Zap } from 'lucide-react';
+import { ArrowRight, Layers, FileImage, Files, Scissors, Minimize2, FileText, Lock, LockOpen, RotateCw, Palette, Stamp, Wrench, ImageMinus, Workflow, BoxSelect, SquareUser, Grid3x3, Crop, FileSpreadsheet, GitCompare, Book, ShieldAlert, Eraser, PenTool, Zap, FileSearch, ArrowUpDown, Search } from 'lucide-react';
 
 export function ToolCatalog() {
     const t = useTranslations('Tools');
     const locale = useLocale();
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Categorized Tools Data
     const categories = [
@@ -35,6 +36,9 @@ export function ToolCatalog() {
                 { slug: 'pdf-redactor', icon: Eraser, title: t('pdf-redactor.title'), desc: t('pdf-redactor.desc'), color: 'text-gray-500 bg-gray-500/10 border-gray-500/20' },
                 { slug: 'pdf-signer', icon: PenTool, title: t('pdf-signer.title'), desc: t('pdf-signer.desc'), color: 'text-blue-600 bg-blue-600/10 border-blue-600/20' },
                 { slug: 'pdf-web-optimize', icon: Zap, title: t('pdf-web-optimize.title'), desc: t('pdf-web-optimize.desc'), color: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20' },
+                { slug: 'extract-metadata', icon: FileSearch, title: t('extract-metadata.title'), desc: t('extract-metadata.desc'), color: 'text-cyan-600 bg-cyan-600/10 border-cyan-600/20' },
+                { slug: 'extract-form-data', icon: FileSpreadsheet, title: t('extract-form-data.title'), desc: t('extract-form-data.desc'), color: 'text-emerald-600 bg-emerald-600/10 border-emerald-600/20' },
+                { slug: 'reorder-pages', icon: ArrowUpDown, title: t('reorder-pages.title'), desc: t('reorder-pages.desc'), color: 'text-violet-600 bg-violet-600/10 border-violet-600/20' },
             ]
         },
         {
@@ -56,8 +60,40 @@ export function ToolCatalog() {
 
     const [activeCategory, setActiveCategory] = useState(categories[0]?.title || "PDF Tools");
 
+    // Filter tools based on search query
+    const filteredCategories = categories.map(category => ({
+        ...category,
+        tools: category.tools.filter(tool => 
+            tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            tool.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            tool.slug.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    }));
+
     return (
         <div className="space-y-12">
+            {/* Search Bar */}
+            <div className="max-w-2xl mx-auto mb-8">
+                <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <input
+                        type="text"
+                        placeholder="Search tools by name, description, or keyword..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-12 pr-4 py-4 bg-card border border-white/10 rounded-xl text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+            </div>
+
             {/* Tab Navigation */}
             <div className="flex flex-wrap justify-center gap-4 mb-12">
                 {categories.map((cat) => (
@@ -74,7 +110,7 @@ export function ToolCatalog() {
                 ))}
             </div>
 
-            {categories.map((category, catIndex) => (
+            {filteredCategories.map((category, catIndex) => (
                 <div key={catIndex} className={category.title === activeCategory ? 'block' : 'hidden'}>
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -82,8 +118,13 @@ export function ToolCatalog() {
                         transition={{ duration: 0.3 }}
                         key={activeCategory} // Force re-render animation on tab change
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {category.tools.map((tool, i) => (
+                        {category.tools.length === 0 ? (
+                            <div className="text-center py-12 text-muted-foreground">
+                                <p>No tools found matching "{searchQuery}"</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {category.tools.map((tool, i) => (
                                 <motion.div
                                     key={tool.slug}
                                     initial={{ opacity: 0, y: 10 }}
@@ -106,8 +147,9 @@ export function ToolCatalog() {
                                         </div>
                                     </Link>
                                 </motion.div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </motion.div>
                 </div>
             ))}

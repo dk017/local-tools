@@ -42,18 +42,51 @@ app.add_middleware(
 TEMP_DIR = os.path.join(tempfile.gettempdir(), "offline_tools_api")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-# File upload size limits (in bytes)
-MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", "52428800"))  # Default: 50MB
+# File upload size limits (in bytes) - Web version only
+# Desktop version has no limits (handled by client-side validation)
+MAX_IMAGE_SIZE = 3 * 1024 * 1024  # 3MB for images (web)
+MAX_PDF_SIZE = 5 * 1024 * 1024    # 5MB for PDFs (web)
+MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", "52428800"))  # Default: 50MB (fallback)
 MAX_TOTAL_SIZE = int(os.getenv("MAX_TOTAL_SIZE", "104857600"))  # Default: 100MB for multiple files
 
 def validate_file_size(file: UploadFile) -> None:
-    """Validates that the uploaded file size is within limits."""
-    if hasattr(file, 'size') and file.size:
-        if file.size > MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File size ({file.size / 1024 / 1024:.2f}MB) exceeds maximum allowed size ({MAX_FILE_SIZE / 1024 / 1024:.2f}MB)"
-            )
+    """Validates that the uploaded file size is within limits based on file type (web version)."""
+    if not hasattr(file, 'size') or not file.size:
+        return
+    
+    # Determine file type from content type or filename
+    content_type = file.content_type or ""
+    filename = file.filename or ""
+    
+    # Check if it's an image
+    is_image = (
+        content_type.startswith("image/") or
+        any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.heic', '.heif'])
+    )
+    
+    # Check if it's a PDF
+    is_pdf = (
+        content_type == "application/pdf" or
+        filename.lower().endswith('.pdf')
+    )
+    
+    # Set appropriate limit based on file type
+    if is_image:
+        max_size = MAX_IMAGE_SIZE
+        limit_text = "3MB"
+    elif is_pdf:
+        max_size = MAX_PDF_SIZE
+        limit_text = "5MB"
+    else:
+        # Fallback to default for unknown types
+        max_size = MAX_FILE_SIZE
+        limit_text = f"{MAX_FILE_SIZE / 1024 / 1024:.0f}MB"
+    
+    if file.size > max_size:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File size ({file.size / 1024 / 1024:.2f}MB) exceeds maximum allowed size ({limit_text}) for web version. Please use the desktop app for larger files."
+        )
 
 def save_upload(file: UploadFile) -> str:
     """Saves an uploaded file to a specific temp path and returns the path."""

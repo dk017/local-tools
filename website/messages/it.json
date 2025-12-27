@@ -340,6 +340,27 @@
             "f2": "File puliti",
             "f3": "Rimuovi tracciamento"
         },
+        "extract-metadata": {
+            "h1": "Estrai metadati PDF",
+            "p1": "Visualizza ed estrai informazioni sui metadati dai file PDF, inclusi titolo, autore, data di creazione e altro.",
+            "f1": "Informazioni complete",
+            "f2": "Facile da leggere",
+            "f3": "Consapevolezza della privacy"
+        },
+        "extract-form-data": {
+            "h1": "Estrai dati del modulo PDF",
+            "p1": "Estrai dati dei campi del modulo dai moduli PDF in CSV o Excel. Funziona con moduli compilabili e appiattiti.",
+            "f1": "Esporta CSV e Excel",
+            "f2": "Tutti i tipi di campi",
+            "f3": "Supporto moduli appiattiti"
+        },
+        "reorder-pages": {
+            "h1": "Riordina pagine PDF",
+            "p1": "Riordina le pagine PDF usando trascina e rilascia o input numerico. Perfetto per organizzare documenti offline.",
+            "f1": "Trascina e rilascia",
+            "f2": "Input numerico",
+            "f3": "Privacy offline"
+        },
         "flatten-pdf": {
             "h1": "Appiattisci PDF",
             "p1": "Appiattisci campi modulo e annotazioni nei documenti PDF per prevenire la modifica.",
@@ -546,6 +567,18 @@
         "remove-metadata": {
             "title": "Rimuovi metadati",
             "desc": "Pulisci dati PDF."
+        },
+        "extract-metadata": {
+            "title": "Estrai metadati",
+            "desc": "Visualizza informazioni PDF."
+        },
+        "extract-form-data": {
+            "title": "Estrai dati del modulo",
+            "desc": "Moduli a CSV/Excel."
+        },
+        "reorder-pages": {
+            "title": "Riordina pagine",
+            "desc": "Organizza pagine PDF."
         },
         "flatten-pdf": {
             "title": "Appiattisci PDF",

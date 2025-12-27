@@ -118,6 +118,10 @@ def handle_pdf_action(action, payload):
         return crop_pdf(payload)
     elif action == "organize" or action == "reorder_pages":
         return organize_pdf(payload)
+    elif action == "extract_metadata":
+        return extract_metadata(payload)
+    elif action == "extract_form_data":
+        return extract_form_data(payload)
     elif action == "preview":
         return preview_pdf(payload)
     else:
@@ -1277,24 +1281,50 @@ def sign_pdf(payload):
     return {"processed_files": processed_files, "errors": errors}
 
 def optimize_pdf(payload):
-    """Optimize PDF for web (linearize)."""
+    """Optimize PDF for web viewing (compression and structure optimization)."""
     files = payload.get("files", [])
 
     processed_files = []
     errors = []
 
     for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
+        doc = None
         try:
             base, ext = os.path.splitext(file_path)
             output_path = f"{base}_web_optimized{ext}"
 
             doc = fitz.open(file_path)
-            # Linearize for web viewing
-            doc.save(output_path, linear=True, garbage=4, deflate=True)
+            
+            # Optimize for web viewing without deprecated linearization
+            # Use garbage collection, compression, and cleaning
+            # garbage=4: Maximum garbage collection (remove unused objects)
+            # deflate=True: Compress streams for smaller file size
+            # clean=True: Clean up PDF structure
+            # ascii=False: Keep binary format (smaller)
+            doc.save(
+                output_path,
+                garbage=4,           # Maximum garbage collection
+                deflate=True,        # Compress streams
+                clean=True,          # Clean up structure
+                ascii=False,        # Keep binary (smaller than ASCII)
+                no_new_id=True,     # Don't generate new IDs (faster)
+                encryption=fitz.PDF_ENCRYPT_NONE  # Ensure no encryption
+            )
             doc.close()
 
-            processed_files.append(output_path)
+            if os.path.exists(output_path):
+                processed_files.append(output_path)
+            else:
+                errors.append({"file": file_path, "error": "Optimization failed: output file not created"})
+                
         except Exception as e:
+            logger.error(f"Error optimizing PDF {file_path}: {e}", exc_info=True)
+            if doc:
+                doc.close()
             errors.append({"file": file_path, "error": str(e)})
 
     return {"processed_files": processed_files, "errors": errors}
@@ -2021,4 +2051,261 @@ def organize_pdf(payload):
                 doc.close()
             errors.append({"file": file_path, "error": str(e)})
 
+    return {"processed_files": processed_files, "errors": errors}
+
+def extract_metadata(payload):
+    """
+    Extract PDF metadata as key-value pairs (user-friendly format).
+    Returns metadata in a simple text format for non-programmers.
+    """
+    files = payload.get("files", [])
+    
+    processed_files = []
+    errors = []
+    
+    for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+        
+        try:
+            base, _ = os.path.splitext(file_path)
+            output_path = f"{base}_metadata.txt"
+            
+            doc = fitz.open(file_path)
+            metadata = doc.metadata
+            
+            # Extract metadata in user-friendly key-value format
+            metadata_lines = []
+            metadata_lines.append("PDF Metadata Information")
+            metadata_lines.append("=" * 50)
+            metadata_lines.append("")
+            
+            # Standard PDF metadata fields
+            if metadata.get('title'):
+                metadata_lines.append(f"Title: {metadata.get('title')}")
+            if metadata.get('author'):
+                metadata_lines.append(f"Author: {metadata.get('author')}")
+            if metadata.get('subject'):
+                metadata_lines.append(f"Subject: {metadata.get('subject')}")
+            if metadata.get('keywords'):
+                metadata_lines.append(f"Keywords: {metadata.get('keywords')}")
+            if metadata.get('creator'):
+                metadata_lines.append(f"Creator: {metadata.get('creator')}")
+            if metadata.get('producer'):
+                metadata_lines.append(f"Producer: {metadata.get('producer')}")
+            if metadata.get('creationDate'):
+                metadata_lines.append(f"Creation Date: {metadata.get('creationDate')}")
+            if metadata.get('modDate'):
+                metadata_lines.append(f"Modification Date: {metadata.get('modDate')}")
+            
+            # Additional document info
+            metadata_lines.append("")
+            metadata_lines.append("Document Information")
+            metadata_lines.append("-" * 50)
+            metadata_lines.append(f"Number of Pages: {len(doc)}")
+            metadata_lines.append(f"File Size: {os.path.getsize(file_path)} bytes")
+            
+            # Try to get additional metadata from pikepdf if available
+            try:
+                with pikepdf.open(file_path) as pdf:
+                    if '/Metadata' in pdf.Root:
+                        metadata_lines.append("")
+                        metadata_lines.append("Additional Metadata (XML)")
+                        metadata_lines.append("-" * 50)
+                        # Extract XML metadata if present
+                        xml_metadata = pdf.Root.Metadata
+                        if xml_metadata:
+                            metadata_lines.append("Contains XML metadata (view in PDF viewer for details)")
+            except Exception:
+                # pikepdf might fail on some PDFs, that's okay
+                pass
+            
+            # Write to file
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(metadata_lines))
+            
+            doc.close()
+            
+            if os.path.exists(output_path):
+                processed_files.append(output_path)
+            else:
+                errors.append({"file": file_path, "error": "Failed to create metadata file"})
+                
+        except Exception as e:
+            logger.error(f"Error extracting metadata from {file_path}: {e}", exc_info=True)
+            errors.append({"file": file_path, "error": str(e)})
+    
+    return {"processed_files": processed_files, "errors": errors}
+
+def extract_form_data(payload):
+    """
+    Extract form field data from PDF to CSV/XLSX.
+    Handles both fillable forms and flattened forms (already filled).
+    """
+    files = payload.get("files", [])
+    output_format = payload.get("output_format", "csv")  # csv or xlsx
+    
+    processed_files = []
+    errors = []
+    
+    for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+        
+        try:
+            base, _ = os.path.splitext(file_path)
+            
+            # Use pypdf for form field extraction (better form support)
+            form_fields = []
+            
+            try:
+                from pypdf import PdfReader
+                
+                reader = PdfReader(file_path)
+                
+                # Check if PDF has form fields
+                if reader.metadata is None and len(reader.pages) == 0:
+                    errors.append({"file": file_path, "error": "PDF appears to be empty or corrupted"})
+                    continue
+                
+                # Extract form fields
+                if '/AcroForm' in reader.trailer.get('/Root', {}):
+                    # PDF has form fields
+                    try:
+                        acro_form = reader.trailer['/Root']['/AcroForm']
+                        if '/Fields' in acro_form:
+                            fields = acro_form['/Fields']
+                            
+                            for field in fields:
+                                field_info = {}
+                                
+                                # Get field name
+                                if '/T' in field:
+                                    field_info['Field Name'] = str(field['/T'])
+                                else:
+                                    field_info['Field Name'] = 'Unnamed'
+                                
+                                # Get field type
+                                if '/FT' in field:
+                                    field_type = str(field['/FT'])
+                                    # Map PDF field types to user-friendly names
+                                    type_map = {
+                                        '/Tx': 'Text',
+                                        '/Btn': 'Button',
+                                        '/Ch': 'Choice',
+                                        '/Sig': 'Signature'
+                                    }
+                                    field_info['Field Type'] = type_map.get(field_type, field_type.replace('/', ''))
+                                else:
+                                    field_info['Field Type'] = 'Unknown'
+                                
+                                # Get field value
+                                if '/V' in field:
+                                    value = field['/V']
+                                    if isinstance(value, list):
+                                        field_info['Field Value'] = ', '.join(str(v) for v in value)
+                                    else:
+                                        field_info['Field Value'] = str(value)
+                                elif '/DV' in field:  # Default value
+                                    field_info['Field Value'] = str(field['/DV'])
+                                else:
+                                    field_info['Field Value'] = ''
+                                
+                                # Get page number (try to determine which page the field is on)
+                                field_info['Page'] = 'Unknown'
+                                
+                                form_fields.append(field_info)
+                    except Exception as e:
+                        logger.warning(f"Error extracting form fields with pypdf: {e}")
+                        # Try alternative method using PyMuPDF
+                        pass
+                
+                # If no form fields found with pypdf, try PyMuPDF
+                if not form_fields:
+                    try:
+                        doc = fitz.open(file_path)
+                        for page_num in range(len(doc)):
+                            page = doc[page_num]
+                            widgets = page.widgets()
+                            
+                            for widget in widgets:
+                                field_info = {}
+                                field_info['Field Name'] = widget.field_name or 'Unnamed'
+                                
+                                # Map field type
+                                field_type_map = {
+                                    fitz.PDF_WIDGET_TYPE_TEXT: 'Text',
+                                    fitz.PDF_WIDGET_TYPE_CHECKBOX: 'Checkbox',
+                                    fitz.PDF_WIDGET_TYPE_RADIOBUTTON: 'Radio Button',
+                                    fitz.PDF_WIDGET_TYPE_SIGNATURE: 'Signature',
+                                    fitz.PDF_WIDGET_TYPE_BUTTON: 'Button',
+                                    fitz.PDF_WIDGET_TYPE_CHOICE: 'Dropdown',
+                                }
+                                field_info['Field Type'] = field_type_map.get(widget.field_type, 'Unknown')
+                                
+                                # Get field value
+                                if widget.field_value:
+                                    field_info['Field Value'] = str(widget.field_value)
+                                else:
+                                    field_info['Field Value'] = ''
+                                
+                                field_info['Page'] = str(page_num + 1)
+                                
+                                form_fields.append(field_info)
+                        
+                        doc.close()
+                    except Exception as e:
+                        logger.warning(f"PyMuPDF form extraction failed: {e}")
+                
+                # If still no fields, check for flattened forms (extract text that might be form data)
+                if not form_fields:
+                    # Try to extract text that looks like form data
+                    try:
+                        doc = fitz.open(file_path)
+                        for page_num in range(len(doc)):
+                            page = doc[page_num]
+                            text = page.get_text()
+                            
+                            # Look for patterns that might indicate form data
+                            # This is a fallback for flattened forms
+                            if text.strip():
+                                field_info = {
+                                    'Field Name': f'Page {page_num + 1} Content',
+                                    'Field Type': 'Text (Flattened)',
+                                    'Field Value': text.strip()[:200],  # First 200 chars
+                                    'Page': str(page_num + 1)
+                                }
+                                form_fields.append(field_info)
+                        
+                        doc.close()
+                    except Exception as e:
+                        logger.warning(f"Flattened form extraction failed: {e}")
+                
+                # Create output file
+                if form_fields:
+                    if output_format == "csv":
+                        output_path = f"{base}_form_data.csv"
+                        df = pd.DataFrame(form_fields)
+                        df.to_csv(output_path, index=False, encoding='utf-8-sig')  # UTF-8 with BOM for Excel compatibility
+                        processed_files.append(output_path)
+                    elif output_format == "xlsx":
+                        output_path = f"{base}_form_data.xlsx"
+                        df = pd.DataFrame(form_fields)
+                        df.to_excel(output_path, index=False, engine='openpyxl')
+                        processed_files.append(output_path)
+                    else:
+                        errors.append({"file": file_path, "error": f"Unsupported output format: {output_format}"})
+                else:
+                    errors.append({"file": file_path, "error": "No form fields found in PDF. The PDF may not contain fillable forms or the forms may be flattened."})
+                    
+            except Exception as e:
+                logger.error(f"Error extracting form data from {file_path}: {e}", exc_info=True)
+                errors.append({"file": file_path, "error": str(e)})
+                
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {e}", exc_info=True)
+            errors.append({"file": file_path, "error": str(e)})
+    
     return {"processed_files": processed_files, "errors": errors}

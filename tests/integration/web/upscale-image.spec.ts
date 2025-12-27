@@ -6,6 +6,9 @@ import { imageValidator } from '../../utils/image-validator';
 /**
  * Upscale Image Tool Test
  * 
+ * NOTE: This tool does not exist in the codebase yet.
+ * All tests are skipped until the tool is implemented.
+ * 
  * Tests image upscaling/resolution enhancement:
  * - Upscales image by specified factor
  * - Validates output dimensions are increased
@@ -15,12 +18,13 @@ test.describe('Upscale Image Tool', () => {
   let baseTest: BaseTest;
 
   test.beforeEach(async ({ page }) => {
+    test.skip(); // Tool doesn't exist yet
     baseTest = new BaseTest(page);
-    // Note: This tool might be named differently - adjust slug as needed
     await baseTest.navigateToTool('upscale-image');
   });
 
   test('should upscale image by 2x', async ({ page }) => {
+    test.skip(); // Tool doesn't exist yet
     // Use fallback if small-image.jpg doesn't exist
     const testImage = fileLoader.getFixturePathWithFallback('images/small-image.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']);
     const originalDims = await imageValidator.getDimensions(testImage);
@@ -40,6 +44,7 @@ test.describe('Upscale Image Tool', () => {
   });
 
   test('should upscale image by 4x', async ({ page }) => {
+    test.skip(); // Tool doesn't exist yet
     // Use fallback if small-image.jpg doesn't exist
     const testImage = fileLoader.getFixturePathWithFallback('images/small-image.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']);
     const originalDims = await imageValidator.getDimensions(testImage);
@@ -56,6 +61,7 @@ test.describe('Upscale Image Tool', () => {
   });
 
   test('should maintain aspect ratio', async ({ page }) => {
+    test.skip(); // Tool doesn't exist yet
     const testImage = fileLoader.getFixturePath('images/portrait.jpg');
     const originalDims = await imageValidator.getDimensions(testImage);
     const originalAspectRatio = originalDims.width / originalDims.height;
@@ -74,6 +80,7 @@ test.describe('Upscale Image Tool', () => {
   });
 
   test('should preserve image format', async ({ page }) => {
+    test.skip(); // Tool doesn't exist yet
     // Use fallback if image.png doesn't exist
     const testImage = fileLoader.getFixturePathWithFallback('images/image.png', ['images/portrait-2.png', 'images/portriat-1.png', 'images/portrait.jpg']);
     const originalFormat = await imageValidator.getFormat(testImage);

@@ -598,8 +598,13 @@ export function ToolProcessor({
     }
 
     // PDF Organize Params
-    if (toolSlug === "organize-pdf") {
+    if (toolSlug === "organize-pdf" || toolSlug === "reorder-pages") {
       formData.append("page_order", pageOrder);
+    }
+
+    // Extract Form Data Params
+    if (toolSlug === "extract-form-data") {
+      formData.append("output_format", extractFormat);
     }
 
     if (files.length > 0) {
@@ -841,11 +846,28 @@ export function ToolProcessor({
         status !== "processing" &&
         status !== "uploading" &&
         !(previewFile && (toolSlug === "rotate-pdf" || toolSlug === "crop-pdf")) && (
-          <FileUploader
-            onFilesSelected={handleFileSelect}
-            accept={acceptedFileTypes}
-            maxFiles={10}
-          />
+          <div>
+              <FileUploader
+              onFilesSelected={handleFileSelect}
+              accept={acceptedFileTypes}
+              maxFiles={10}
+            />
+            {/* File Size Limit Info (Web Version Only) */}
+            {typeof window !== 'undefined' && !('__TAURI__' in window) && (
+              <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 text-sm text-muted-foreground">
+                <p className="font-semibold mb-1">Web Version File Size Limits:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  {acceptedFileTypes && Object.keys(acceptedFileTypes).some(key => key.startsWith('image/')) ? (
+                    <li>Images: Maximum 3MB per file</li>
+                  ) : null}
+                  {acceptedFileTypes && Object.keys(acceptedFileTypes).some(key => key === 'application/pdf') ? (
+                    <li>PDFs: Maximum 5MB per file</li>
+                  ) : null}
+                  <li className="text-primary/80">💡 For larger files, use our desktop app (unlimited file sizes)</li>
+                </ul>
+              </div>
+            )}
+          </div>
         )}
 
       {/* Decorative Grid */}
@@ -1304,8 +1326,8 @@ export function ToolProcessor({
               </div>
             )}
 
-            {/* Organize PDF Options */}
-            {toolSlug === "organize-pdf" && (
+            {/* Organize PDF / Reorder Pages Options */}
+            {(toolSlug === "organize-pdf" || toolSlug === "reorder-pages") && (
               <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10">
                 <h3 className="text-lg font-bold mb-4">Page Order</h3>
                 <div>
@@ -1323,6 +1345,27 @@ export function ToolProcessor({
                     Use commas for individual pages (e.g., "3,1,2") or dashes
                     for ranges (e.g., "1-5,10,8-9").
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Extract Form Data Options */}
+            {toolSlug === "extract-form-data" && (
+              <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10">
+                <h3 className="text-lg font-bold mb-4">Output Format</h3>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setExtractFormat("csv")}
+                    className={`px-4 py-2 rounded border transition-colors flex items-center gap-2 ${extractFormat === "csv" ? "bg-primary text-black border-primary" : "border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                  >
+                    <FileSpreadsheet size={16} /> CSV
+                  </button>
+                  <button
+                    onClick={() => setExtractFormat("xlsx")}
+                    className={`px-4 py-2 rounded border transition-colors flex items-center gap-2 ${extractFormat === "xlsx" ? "bg-primary text-black border-primary" : "border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                  >
+                    <FileSpreadsheet size={16} /> Excel
+                  </button>
                 </div>
               </div>
             )}

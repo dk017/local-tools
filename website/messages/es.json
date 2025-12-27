@@ -345,6 +345,27 @@
             "f2": "Archivos limpios",
             "f3": "Eliminar seguimiento"
         },
+        "extract-metadata": {
+            "h1": "Extraer metadatos del PDF",
+            "p1": "Ver y extraer información de metadatos de archivos PDF, incluyendo título, autor, fecha de creación y más.",
+            "f1": "Información completa",
+            "f2": "Fácil de leer",
+            "f3": "Conciencia de privacidad"
+        },
+        "extract-form-data": {
+            "h1": "Extraer datos de formulario del PDF",
+            "p1": "Extrae datos de campos de formulario de formularios PDF a CSV o Excel. Funciona con formularios rellenables y aplanados.",
+            "f1": "Exportar CSV y Excel",
+            "f2": "Todos los tipos de campos",
+            "f3": "Soporte para formularios aplanados"
+        },
+        "reorder-pages": {
+            "h1": "Reordenar páginas PDF",
+            "p1": "Reordena páginas PDF usando arrastrar y soltar o entrada numérica. Perfecto para organizar documentos sin conexión.",
+            "f1": "Arrastrar y soltar",
+            "f2": "Entrada numérica",
+            "f3": "Privacidad sin conexión"
+        },
         "flatten-pdf": {
             "h1": "Aplanar PDF",
             "p1": "Aplana campos de formulario y anotaciones en documentos PDF para prevenir la edición.",
@@ -546,6 +567,18 @@
         "remove-metadata": {
             "title": "Eliminar metadatos",
             "desc": "Limpiar datos PDF."
+        },
+        "extract-metadata": {
+            "title": "Extraer metadatos",
+            "desc": "Ver información PDF."
+        },
+        "extract-form-data": {
+            "title": "Extraer datos de formulario",
+            "desc": "Formularios a CSV/Excel."
+        },
+        "reorder-pages": {
+            "title": "Reordenar páginas",
+            "desc": "Organizar páginas PDF."
         },
         "flatten-pdf": {
             "title": "Aplanar PDF",

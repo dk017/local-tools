@@ -345,6 +345,27 @@
             "f2": "Fichiers propres",
             "f3": "Supprimer le suivi"
         },
+        "extract-metadata": {
+            "h1": "Extraire les métadonnées PDF",
+            "p1": "Affichez et extrayez les informations de métadonnées des fichiers PDF, y compris le titre, l'auteur, la date de création, etc.",
+            "f1": "Informations complètes",
+            "f2": "Facile à lire",
+            "f3": "Conscience de la confidentialité"
+        },
+        "extract-form-data": {
+            "h1": "Extraire les données de formulaire PDF",
+            "p1": "Extrayez les données des champs de formulaire des formulaires PDF vers CSV ou Excel. Fonctionne avec les formulaires remplissables et aplatis.",
+            "f1": "Export CSV et Excel",
+            "f2": "Tous les types de champs",
+            "f3": "Support des formulaires aplatis"
+        },
+        "reorder-pages": {
+            "h1": "Réorganiser les pages PDF",
+            "p1": "Réorganisez les pages PDF en utilisant le glisser-déposer ou la saisie numérique. Parfait pour organiser des documents hors ligne.",
+            "f1": "Glisser-déposer",
+            "f2": "Saisie numérique",
+            "f3": "Confidentialité hors ligne"
+        },
         "flatten-pdf": {
             "h1": "Aplatir le PDF",
             "p1": "Aplatissez les champs de formulaire et les annotations dans les documents PDF pour empêcher l'édition.",
@@ -546,6 +567,18 @@
         "remove-metadata": {
             "title": "Supprimer les métadonnées",
             "desc": "Nettoyer les données PDF."
+        },
+        "extract-metadata": {
+            "title": "Extraire les métadonnées",
+            "desc": "Voir les infos PDF."
+        },
+        "extract-form-data": {
+            "title": "Extraire les données de formulaire",
+            "desc": "Formulaires vers CSV/Excel."
+        },
+        "reorder-pages": {
+            "title": "Réorganiser les pages",
+            "desc": "Organiser les pages PDF."
         },
         "flatten-pdf": {
             "title": "Aplatir le PDF",

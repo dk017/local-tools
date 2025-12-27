@@ -66,10 +66,38 @@ export class FileLoader {
 
   /**
    * Get file size in bytes
+   * Accepts both relative paths (from fixtures) and absolute paths
    */
-  getFileSize(relativePath: string): number {
-    const fullPath = this.getFixturePath(relativePath);
+  getFileSize(filePath: string, isAbsolute: boolean = false): number {
+    const fullPath = isAbsolute ? filePath : this.getFixturePath(filePath);
+    if (!fs.existsSync(fullPath)) {
+      throw new Error(`File not found: ${fullPath}`);
+    }
     return fs.statSync(fullPath).size;
+  }
+
+  /**
+   * Check if file size is within web limits
+   * Returns true if file is within limits, false otherwise
+   */
+  isWithinWebLimits(filePath: string, isAbsolute: boolean = false): { within: boolean; size: number; limit: number; type: 'image' | 'pdf' | 'unknown' } {
+    const size = this.getFileSize(filePath, isAbsolute);
+    const fullPath = isAbsolute ? filePath : path.join(this.fixturesDir, filePath);
+    const ext = path.extname(fullPath).toLowerCase();
+    
+    // Determine file type
+    const isImage = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.heic', '.heif'].includes(ext);
+    const isPdf = ext === '.pdf';
+    
+    if (isImage) {
+      const limit = 3 * 1024 * 1024; // 3MB
+      return { within: size <= limit, size, limit, type: 'image' };
+    } else if (isPdf) {
+      const limit = 5 * 1024 * 1024; // 5MB
+      return { within: size <= limit, size, limit, type: 'pdf' };
+    }
+    
+    return { within: true, size, limit: Infinity, type: 'unknown' };
   }
 
   /**
@@ -107,6 +135,41 @@ export class FileLoader {
       return [];
     }
     return fs.readdirSync(dir).map(file => path.join(subDir, file));
+  }
+
+  /**
+   * Check if a file is a ZIP archive by checking magic number
+   */
+  isZipFile(filePath: string): boolean {
+    try {
+      const buffer = fs.readFileSync(filePath);
+      // ZIP file signature: PK (0x50 0x4B)
+      return buffer.length >= 2 && buffer[0] === 0x50 && buffer[1] === 0x4B;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if a file is an image by checking magic numbers
+   */
+  isImageFile(filePath: string): boolean {
+    try {
+      const buffer = fs.readFileSync(filePath);
+      if (buffer.length < 4) return false;
+      
+      // PNG: 89 50 4E 47
+      if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+        return true;
+      }
+      // JPEG: FF D8 FF
+      if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   }
 }
 

@@ -97,6 +97,12 @@ function getApiEndpoint(slug: string) {
       return "/api/pdf/extract_text";
     case "remove-metadata":
       return "/api/pdf/remove_metadata";
+    case "extract-metadata":
+      return "/api/pdf/extract_metadata";
+    case "extract-form-data":
+      return "/api/pdf/extract_form_data";
+    case "reorder-pages":
+      return "/api/pdf/reorder_pages";
     case "flatten-pdf":
       return "/api/pdf/flatten";
     case "photo-studio":

@@ -32,6 +32,9 @@ export const TOOL_SLUGS = [
     'page-numbers',
     'extract-text',
     'remove-metadata',
+    'extract-metadata',
+    'extract-form-data',
+    'reorder-pages',
     'flatten-pdf',
     // Image Tools
     'remove-image-background',

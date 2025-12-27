@@ -254,6 +254,24 @@ export const tools = [
     icon: "shield",
   },
   {
+    slug: "extract-metadata",
+    title: "Extract Metadata",
+    description: "Extract and view PDF metadata information (title, author, dates, etc.).",
+    icon: "file-search",
+  },
+  {
+    slug: "extract-form-data",
+    title: "Extract Form Data",
+    description: "Extract form field data from PDF forms to CSV or Excel. Handles both fillable and flattened forms.",
+    icon: "file-spreadsheet",
+  },
+  {
+    slug: "reorder-pages",
+    title: "Reorder Pages",
+    description: "Reorder PDF pages using drag-and-drop or numeric input. Perfect for organizing documents.",
+    icon: "arrow-up-down",
+  },
+  {
     slug: "flatten-pdf",
     title: "Flatten PDF",
     description: "Flatten form fields and annotations in PDF documents.",
