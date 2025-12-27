@@ -23,6 +23,7 @@ import {
   RotateCw,
   RotateCcw,
   Crop,
+  Maximize2,
 } from "lucide-react";
 import Cropper, { Area } from "react-easy-crop";
 import dynamic from "next/dynamic";
@@ -240,6 +241,7 @@ export function ToolProcessor({
   const [resizeWidth, setResizeWidth] = useState<number>(0);
   const [resizeHeight, setResizeHeight] = useState<number>(0);
   const [resizePercentage, setResizePercentage] = useState<number>(50);
+  const [upscaleFactor, setUpscaleFactor] = useState<2 | 4>(2);
   const [extractPaletteResult, setExtractPaletteResult] = useState<Record<
     string,
     { rgb: number[]; hex: string }[]
@@ -563,6 +565,10 @@ export function ToolProcessor({
       formData.append("width", resizeWidth.toString());
       formData.append("height", resizeHeight.toString());
       formData.append("percentage", resizePercentage.toString());
+    }
+
+    if (toolSlug === "upscale-image") {
+      formData.append("scale_factor", upscaleFactor.toString());
     }
 
     if (toolSlug === "passport-photo") {
@@ -1720,7 +1726,8 @@ export function ToolProcessor({
               (toolSlug === "convert-image" ||
                 toolSlug === "heic-to-jpg" ||
                 toolSlug === "compress-image" ||
-                toolSlug === "resize-image") && (
+                toolSlug === "resize-image" ||
+                toolSlug === "upscale-image") && (
                 <div className="space-y-6">
                   {/* Preview Card */}
                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col items-center">
@@ -1909,6 +1916,42 @@ export function ToolProcessor({
                           />
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Upscale Factor */}
+                  {toolSlug === "upscale-image" && (
+                    <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+                      <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <Maximize2 size={20} /> Scale Factor
+                      </h3>
+                      <div className="flex gap-4">
+                        <button
+                          onClick={() => setUpscaleFactor(2)}
+                          className={`flex-1 py-3 rounded-lg border transition-all font-medium ${
+                            upscaleFactor === 2
+                              ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,243,255,0.2)]"
+                              : "border-white/20 text-muted-foreground hover:bg-white/5 hover:border-white/40"
+                          }`}
+                        >
+                          2x
+                        </button>
+                        <button
+                          onClick={() => setUpscaleFactor(4)}
+                          className={`flex-1 py-3 rounded-lg border transition-all font-medium ${
+                            upscaleFactor === 4
+                              ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,243,255,0.2)]"
+                              : "border-white/20 text-muted-foreground hover:bg-white/5 hover:border-white/40"
+                          }`}
+                        >
+                          4x
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        {upscaleFactor === 2
+                          ? "Doubles image dimensions (2x width, 2x height)"
+                          : "Quadruples image dimensions (4x width, 4x height)"}
+                      </p>
                     </div>
                   )}
 

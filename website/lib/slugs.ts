@@ -40,6 +40,7 @@ export const TOOL_SLUGS = [
     'remove-image-background',
     'convert-image',
     'resize-image',
+    'upscale-image',
     'compress-image',
     'passport-photo',
     'generate-icons',

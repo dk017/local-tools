@@ -157,6 +157,13 @@
             "f2": "Pixel Precision",
             "f3": "High Quality"
         },
+        "upscale-image": {
+            "h1": "Upscale Images",
+            "p1": "Enhance image resolution using AI-powered upscaling. Increase image size while preserving quality.",
+            "f1": "AI-Powered Upscaling",
+            "f2": "2x or 4x Scale",
+            "f3": "Quality Preservation"
+        },
         "compress-image": {
             "h1": "Compress Images",
             "p1": "Reduce image size without losing quality. Optimize web images instantly.",
@@ -478,6 +485,10 @@
         "resize-image": {
             "title": "Resize Image",
             "desc": "Scale dimensions."
+        },
+        "upscale-image": {
+            "title": "Upscale Image",
+            "desc": "Enhance resolution with AI."
         },
         "compress-image": {
             "title": "Compress Image",

@@ -98,6 +98,12 @@ export const tools = [
     icon: "maximize",
   },
   {
+    slug: "upscale-image",
+    title: "Upscale Image",
+    description: "Enhance image resolution using AI-powered upscaling.",
+    icon: "maximize-2",
+  },
+  {
     slug: "compress-image",
     title: "Compress Image",
     description: "Compress image size.",

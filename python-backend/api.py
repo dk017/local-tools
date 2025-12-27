@@ -231,7 +231,8 @@ async def image_endpoint(
     rows: Optional[int] = Form(None),
     cols: Optional[int] = Form(None),
     count: Optional[int] = Form(None),
-    maintain_aspect: Optional[bool] = Form(None)
+    maintain_aspect: Optional[bool] = Form(None),
+    scale_factor: Optional[int] = Form(None)
 ):
     """Endpoint matching server.py format for website compatibility."""
     # Validate total size of all files
@@ -273,7 +274,8 @@ async def image_endpoint(
         "rows": rows,
         "cols": cols,
         "count": count,
-        "maintain_aspect": maintain_aspect
+        "maintain_aspect": maintain_aspect,
+        "scale_factor": scale_factor
     }
 
     if crop_box:

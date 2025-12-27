@@ -65,6 +65,13 @@
         "description": "Resize images by pixels or percentage."
     },
     {
+        "slug": "upscale-image",
+        "tool": "image",
+        "mode": "upscale",
+        "title": "Upscale Image - AI Resolution Enhancement",
+        "description": "Enhance image resolution using AI-powered upscaling (2x or 4x)."
+    },
+    {
         "slug": "crop-image",
         "tool": "image",
         "mode": "crop",

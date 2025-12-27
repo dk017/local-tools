@@ -5,6 +5,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance, ImageFilter
 from pillow_heif import register_heif_opener
 register_heif_opener()
 import io
+import numpy as np
+from pathlib import Path
 
 # Setup module-level logger
 logger = logging.getLogger(__name__)
@@ -57,6 +59,8 @@ def handle_image_action(action, payload):
         return remove_background(payload)
     elif action == "heic_to_jpg":
         return heic_to_jpg(payload)
+    elif action == "upscale":
+        return upscale_images(payload)
     else:
         raise ValueError(f"Unknown action: {action}")
 
@@ -1020,4 +1024,152 @@ def heic_to_jpg(payload):
             logger.error(f"HEIC Conversion Error: {e}")
             errors.append({"file": file_path, "error": str(e)})
             
+    return {"processed_files": processed_files, "errors": errors}
+
+
+def _get_upscale_model_path(scale: int) -> str:
+    """
+    Download and cache EDSR model for upscaling.
+    Uses pooch to download models on first use.
+    
+    Args:
+        scale: Scale factor (2 or 4)
+        
+    Returns:
+        Path to the cached model file
+    """
+    try:
+        import pooch
+    except ImportError:
+        raise ImportError("pooch library is required for model downloads")
+    
+    # Model URLs - using OpenCV's model zoo or reliable GitHub sources
+    # These are direct download URLs for EDSR models
+    model_urls = {
+        2: "https://github.com/Saafke/EDSR_TensorFlow/raw/master/models/EDSR_x2.pb",
+        4: "https://github.com/Saafke/EDSR_TensorFlow/raw/master/models/EDSR_x4.pb"
+    }
+    
+    if scale not in model_urls:
+        raise ValueError(f"Unsupported scale factor: {scale}. Supported: 2, 4")
+    
+    # Cache directory
+    cache_dir = Path.home() / ".cache" / "offline-tools" / "upscale"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    
+    model_filename = f"EDSR_x{scale}.pb"
+    model_path = cache_dir / model_filename
+    
+    # If model doesn't exist, download it
+    if not model_path.exists():
+        logger.info(f"Downloading EDSR x{scale} model (this may take a few minutes)...")
+        try:
+            pooch.retrieve(
+                url=model_urls[scale],
+                known_hash=None,  # Skip hash verification for now
+                fname=model_filename,
+                path=str(cache_dir),
+                progressbar=True
+            )
+            logger.info(f"Model downloaded successfully to {model_path}")
+        except Exception as e:
+            logger.error(f"Failed to download model: {e}")
+            # Try alternative: direct download using requests
+            try:
+                import requests
+                response = requests.get(model_urls[scale], stream=True, timeout=300)
+                response.raise_for_status()
+                with open(model_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                logger.info(f"Model downloaded via requests to {model_path}")
+            except Exception as e2:
+                logger.error(f"Alternative download also failed: {e2}")
+                raise Exception(f"Failed to download EDSR model. Please check your internet connection. Error: {e2}")
+    
+    return str(model_path)
+
+
+def upscale_images(payload):
+    """
+    Upscale images using OpenCV's dnn_superres with EDSR model.
+    
+    Args:
+        payload: Dictionary containing:
+            - files: List of image file paths
+            - scale_factor: Integer (2 or 4) for upscaling factor
+            
+    Returns:
+        Dictionary with processed_files and errors
+    """
+    try:
+        import cv2
+        from cv2 import dnn_superres
+    except ImportError:
+        return {"processed_files": [], "errors": ["opencv-contrib-python is required for upscaling. Please install it."]}
+    
+    files = payload.get("files", [])
+    scale_factor = payload.get("scale_factor", 2)
+    
+    # Validate scale factor
+    try:
+        scale_factor = int(scale_factor)
+        if scale_factor not in [2, 4]:
+            return {"processed_files": [], "errors": [f"Invalid scale factor: {scale_factor}. Supported: 2, 4"]}
+    except (ValueError, TypeError):
+        return {"processed_files": [], "errors": [f"Invalid scale factor: {scale_factor}. Must be 2 or 4"]}
+    
+    processed_files = []
+    errors = []
+    
+    # Get model path (downloads if needed)
+    try:
+        model_path = _get_upscale_model_path(scale_factor)
+    except Exception as e:
+        return {"processed_files": [], "errors": [f"Model download failed: {str(e)}"]}
+    
+    # Initialize super resolution object
+    try:
+        sr = dnn_superres.DnnSuperResImpl_create()
+        sr.readModel(model_path)
+        sr.setModel("edsr", scale_factor)
+        logger.info(f"EDSR x{scale_factor} model loaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to load EDSR model: {e}")
+        return {"processed_files": [], "errors": [f"Failed to load upscaling model: {str(e)}"]}
+    
+    for file_path in files:
+        try:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"File not found: {file_path}")
+            
+            # Read image using OpenCV
+            img = cv2.imread(file_path)
+            if img is None:
+                raise ValueError(f"Failed to read image: {file_path}")
+            
+            original_height, original_width = img.shape[:2]
+            logger.info(f"Upscaling {file_path} from {original_width}x{original_height} to {original_width*scale_factor}x{original_height*scale_factor}")
+            
+            # Upscale the image
+            upscaled = sr.upsample(img)
+            
+            # Save the upscaled image
+            base, ext = os.path.splitext(file_path)
+            output_path = f"{base}_upscaled{ext}"
+            
+            # Preserve original format
+            cv2.imwrite(output_path, upscaled)
+            
+            # Verify output
+            if not os.path.exists(output_path):
+                raise ValueError(f"Failed to save upscaled image: {output_path}")
+            
+            processed_files.append(output_path)
+            logger.info(f"Successfully upscaled {file_path} -> {output_path}")
+            
+        except Exception as e:
+            logger.error(f"Error upscaling {file_path}: {e}", exc_info=True)
+            errors.append({"file": file_path, "error": str(e)})
+    
     return {"processed_files": processed_files, "errors": errors}

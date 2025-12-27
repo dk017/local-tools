@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
-import { ArrowRight, Layers, FileImage, Files, Scissors, Minimize2, FileText, Lock, LockOpen, RotateCw, Palette, Stamp, Wrench, ImageMinus, Workflow, BoxSelect, SquareUser, Grid3x3, Crop, FileSpreadsheet, GitCompare, Book, ShieldAlert, Eraser, PenTool, Zap, FileSearch, ArrowUpDown, Search } from 'lucide-react';
+import { ArrowRight, Layers, FileImage, Files, Scissors, Minimize2, FileText, Lock, LockOpen, RotateCw, Palette, Stamp, Wrench, ImageMinus, Workflow, BoxSelect, SquareUser, Grid3x3, Crop, FileSpreadsheet, GitCompare, Book, ShieldAlert, Eraser, PenTool, Zap, FileSearch, ArrowUpDown, Search, Maximize2 } from 'lucide-react';
 
 export function ToolCatalog() {
     const t = useTranslations('Tools');
@@ -47,6 +47,7 @@ export function ToolCatalog() {
                 { slug: 'remove-image-background', icon: ImageMinus, title: t('remove-image-background.title'), desc: t('remove-image-background.desc'), color: 'text-pink-500 bg-pink-500/10 border-pink-500/20' },
                 { slug: 'convert-image', icon: Workflow, title: t('convert-image.title'), desc: t('convert-image.desc'), color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
                 { slug: 'resize-image', icon: BoxSelect, title: t('resize-image.title'), desc: t('resize-image.desc'), color: 'text-green-500 bg-green-500/10 border-green-500/20' },
+                { slug: 'upscale-image', icon: Maximize2, title: t('upscale-image.title'), desc: t('upscale-image.desc'), color: 'text-violet-500 bg-violet-500/10 border-violet-500/20' },
                 { slug: 'compress-image', icon: Minimize2, title: t('compress-image.title'), desc: t('compress-image.desc'), color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
                 { slug: 'passport-photo', icon: SquareUser, title: t('passport-photo.title'), desc: t('passport-photo.desc'), color: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20' },
                 { slug: 'generate-icons', icon: Grid3x3, title: t('generate-icons.title'), desc: t('generate-icons.desc'), color: 'text-purple-500 bg-purple-500/10 border-purple-500/20' },

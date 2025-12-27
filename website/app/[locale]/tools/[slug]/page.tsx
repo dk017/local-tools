@@ -40,6 +40,8 @@ function getApiEndpoint(slug: string) {
       return "/api/image/convert";
     case "resize-image":
       return "/api/image/resize";
+    case "upscale-image":
+      return "/api/image/upscale";
     case "compress-image":
       return "/api/image/compress";
     case "passport-photo":

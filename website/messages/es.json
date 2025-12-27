@@ -143,6 +143,13 @@
             "f2": "Precisión Píxel",
             "f3": "Alta Calidad"
         },
+        "upscale-image": {
+            "h1": "Mejorar Resolución",
+            "p1": "Mejora la resolución de imagen con IA. Aumenta el tamaño preservando la calidad.",
+            "f1": "Mejora con IA",
+            "f2": "2x o 4x",
+            "f3": "Preservación Calidad"
+        },
         "compress-image": {
             "h1": "Comprimir Imágenes",
             "p1": "Reduce el tamaño de imagen sin perder calidad.",
@@ -467,6 +474,10 @@
         "resize-image": {
             "title": "Redimensionar Imagen",
             "desc": "Escalar dimensiones."
+        },
+        "upscale-image": {
+            "title": "Mejorar Resolución",
+            "desc": "IA para mejorar."
         },
         "compress-image": {
             "title": "Comprimir Imagen",

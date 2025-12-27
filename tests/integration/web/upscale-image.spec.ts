@@ -6,33 +6,29 @@ import { imageValidator } from '../../utils/image-validator';
 /**
  * Upscale Image Tool Test
  * 
- * NOTE: This tool does not exist in the codebase yet.
- * All tests are skipped until the tool is implemented.
- * 
  * Tests image upscaling/resolution enhancement:
- * - Upscales image by specified factor
- * - Validates output dimensions are increased
- * - Verifies image quality is maintained
+ * - Upscales image by specified factor (2x or 4x)
+ * - Validates output dimensions are increased correctly
+ * - Verifies aspect ratio is maintained
+ * - Verifies image format is preserved
  */
 test.describe('Upscale Image Tool', () => {
   let baseTest: BaseTest;
 
   test.beforeEach(async ({ page }) => {
-    test.skip(); // Tool doesn't exist yet
     baseTest = new BaseTest(page);
     await baseTest.navigateToTool('upscale-image');
   });
 
   test('should upscale image by 2x', async ({ page }) => {
-    test.skip(); // Tool doesn't exist yet
     // Use fallback if small-image.jpg doesn't exist
     const testImage = fileLoader.getFixturePathWithFallback('images/small-image.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']);
     const originalDims = await imageValidator.getDimensions(testImage);
 
     await baseTest.uploadFile(testImage);
 
-    // Select 2x upscale
-    await page.selectOption('select[name="scale"], select[name="factor"]', { label: /2x|200%/i }).catch(() => {});
+    // Click 2x button (default is 2x, but click to ensure)
+    await page.click('button:has-text("2x")').catch(() => {});
 
     await baseTest.waitForProcessing();
     const outputPath = await baseTest.downloadFile();
@@ -44,13 +40,14 @@ test.describe('Upscale Image Tool', () => {
   });
 
   test('should upscale image by 4x', async ({ page }) => {
-    test.skip(); // Tool doesn't exist yet
     // Use fallback if small-image.jpg doesn't exist
     const testImage = fileLoader.getFixturePathWithFallback('images/small-image.jpg', ['images/portrait.jpg', 'images/portrait-with-bg.jpg']);
     const originalDims = await imageValidator.getDimensions(testImage);
 
     await baseTest.uploadFile(testImage);
-    await page.selectOption('select[name="scale"]', { label: /4x|400%/i }).catch(() => {});
+    
+    // Click 4x button
+    await page.click('button:has-text("4x")');
 
     await baseTest.waitForProcessing();
     const outputPath = await baseTest.downloadFile();
@@ -61,13 +58,13 @@ test.describe('Upscale Image Tool', () => {
   });
 
   test('should maintain aspect ratio', async ({ page }) => {
-    test.skip(); // Tool doesn't exist yet
-    const testImage = fileLoader.getFixturePath('images/portrait.jpg');
+    const testImage = fileLoader.getFixturePathWithFallback('images/portrait.jpg', ['images/portrait-with-bg.jpg', 'images/small-image.jpg']);
     const originalDims = await imageValidator.getDimensions(testImage);
     const originalAspectRatio = originalDims.width / originalDims.height;
 
     await baseTest.uploadFile(testImage);
-    await page.selectOption('select[name="scale"]', { label: /2x/i }).catch(() => {});
+    // Click 2x button
+    await page.click('button:has-text("2x")').catch(() => {});
 
     await baseTest.waitForProcessing();
     const outputPath = await baseTest.downloadFile();
@@ -75,14 +72,13 @@ test.describe('Upscale Image Tool', () => {
     const outputDims = await imageValidator.getDimensions(outputPath);
     const outputAspectRatio = outputDims.width / outputDims.height;
 
-    // Aspect ratio should be preserved
+    // Aspect ratio should be preserved (within small tolerance)
     expect(outputAspectRatio).toBeCloseTo(originalAspectRatio, 2);
   });
 
   test('should preserve image format', async ({ page }) => {
-    test.skip(); // Tool doesn't exist yet
     // Use fallback if image.png doesn't exist
-    const testImage = fileLoader.getFixturePathWithFallback('images/image.png', ['images/portrait-2.png', 'images/portriat-1.png', 'images/portrait.jpg']);
+    const testImage = fileLoader.getFixturePathWithFallback('images/image.png', ['images/portrait-2.png', 'images/portrait-1.png', 'images/portrait.jpg']);
     const originalFormat = await imageValidator.getFormat(testImage);
 
     await baseTest.uploadFile(testImage);

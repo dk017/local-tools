@@ -45,6 +45,7 @@ dist/
 *.pyd
 *.tar.gz
 *.spec
+*.tsbuildinfo
 
 # Tauri binaries
 src-tauri/binaries/
