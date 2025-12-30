@@ -178,6 +178,13 @@
             "f2": "Control Opacidad",
             "f3": "Protección Marca"
         },
+        "crop-pdf": {
+            "h1": "Recortar Páginas PDF",
+            "p1": "Recorta páginas PDF para eliminar márgenes y contenido no deseado.",
+            "f1": "Recorte Visual",
+            "f2": "Control Preciso",
+            "f3": "Procesamiento por Lotes"
+        },
         "repair-pdf": {
             "h1": "Reparar PDF",
             "p1": "Arregla archivos PDF corruptos o dañados.",
@@ -689,6 +696,13 @@
         "supports": "Soporta PDF, PNG, JPG",
         "limit": "Hasta {count} archivos",
         "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+    },
+    "Validation": {
+        "single_file_required": "This tool only accepts one file. Please select a single {type} file.",
+        "exactly_two_files_required": "This tool requires exactly 2 PDF files for comparison. Please select exactly 2 files.",
+        "too_many_files": "This tool accepts up to {max} files. You selected {count} files. Please select fewer files.",
+        "invalid_file_type": "Invalid file type. This tool only accepts {type} files.",
+        "file_too_large_web": "File \"{filename}\" is too large ({size}MB). Maximum size for web version is {limit}MB. Please use the desktop app for larger files."
     }
 }
 ```

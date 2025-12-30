@@ -54,11 +54,38 @@ export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className 
     }
 
     const onDropRejected = useCallback((fileRejections: any[]) => {
-        const file = fileRejections[0];
-        if (file?.errors[0]?.code === 'file-too-large') {
-            alert(t('file_too_large', { limit: sizeLimitText }));
+        const rejection = fileRejections[0];
+        const file = rejection?.file;
+        const error = rejection?.errors[0];
+        
+        if (!file || !error) return;
+        
+        let errorMessage = '';
+        
+        switch (error.code) {
+            case 'file-too-large':
+                errorMessage = t('file_too_large', { limit: sizeLimitText });
+                break;
+            case 'file-invalid-type':
+                if (isPdfTool) {
+                    errorMessage = `Invalid file type. "${file.name}" is not a PDF file. Please select a PDF file.`;
+                } else if (isImageTool) {
+                    errorMessage = `Invalid file type. "${file.name}" is not an image file. Please select an image file (PNG, JPG, JPEG, WebP).`;
+                } else {
+                    errorMessage = `Invalid file type. "${file.name}" is not supported.`;
+                }
+                break;
+            case 'too-many-files':
+                errorMessage = `Too many files selected. Maximum allowed: ${maxFiles} file${maxFiles > 1 ? 's' : ''}.`;
+                break;
+            default:
+                errorMessage = `Error uploading "${file.name}": ${error.message || 'Unknown error'}`;
         }
-    }, [t, sizeLimitText]);
+        
+        if (errorMessage) {
+            alert(errorMessage);
+        }
+    }, [t, sizeLimitText, isPdfTool, isImageTool, maxFiles]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -89,9 +116,12 @@ export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className 
                 <h3 className="text-lg font-bold mb-1">
                     {isDragActive ? t('drop_active') : t('drop_idle')}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                    {maxFiles === 1 ? t('supports') : t('limit', { count: maxFiles })}
-                </p>
+                {/* Only show file count/support text for multi-file tools or non-PDF-only single-file tools */}
+                {!(maxFiles === 1 && isPdfTool && !isImageTool) && (
+                    <p className="text-sm text-muted-foreground">
+                        {maxFiles === 1 ? t('supports') : t('limit', { count: maxFiles })}
+                    </p>
+                )}
             </div>
         </div>
     );

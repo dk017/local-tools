@@ -12,6 +12,7 @@ import {
   Type,
   Image as LucideImage,
   Plus,
+  X,
   FileSpreadsheet,
   ShieldAlert,
   PenTool,
@@ -143,6 +144,276 @@ export function ToolProcessor({
   acceptedFileTypes,
 }: ToolProcessorProps) {
   const t = useTranslations("ToolProcessor");
+  
+  // Determine max files based on tool type
+  const getMaxFiles = (): number => {
+    // Special case: pdf-diff requires exactly 2 files
+    if (toolSlug === "pdf-diff") {
+      return 2;
+    }
+    
+    // Single-file tools
+    const singleFileTools = [
+      "rotate-pdf",
+      "compress-pdf",
+      "pdf-to-word",
+      "pdf-to-images",
+      "protect-pdf",
+      "unlock-pdf",
+      "pdf-signer",
+      "pdf-redactor",
+      "crop-pdf",
+      "grayscale-pdf",
+      "repair-pdf",
+      "pdf-web-optimize",
+      "pdf-to-pdfa",
+      "ocr-pdf",
+      "word-to-pdf",
+      "powerpoint-to-pdf",
+      "excel-to-pdf",
+      "html-to-pdf",
+      "organize-pdf",
+      "split-pdf",
+      "watermark-pdf",
+      "extract-tables",
+      "extract-text",
+      "remove-metadata",
+      "extract-metadata",
+      "extract-form-data",
+      "reorder-pages",
+      "flatten-pdf",
+      "extract-images-from-pdf",
+      "delete-pages",
+      "page-numbers",
+      "pdf-scrubber",
+      "convert-image",
+      "resize-image",
+      "upscale-image",
+      "compress-image",
+      "passport-photo",
+      "generate-icons",
+      "extract-palette",
+      "crop-image",
+      "heic-to-jpg",
+      "photo-studio",
+      "grid-split",
+      "remove-image-metadata",
+    ];
+    
+    return singleFileTools.includes(toolSlug) ? 1 : 10;
+  };
+  
+  const maxFiles = getMaxFiles();
+  
+  // Get file type name for error messages
+  const getFileTypeName = (): string => {
+    if (toolSlug === "images-to-pdf") {
+      return "image";  // images-to-pdf accepts images, not PDFs
+    } else if (toolSlug.includes("pdf") || toolSlug === "pdf-diff") {
+      return "PDF";
+    } else if (toolSlug.includes("word") || toolSlug === "word-to-pdf") {
+      return "Word document";
+    } else if (toolSlug.includes("powerpoint") || toolSlug === "powerpoint-to-pdf") {
+      return "PowerPoint presentation";
+    } else if (toolSlug.includes("excel") || toolSlug === "excel-to-pdf") {
+      return "Excel spreadsheet";
+    } else if (toolSlug.includes("html") || toolSlug === "html-to-pdf") {
+      return "HTML file";
+    } else if (toolSlug.includes("heic") || toolSlug === "heic-to-jpg") {
+      return "HEIC image";
+    } else {
+      return "image";
+    }
+  };
+  
+  // Check if running in web (not desktop)
+  const isWeb = typeof window !== 'undefined' && !('__TAURI__' in window);
+  
+  // Comprehensive file validation function
+  interface ValidationResult {
+    valid: boolean;
+    error?: string;
+  }
+  
+  const validateFiles = (files: File[]): ValidationResult => {
+    // Clear previous errors
+    setErrorMessage(null);
+    
+    // File count validation
+    if (maxFiles === 1 && files.length > 1) {
+      return {
+        valid: false,
+        error: `This tool only accepts one file. Please select a single ${getFileTypeName()} file.`
+      };
+    }
+    
+    if (maxFiles === 2 && files.length !== 2) {
+      if (files.length === 1) {
+        return {
+          valid: false,
+          error: "This tool requires exactly 2 PDF files for comparison. Please select one more file."
+        };
+      } else if (files.length === 0) {
+        return {
+          valid: false,
+          error: "This tool requires exactly 2 PDF files for comparison. Please select 2 files."
+        };
+      } else {
+        return {
+          valid: false,
+          error: `This tool requires exactly 2 PDF files. You selected ${files.length} files. Please select exactly 2 files.`
+        };
+      }
+    }
+    
+    if (maxFiles === 10 && files.length > 10) {
+      return {
+        valid: false,
+        error: `This tool accepts up to 10 files. You selected ${files.length} files. Please select fewer files.`
+      };
+    }
+    
+    // File type validation
+    const isPdfTool = (toolSlug.includes("pdf") &&
+                      toolSlug !== "images-to-pdf") ||  // Exclude images-to-pdf (accepts images, not PDFs)
+                      toolSlug === "pdf-diff" ||
+                      toolSlug === "extract-tables" ||
+                      toolSlug === "extract-text" ||
+                      toolSlug === "extract-metadata" ||
+                      toolSlug === "extract-form-data" ||
+                      toolSlug === "extract-images-from-pdf";
+    
+    const isImageTool = (toolSlug.includes("image") &&
+                        toolSlug !== "extract-images-from-pdf" &&
+                        toolSlug !== "pdf-to-images") ||
+                       toolSlug === "images-to-pdf" ||  // Accepts images as input
+                       toolSlug === "remove-image-background" ||
+                       toolSlug === "convert-image" ||
+                       toolSlug === "resize-image" ||
+                       toolSlug === "upscale-image" ||
+                       toolSlug === "compress-image" ||
+                       toolSlug === "passport-photo" ||
+                       toolSlug === "generate-icons" ||
+                       toolSlug === "extract-palette" ||
+                       toolSlug === "crop-image" ||
+                       toolSlug === "watermark-image" ||
+                       toolSlug === "photo-studio" ||
+                       toolSlug === "grid-split" ||
+                       toolSlug === "remove-image-metadata";
+    
+    const isWordTool = toolSlug === "word-to-pdf";
+    const isPowerPointTool = toolSlug === "powerpoint-to-pdf";
+    const isExcelTool = toolSlug === "excel-to-pdf";
+    const isHtmlTool = toolSlug === "html-to-pdf";
+    const isHeicTool = toolSlug === "heic-to-jpg";
+    
+    for (const file of files) {
+      const fileName = file.name.toLowerCase();
+      const fileType = file.type;
+
+      // Empty file check
+      if (file.size === 0) {
+        return {
+          valid: false,
+          error: `File "${file.name}" is empty (0 bytes). Please select a valid file.`
+        };
+      }
+
+      // Minimum file size check (corrupted/invalid files)
+      if (file.size < 100) {
+        return {
+          valid: false,
+          error: `File "${file.name}" is too small (${file.size} bytes). This file appears to be corrupted or invalid.`
+        };
+      }
+
+      // PDF validation
+      if (isPdfTool && !fileName.endsWith('.pdf') && fileType !== 'application/pdf') {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts PDF files. "${file.name}" is not a PDF file.`
+        };
+      }
+      
+      // Image validation
+      if (isImageTool && !fileName.match(/\.(jpg|jpeg|png|webp|gif|bmp|heic|heif)$/i) && !fileType.startsWith('image/')) {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts image files (PNG, JPG, JPEG, WebP). "${file.name}" is not an image file.`
+        };
+      }
+      
+      // Word validation
+      if (isWordTool && !fileName.match(/\.(docx|doc)$/i) && !fileType.includes('wordprocessingml')) {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts Word documents (.docx, .doc). "${file.name}" is not a Word document.`
+        };
+      }
+      
+      // PowerPoint validation
+      if (isPowerPointTool && !fileName.match(/\.(pptx|ppt)$/i) && !fileType.includes('presentationml')) {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts PowerPoint presentations (.pptx, .ppt). "${file.name}" is not a PowerPoint file.`
+        };
+      }
+      
+      // Excel validation
+      if (isExcelTool && !fileName.match(/\.(xlsx|xls)$/i) && !fileType.includes('spreadsheetml')) {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts Excel spreadsheets (.xlsx, .xls). "${file.name}" is not an Excel file.`
+        };
+      }
+      
+      // HTML validation
+      if (isHtmlTool && !fileName.match(/\.(html|htm)$/i) && fileType !== 'text/html') {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts HTML files (.html, .htm). "${file.name}" is not an HTML file.`
+        };
+      }
+      
+      // HEIC validation
+      if (isHeicTool && !fileName.match(/\.(heic|heif)$/i) && fileType !== 'image/heic' && fileType !== 'image/heif') {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts HEIC images (.heic, .heif). "${file.name}" is not a HEIC file.`
+        };
+      }
+      
+      // File size validation (web only)
+      if (isWeb) {
+        const maxImageSize = 3 * 1024 * 1024; // 3MB
+        const maxPdfSize = 5 * 1024 * 1024; // 5MB
+        const maxOfficeSize = 5 * 1024 * 1024; // 5MB for Office files
+        
+        if (isImageTool && file.size > maxImageSize) {
+          return {
+            valid: false,
+            error: `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size for web version is 3MB. Please use the desktop app for larger files.`
+          };
+        }
+        
+        if (isPdfTool && file.size > maxPdfSize) {
+          return {
+            valid: false,
+            error: `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size for web version is 5MB. Please use the desktop app for larger files.`
+          };
+        }
+        
+        if ((isWordTool || isPowerPointTool || isExcelTool) && file.size > maxOfficeSize) {
+          return {
+            valid: false,
+            error: `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size for web version is 5MB. Please use the desktop app for larger files.`
+          };
+        }
+      }
+    }
+    
+    return { valid: true };
+  };
   const [status, setStatus] = useState<
     "idle" | "uploading" | "processing" | "complete" | "error"
   >("idle");
@@ -195,6 +466,7 @@ export function ToolProcessor({
     x: 0.5,
     y: 0.5,
   });
+  const [watermarkScale, setWatermarkScale] = useState<number>(1);
 
   // Crop State (Visual)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -219,6 +491,9 @@ export function ToolProcessor({
     }
   }, [toolSlug]);
 
+  // Watermark preview doesn't need to reload on settings change
+  // The overlay updates in real-time on the client side
+
   // Crop State
   const [cropX, setCropX] = useState<number>(0);
   const [cropY, setCropY] = useState<number>(0);
@@ -229,11 +504,18 @@ export function ToolProcessor({
   const [studioBackground, setStudioBackground] = useState<string | null>(null);
   const [studioDim, setStudioDim] = useState({ w: 800, h: 600 });
   const [extractFormat, setExtractFormat] = useState("csv");
+  const [mergeTables, setMergeTables] = useState(false);
   // Advanced Tools State
   const [redactText, setRedactText] = useState("");
+  const [redactTexts, setRedactTexts] = useState<string[]>([""]);
   const [certFile, setCertFile] = useState<File | null>(null);
   const [certPassword, setCertPassword] = useState("");
   const [pdfPassword, setPdfPassword] = useState("");
+  // PDF Signer Configuration
+  const [signatureText, setSignatureText] = useState("Digitally Signed");
+  const [signatureLocation, setSignatureLocation] = useState("");
+  const [signaturePosPercent, setSignaturePosPercent] = useState({ x: 0.5, y: 0.1 }); // Top center by default
+  const [signatureScale, setSignatureScale] = useState(1);
   const [heicQuality, setHeicQuality] = useState(95);
   const [compressionLevel, setCompressionLevel] = useState(1);
 
@@ -248,11 +530,16 @@ export function ToolProcessor({
   > | null>(null);
 
   // PDF Crop State
-  const [pdfCropX, setPdfCropX] = useState<number>(0);
-  const [pdfCropY, setPdfCropY] = useState<number>(0);
-  const [pdfCropWidth, setPdfCropWidth] = useState<number | null>(null);
-  const [pdfCropHeight, setPdfCropHeight] = useState<number | null>(null);
+  const [pdfCropX, setPdfCropX] = useState<number>(50);
+  const [pdfCropY, setPdfCropY] = useState<number>(50);
+  const [pdfCropWidth, setPdfCropWidth] = useState<number | null>(400);
+  const [pdfCropHeight, setPdfCropHeight] = useState<number | null>(500);
   const [pdfCropPages, setPdfCropPages] = useState<string>("");
+  const [isDraggingCrop, setIsDraggingCrop] = useState(false);
+  const [isResizingCrop, setIsResizingCrop] = useState(false);
+  const cropPreviewRef = useRef<HTMLImageElement>(null);
+  const [pdfPageWidth, setPdfPageWidth] = useState<number | null>(null);
+  const [pdfPageHeight, setPdfPageHeight] = useState<number | null>(null);
 
   // PDF Organize State
   const [pageOrder, setPageOrder] = useState<string>("");
@@ -273,21 +560,62 @@ export function ToolProcessor({
   // Cache for preview images
   const previewCacheRef = useRef<Map<string, string>>(new Map());
 
-  // Generate cache key from params
-  const getCacheKey = (params: any): string => {
+  // Initialize crop box when preview loads for crop-pdf
+  useEffect(() => {
+    if (toolSlug === "crop-pdf" && previewUrl && cropPreviewRef.current && pdfPageWidth && pdfPageHeight) {
+      const img = cropPreviewRef.current;
+      // Wait for image to load
+      if (img.complete && img.naturalWidth > 0) {
+        const imgRect = img.getBoundingClientRect();
+        // Set crop box to center 60% of the image
+        const cropW = imgRect.width * 0.6;
+        const cropH = imgRect.height * 0.6;
+        const cropX = (imgRect.width - cropW) / 2;
+        const cropY = (imgRect.height - cropH) / 2;
+        setPdfCropX(cropX);
+        setPdfCropY(cropY);
+        setPdfCropWidth(cropW);
+        setPdfCropHeight(cropH);
+      } else {
+        // If image not loaded yet, wait for it
+        const onLoad = () => {
+          const imgRect = img.getBoundingClientRect();
+          const cropW = imgRect.width * 0.6;
+          const cropH = imgRect.height * 0.6;
+          const cropX = (imgRect.width - cropW) / 2;
+          const cropY = (imgRect.height - cropH) / 2;
+          setPdfCropX(cropX);
+          setPdfCropY(cropY);
+          setPdfCropWidth(cropW);
+          setPdfCropHeight(cropH);
+        };
+        img.addEventListener('load', onLoad);
+        return () => img.removeEventListener('load', onLoad);
+      }
+    }
+  }, [toolSlug, previewUrl, pdfPageWidth, pdfPageHeight]);
+
+    // Generate cache key from params
+  const getCacheKey = (params: any, fileName?: string): string => {
     const sortedParams = Object.keys(params)
       .sort()
       .map((key) => `${key}:${params[key]}`)
       .join("|");
-    return `${previewFile?.name || ""}|${toolSlug}|${sortedParams}`;
+    return `${fileName || previewFile?.name || ""}|${toolSlug}|${sortedParams}`;
   };
 
   // Fetch preview with parameters
-  const fetchPreview = async (params: any, debounceMs: number = 300) => {
-    if (!previewFile) return;
+  const fetchPreview = async (params: any = {}, debounceMs: number = 300, fileOverride?: File) => {
+    const fileToUse = fileOverride || previewFile;
+    if (!fileToUse) return;
+    
+    // For rotate-pdf, ensure angle is included from params or current state
+    if (toolSlug === "rotate-pdf" && params.angle === undefined) {
+      params.angle = rotationAngle;
+    }
     
     // Check cache first
-    const cacheKey = getCacheKey(params);
+    const cacheKey = getCacheKey(params, fileToUse.name);
     const cachedPreview = previewCacheRef.current.get(cacheKey);
     if (cachedPreview) {
       setPreviewUrl(cachedPreview);
@@ -304,7 +632,7 @@ export function ToolProcessor({
     previewDebounceRef.current = setTimeout(async () => {
       setIsLoadingPreview(true);
       const formData = new FormData();
-      formData.append("files", previewFile);
+      formData.append("files", fileToUse);
       const actionType = toolSlug.replace("-pdf", "").replace("-image", "");
       formData.append("mode", actionType);
       formData.append("page", "0");
@@ -321,6 +649,14 @@ export function ToolProcessor({
           method: "POST",
           body: formData,
         });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Preview API error:", res.status, errorText);
+          setIsLoadingPreview(false);
+          return;
+        }
+        
         const data = await res.json();
         if (data.image) {
           // Cache the result
@@ -334,8 +670,16 @@ export function ToolProcessor({
           }
           setPreviewUrl(data.image);
           setPreviewParams(params);
+
+          // Store PDF page dimensions for coordinate conversion
+          if (data.page_width && data.page_height) {
+            setPdfPageWidth(data.page_width);
+            setPdfPageHeight(data.page_height);
+          }
         } else if (data.errors && data.errors.length > 0) {
           console.error("Preview error:", data.errors);
+        } else {
+          console.warn("Preview response missing image:", data);
         }
       } catch (e) {
         console.error("Preview failed", e);
@@ -346,6 +690,22 @@ export function ToolProcessor({
   };
 
   const handleFileSelect = (files: File[]) => {
+    // Clear previous errors
+    setErrorMessage(null);
+    
+    // Validate files before processing
+    const validation = validateFiles(files);
+    if (!validation.valid) {
+      setErrorMessage(validation.error || "Invalid files selected.");
+      setStatus("error");
+      return;
+    }
+    
+    // Validation passed - clear any previous error state
+    if (status === "error") {
+      setStatus("idle");
+    }
+    
     if (toolSlug === "design-studio" && files.length > 0) {
       const file = files[0];
       const url = URL.createObjectURL(file);
@@ -404,7 +764,7 @@ export function ToolProcessor({
       return;
     }
 
-    // Auto-preview for tools that need preview
+    // Auto-preview for tools that need preview (including reorder-pages)
     if (
       (toolSlug === "watermark-pdf" ||
         toolSlug === "watermark-image" ||
@@ -415,7 +775,9 @@ export function ToolProcessor({
         toolSlug === "pdf-redactor" ||
         toolSlug === "rotate-pdf" ||
         toolSlug === "crop-pdf" ||
-        toolSlug === "grayscale-pdf") &&
+        toolSlug === "grayscale-pdf" ||
+        toolSlug === "reorder-pages" ||
+        toolSlug === "organize-pdf") &&
       files.length > 0
     ) {
       const file = files[0];
@@ -430,23 +792,42 @@ export function ToolProcessor({
       } else if (
         toolSlug === "protect-pdf" ||
         toolSlug === "unlock-pdf" ||
-        toolSlug === "pdf-signer" ||
-        toolSlug === "pdf-redactor"
+        toolSlug === "pdf-redactor" ||
+        toolSlug === "reorder-pages" ||
+        toolSlug === "organize-pdf"
       ) {
         // No visual preview, but stage the file and wait for user to click Process
         setPreviewFile(file);
         // We don't set previewUrl, effectively kept null
+        // DO NOT auto-process - wait for user to enter page order/password and click button
+        return;
+      } else if (toolSlug === "pdf-signer") {
+        // PDF Signer - show preview with signature overlay positioning
+        setPreviewFile(file);
+        fetchPreview({}, 0, file);
+        // DO NOT auto-process - wait for user to configure signature and click Sign button
+        return;
       } else {
         // Server-side preview for PDF
         setPreviewFile(file);
         // Load initial preview based on tool type
         if (toolSlug === "rotate-pdf") {
-          fetchPreview({ angle: 0 }, 0); // No debounce for initial load
+          // Pass file directly since state update is async
+          fetchPreview({ angle: rotationAngle }, 0, file); // Use current rotation angle for initial load
+          // DO NOT auto-process - wait for user to adjust rotation and click Apply button
+          return;
         } else if (toolSlug === "crop-pdf") {
           // Load initial preview without crop (will show full page)
-          fetchPreview({}, 0);
+          fetchPreview({}, 0, file);
+          // DO NOT auto-process - wait for user to configure crop area and click Apply button
+          return;
         } else if (toolSlug === "grayscale-pdf") {
           fetchPreview({}, 0);
+        } else if (toolSlug === "watermark-pdf") {
+          // Watermark PDF - show plain preview, watermark is overlaid on client side
+          fetchPreview({}, 0, file);
+          // DO NOT auto-process - wait for user to configure watermark and click Process button
+          return;
         } else {
           // Default preview for other PDF tools
           const fd = new FormData();
@@ -471,12 +852,29 @@ export function ToolProcessor({
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleFiles = async (files: File[]) => {
-    // If we are in watermark mode and just loaded a preview, DO NOT auto-process
-    if (
-      (toolSlug === "watermark-pdf" || toolSlug === "watermark-image") &&
-      !previewUrl
-    ) {
-      return;
+    // Validate files FIRST before any processing
+    const validation = validateFiles(files);
+    if (!validation.valid) {
+      setErrorMessage(validation.error || "Invalid files selected.");
+      setStatus("error");
+      return; // STOP - don't upload
+    }
+
+    // Manual-process tools should not auto-process - user must click Process button
+    // These tools require additional configuration before processing
+    const manualProcessTools = [
+      "watermark-pdf",
+      "watermark-image",
+      "reorder-pages",
+      "organize-pdf"
+    ];
+
+    if (manualProcessTools.includes(toolSlug)) {
+      // Only proceed if explicitly called (user clicked Process button)
+      // Check if preview is loaded (indicates file was staged)
+      if (!previewFile) {
+        return;
+      }
     }
 
     setStatus("uploading");
@@ -493,18 +891,16 @@ export function ToolProcessor({
     if (toolSlug === "watermark-pdf" || toolSlug === "watermark-image") {
       formData.append("watermark_type", watermarkType);
       formData.append("opacity", watermarkOpacity.toString());
+      formData.append("x", watermarkPosPercent.x.toString());
+      formData.append("y", watermarkPosPercent.y.toString());
       if (watermarkType === "text") {
         formData.append("text", watermarkText);
         formData.append("color", watermarkColor);
-        formData.append("font_size", watermarkFontSize.toString());
-        formData.append("position", watermarkPosition);
-        formData.append("x", watermarkPosPercent.x.toString());
-        formData.append("y", watermarkPosPercent.y.toString());
+        // Apply scale to font size for final output
+        const effectiveFontSize = Math.round(watermarkFontSize * watermarkScale);
+        formData.append("font_size", effectiveFontSize.toString());
       } else if (watermarkFile) {
         formData.append("watermark_file", watermarkFile);
-        formData.append("position", watermarkPosition);
-        formData.append("x", watermarkPosPercent.x.toString());
-        formData.append("y", watermarkPosPercent.y.toString());
       }
     }
 
@@ -521,6 +917,7 @@ export function ToolProcessor({
 
     if (toolSlug === "extract-tables") {
       formData.append("output_format", extractFormat);
+      formData.append("merge_tables", mergeTables ? "true" : "false");
     }
 
     if (toolSlug === "convert-image" || toolSlug === "heic-to-jpg") {
@@ -547,6 +944,8 @@ export function ToolProcessor({
       formData.append("level", compressionLevel.toString());
     }
 
+    // Password validation is handled by button disabled state
+    // No need to validate here since button won't be enabled without valid password
     if (toolSlug === "protect-pdf" || toolSlug === "unlock-pdf") {
       formData.append("password", pdfPassword);
     }
@@ -554,10 +953,21 @@ export function ToolProcessor({
     if (toolSlug === "pdf-signer") {
       if (certFile) formData.append("cert_file", certFile);
       formData.append("password", certPassword);
+      // Signature appearance configuration
+      formData.append("text", signatureText);
+      formData.append("reason", "Document Authorization"); // Fixed value
+      formData.append("location", signatureLocation);
+      // Position (as percentages)
+      formData.append("x", (signaturePosPercent.x * 100).toString());
+      formData.append("y", (signaturePosPercent.y * 100).toString());
     }
 
     if (toolSlug === "pdf-redactor") {
-      formData.append("text", redactText);
+      // Send all non-empty redaction texts as JSON array
+      const textsToRedact = redactTexts.filter(t => t.trim().length > 0);
+      console.log("Redaction texts being sent:", textsToRedact);
+      console.log("JSON stringified:", JSON.stringify(textsToRedact));
+      formData.append("texts", JSON.stringify(textsToRedact));
     }
 
     if (toolSlug === "resize-image") {
@@ -574,15 +984,7 @@ export function ToolProcessor({
     if (toolSlug === "passport-photo") {
       formData.append("country", passportCountry);
     }
-
-    // Advanced Params
-    if (toolSlug === "pdf-redactor") {
-      formData.append("text", redactText);
-    }
-    if (toolSlug === "pdf-signer") {
-      formData.append("password", certPassword);
-      if (certFile) formData.append("cert_file", certFile);
-    }
+    // pdf-signer params already appended above (lines 912-915)
     if (toolSlug === "heic-to-jpg") {
       formData.append("quality", heicQuality.toString());
     }
@@ -594,12 +996,34 @@ export function ToolProcessor({
 
     // PDF Crop Params
     if (toolSlug === "crop-pdf") {
-      formData.append("x", pdfCropX.toString());
-      formData.append("y", pdfCropY.toString());
-      if (pdfCropWidth !== null)
-        formData.append("width", pdfCropWidth.toString());
-      if (pdfCropHeight !== null)
-        formData.append("height", pdfCropHeight.toString());
+      // Convert pixel coordinates from preview to PDF points
+      if (cropPreviewRef.current && pdfPageWidth && pdfPageHeight) {
+        const previewImg = cropPreviewRef.current;
+        const imgRect = previewImg.getBoundingClientRect();
+
+        // Calculate scaling factor: actual PDF size / preview display size
+        const scaleX = pdfPageWidth / imgRect.width;
+        const scaleY = pdfPageHeight / imgRect.height;
+
+        // Convert coordinates to PDF points
+        const pdfX = Math.round(pdfCropX * scaleX);
+        const pdfY = Math.round(pdfCropY * scaleY);
+        const pdfWidth = pdfCropWidth !== null ? Math.round(pdfCropWidth * scaleX) : null;
+        const pdfHeight = pdfCropHeight !== null ? Math.round(pdfCropHeight * scaleY) : null;
+
+        formData.append("x", pdfX.toString());
+        formData.append("y", pdfY.toString());
+        if (pdfWidth !== null) formData.append("width", pdfWidth.toString());
+        if (pdfHeight !== null) formData.append("height", pdfHeight.toString());
+      } else {
+        // Fallback to raw values if conversion not possible
+        formData.append("x", pdfCropX.toString());
+        formData.append("y", pdfCropY.toString());
+        if (pdfCropWidth !== null)
+          formData.append("width", pdfCropWidth.toString());
+        if (pdfCropHeight !== null)
+          formData.append("height", pdfCropHeight.toString());
+      }
       if (pdfCropPages) formData.append("pages", pdfCropPages);
     }
 
@@ -704,22 +1128,78 @@ export function ToolProcessor({
       if (!res.ok) {
         let errText = await res.text();
         console.error("Backend Error:", errText);
+
         try {
           // Try parsing JSON error if available
           const jsonErr = JSON.parse(errText);
-          if (jsonErr.detail) errText = jsonErr.detail;
-        } catch {
-          /* ignore json parse error */
+
+          if (jsonErr.detail) {
+            // Check if detail is an array of error objects
+            if (Array.isArray(jsonErr.detail) && jsonErr.detail.length > 0) {
+              // Extract just the error messages
+              errText = jsonErr.detail.map((err: any) => {
+                if (typeof err === 'string') return err;
+                if (err.error) return err.error;
+                if (err.message) return err.message;
+                // Try to extract any meaningful text from object
+                return JSON.stringify(err);
+              }).join(', ');
+            } else if (typeof jsonErr.detail === 'string') {
+              // Clean up array notation if present (e.g., "['error message']" -> "error message")
+              errText = jsonErr.detail
+                .replace(/^\[['"]|['"]\]$/g, '')  // Remove leading [' and trailing ']
+                .replace(/['"]/g, '');            // Remove remaining quotes
+            } else if (typeof jsonErr.detail === 'object' && jsonErr.detail !== null) {
+              // Handle object detail - extract error/message fields
+              if (jsonErr.detail.error) {
+                errText = jsonErr.detail.error;
+              } else if (jsonErr.detail.message) {
+                errText = jsonErr.detail.message;
+              } else {
+                // Fallback: try to extract any meaningful text
+                const extracted = Object.values(jsonErr.detail)
+                  .filter(v => typeof v === 'string' && v.length > 0)
+                  .join(', ');
+                errText = extracted || "Processing failed. Please try again.";
+              }
+            } else {
+              // Last resort: convert to string but avoid "[object Object]"
+              errText = String(jsonErr.detail);
+            }
+          } else if (jsonErr.message) {
+            // Fallback to message field if detail doesn't exist
+            errText = jsonErr.message;
+          }
+        } catch (parseErr) {
+          console.warn("Failed to parse error JSON:", parseErr);
+          // If not JSON, try to clean up the error text
+          errText = errText.replace(/^.*?-\s*/, ''); // Remove status code prefix
         }
 
-        throw new Error(
-          `Processing failed: ${res.status} ${res.statusText} - ${errText}`
+        // Clean up file paths in error messages - replace temp paths with just filenames
+        // Match patterns like: C:\Users\...\tmpXXXXX.pdf or /tmp/tmpXXXXX.pdf
+        errText = errText.replace(
+          /[A-Za-z]:\\(?:Users\\[^\\]+\\AppData\\Local\\)?Temp\\(tmp[^\\.\s]+\.[a-z]+)/gi,
+          (match, filename) => filename
+        ).replace(
+          /\/tmp\/(tmp[^\s\/]+\.[a-z]+)/gi,
+          (match, filename) => filename
         );
+
+        throw new Error(errText || "Processing failed. Please try again.");
       }
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       setDownloadUrl(url);
+
+      // Check for partial success warning
+      const processingWarning = res.headers.get("X-Processing-Warning");
+      if (processingWarning) {
+        console.warn("Partial success:", processingWarning);
+        // Show warning but still allow download
+        setErrorMessage(`⚠️ ${processingWarning}`);
+      }
 
       // Try to extract filename from header or use default
       const contentDisposition = res.headers.get("Content-Disposition");
@@ -744,10 +1224,11 @@ export function ToolProcessor({
           files[0].name;
 
         // Check for ZIP files by content type or tool type
-        if (contentType === "application/zip" || 
+        if (contentType === "application/zip" ||
             contentType === "application/x-zip-compressed" ||
             toolSlug === "split-pdf" ||
             toolSlug === "extract-images-from-pdf" ||
+            toolSlug === "extract-tables" ||
             toolSlug === "pdf-to-images") {
           filename = `processed_${nameWithoutExt}.zip`;
         } else if (toolSlug === "images-to-pdf" || toolSlug === "merge-pdf") {
@@ -758,9 +1239,10 @@ export function ToolProcessor({
       }
 
       // Final check: if filename doesn't have extension but we know it should be ZIP
-      if ((toolSlug === "split-pdf" || 
-           toolSlug === "extract-images-from-pdf" || 
-           toolSlug === "pdf-to-images") && 
+      if ((toolSlug === "split-pdf" ||
+           toolSlug === "extract-images-from-pdf" ||
+           toolSlug === "extract-tables" ||
+           toolSlug === "pdf-to-images") &&
           !filename.toLowerCase().endsWith(".zip")) {
         const nameWithoutExt = filename.substring(0, filename.lastIndexOf(".")) || filename;
         filename = `${nameWithoutExt}.zip`;
@@ -832,7 +1314,7 @@ export function ToolProcessor({
               <FileUploader
                 onFilesSelected={(files) => handleFileSelect(files)}
                 accept={acceptedFileTypes}
-                maxFiles={10}
+                maxFiles={maxFiles}
                 className="h-14 p-0 border-white/20 hover:border-primary/50"
               />
             </div>
@@ -851,12 +1333,12 @@ export function ToolProcessor({
         status !== "complete" &&
         status !== "processing" &&
         status !== "uploading" &&
-        !(previewFile && (toolSlug === "rotate-pdf" || toolSlug === "crop-pdf")) && (
+        !(previewFile && (toolSlug === "rotate-pdf" || toolSlug === "crop-pdf" || toolSlug === "watermark-pdf" || toolSlug === "watermark-image" || toolSlug === "pdf-redactor" || toolSlug === "protect-pdf" || toolSlug === "unlock-pdf" || toolSlug === "pdf-signer")) && (
           <div>
               <FileUploader
               onFilesSelected={handleFileSelect}
               accept={acceptedFileTypes}
-              maxFiles={10}
+              maxFiles={maxFiles}
             />
             {/* File Size Limit Info (Web Version Only) */}
             {typeof window !== 'undefined' && !('__TAURI__' in window) && (
@@ -873,6 +1355,639 @@ export function ToolProcessor({
                 </ul>
               </div>
             )}
+          </div>
+        )}
+
+      {/* Watermark Tool - Show preview and settings in place of uploader */}
+      {(toolSlug === "watermark-pdf" || toolSlug === "watermark-image") &&
+        previewFile &&
+        status !== "complete" &&
+        status !== "processing" &&
+        status !== "uploading" && (
+          <div className="space-y-6">
+            {/* Watermark Preview */}
+            {previewUrl && (
+              <div className="relative border border-white/20 rounded-xl overflow-hidden bg-black/50 flex items-center justify-center min-h-[400px]">
+                {isLoadingPreview && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                )}
+
+                {/* PDF Preview (background) */}
+                <img
+                  src={previewUrl}
+                  className="w-full h-auto object-contain max-h-[600px] pointer-events-none"
+                  alt="PDF Preview"
+                  id="watermark-preview-base"
+                />
+
+                {/* Draggable & Resizable Watermark Overlay */}
+                <div
+                  className="absolute border-2 border-primary/60 hover:border-primary bg-primary/10 transition-colors rounded group"
+                  style={{
+                    left: `${watermarkPosPercent.x * 100}%`,
+                    top: `${watermarkPosPercent.y * 100}%`,
+                    transform: `translate(-50%, -50%) scale(${watermarkScale})`,
+                    userSelect: "none",
+                    display: "inline-block",
+                    maxWidth: "90%",
+                    cursor: "move",
+                  }}
+                  onMouseDown={(e) => {
+                    // Only drag if not clicking on the text or resize handle
+                    if ((e.target as HTMLElement).tagName === 'SPAN' ||
+                        (e.target as HTMLElement).classList.contains('resize-handle')) {
+                      return;
+                    }
+
+                    e.preventDefault();
+                    const container = e.currentTarget.parentElement;
+                    if (!container) return;
+
+                    const rect = container.getBoundingClientRect();
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startPosX = watermarkPosPercent.x;
+                    const startPosY = watermarkPosPercent.y;
+
+                    const onMove = (moveEvent: MouseEvent) => {
+                      const dx = moveEvent.clientX - startX;
+                      const dy = moveEvent.clientY - startY;
+                      const percentDx = dx / rect.width;
+                      const percentDy = dy / rect.height;
+                      let newX = Math.max(0, Math.min(1, startPosX + percentDx));
+                      let newY = Math.max(0, Math.min(1, startPosY + percentDy));
+                      setWatermarkPosPercent({ x: newX, y: newY });
+                    };
+
+                    const onUp = () => {
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
+                >
+                  {watermarkType === "text" ? (
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      dangerouslySetInnerHTML={{ __html: watermarkText }}
+                      onBlur={(e) => setWatermarkText(e.currentTarget.textContent || "")}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      style={{
+                        fontSize: `${watermarkFontSize}px`,
+                        color: watermarkColor,
+                        opacity: watermarkOpacity,
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        whiteSpace: "nowrap",
+                        padding: "8px",
+                        textShadow: "0 0 3px rgba(0,0,0,0.8)",
+                        fontFamily: "Arial, sans-serif",
+                        cursor: "text",
+                        display: "inline-block",
+                        minWidth: "50px",
+                      }}
+                    />
+                  ) : (
+                    watermarkFile && (
+                      <div style={{ opacity: watermarkOpacity, padding: "8px" }}>
+                        <img
+                          src={URL.createObjectURL(watermarkFile)}
+                          className="max-h-32 object-contain pointer-events-none"
+                          alt="Watermark"
+                        />
+                      </div>
+                    )
+                  )}
+
+                  {/* Resize Handle */}
+                  <div
+                    className="resize-handle absolute bottom-0 right-0 w-4 h-4 bg-primary border border-white cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{
+                      transform: "translate(50%, 50%)",
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      const startScale = watermarkScale;
+                      const startX = e.clientX;
+                      const startY = e.clientY;
+
+                      const onMove = (moveEvent: MouseEvent) => {
+                        const dx = moveEvent.clientX - startX;
+                        const dy = moveEvent.clientY - startY;
+                        const delta = (dx + dy) / 200; // Average of both dimensions
+                        const newScale = Math.max(0.3, Math.min(3, startScale + delta));
+                        setWatermarkScale(newScale);
+                      };
+
+                      const onUp = () => {
+                        window.removeEventListener("mousemove", onMove);
+                        window.removeEventListener("mouseup", onUp);
+                      };
+
+                      window.addEventListener("mousemove", onMove);
+                      window.addEventListener("mouseup", onUp);
+                    }}
+                  />
+                </div>
+
+                <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded flex flex-col gap-1">
+                  <div>✋ Drag border to move</div>
+                  <div>✏️ Click text to edit</div>
+                  <div>↔️ Drag corner to resize</div>
+                </div>
+              </div>
+            )}
+
+            {/* Watermark Settings */}
+            <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <Type size={20} /> {t("watermark_settings")}
+              </h3>
+
+              {/* Type Selection */}
+              <div className="flex gap-2 p-1 bg-black/20 rounded-lg mb-6">
+                <button
+                  onClick={() => setWatermarkType("text")}
+                  className={`flex-1 py-2 rounded-md font-medium transition-all ${
+                    watermarkType === "text"
+                      ? "bg-primary text-black"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  <Type className="inline w-4 h-4 mr-2" />
+                  Text
+                </button>
+                <button
+                  onClick={() => setWatermarkType("image")}
+                  className={`flex-1 py-2 rounded-md font-medium transition-all ${
+                    watermarkType === "image"
+                      ? "bg-primary text-black"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  <LucideImage className="inline w-4 h-4 mr-2" />
+                  Image
+                </button>
+              </div>
+
+              {/* Text Watermark Settings */}
+              {watermarkType === "text" && (
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Watermark Text</label>
+                    <input
+                      type="text"
+                      value={watermarkText}
+                      onChange={(e) => setWatermarkText(e.target.value)}
+                      className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                      placeholder="Enter watermark text"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Size: {watermarkFontSize}px
+                      </label>
+                      <input
+                        type="range"
+                        min="10"
+                        max="200"
+                        step="5"
+                        value={watermarkFontSize}
+                        onChange={(e) => setWatermarkFontSize(parseInt(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Opacity: {watermarkOpacity.toFixed(1)}
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={watermarkOpacity}
+                        onChange={(e) => setWatermarkOpacity(parseFloat(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Color</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={watermarkColor}
+                        onChange={(e) => setWatermarkColor(e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer border border-white/20"
+                      />
+                      <span className="text-sm font-mono opacity-70">{watermarkColor}</span>
+                    </div>
+                  </div>
+
+                  {/* Position Controls */}
+                  <div>
+                    <label className="block text-sm font-medium mb-3">Position</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">
+                          Horizontal: {(watermarkPosPercent.x * 100).toFixed(0)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={watermarkPosPercent.x}
+                          onChange={(e) => {
+                            setWatermarkPosPercent({ ...watermarkPosPercent, x: parseFloat(e.target.value) });
+                            setWatermarkPosition("custom");
+                          }}
+                          className="w-full accent-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">
+                          Vertical: {(watermarkPosPercent.y * 100).toFixed(0)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={watermarkPosPercent.y}
+                          onChange={(e) => {
+                            setWatermarkPosPercent({ ...watermarkPosPercent, y: parseFloat(e.target.value) });
+                            setWatermarkPosition("custom");
+                          }}
+                          className="w-full accent-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Scale Control */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Scale: {watermarkScale.toFixed(1)}x
+                    </label>
+                    <input
+                      type="range"
+                      min="0.3"
+                      max="3"
+                      step="0.1"
+                      value={watermarkScale}
+                      onChange={(e) => setWatermarkScale(parseFloat(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>Small</span>
+                      <span>Large</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Image Watermark Settings */}
+              {watermarkType === "image" && (
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Upload Watermark Image</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setWatermarkFile(e.target.files[0]);
+                        }
+                      }}
+                      className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Opacity: {watermarkOpacity.toFixed(1)}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={watermarkOpacity}
+                      onChange={(e) => setWatermarkOpacity(parseFloat(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                  </div>
+
+                  {/* Position Controls */}
+                  <div>
+                    <label className="block text-sm font-medium mb-3">Position</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">
+                          Horizontal: {(watermarkPosPercent.x * 100).toFixed(0)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={watermarkPosPercent.x}
+                          onChange={(e) => {
+                            setWatermarkPosPercent({ ...watermarkPosPercent, x: parseFloat(e.target.value) });
+                            setWatermarkPosition("custom");
+                          }}
+                          className="w-full accent-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">
+                          Vertical: {(watermarkPosPercent.y * 100).toFixed(0)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={watermarkPosPercent.y}
+                          onChange={(e) => {
+                            setWatermarkPosPercent({ ...watermarkPosPercent, y: parseFloat(e.target.value) });
+                            setWatermarkPosition("custom");
+                          }}
+                          className="w-full accent-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setPreviewUrl(null);
+                  setPreviewFile(null);
+                  setWatermarkPosPercent({ x: 0.5, y: 0.5 });
+                  setWatermarkScale(1);
+                }}
+                className="px-6 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-sm font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => previewFile && handleFiles([previewFile])}
+                className="flex-1 px-6 py-2 rounded-lg bg-primary text-black font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Apply Watermark
+              </button>
+            </div>
+          </div>
+        )}
+
+      {/* PDF Signer Tool - Show preview and signature positioning */}
+      {toolSlug === "pdf-signer" &&
+        previewFile &&
+        status !== "complete" &&
+        status !== "processing" &&
+        status !== "uploading" && (
+          <div className="space-y-6">
+            {/* PDF Preview with Signature Overlay */}
+            {previewUrl && (
+              <div className="relative border border-white/20 rounded-xl overflow-hidden bg-black/50 flex items-center justify-center min-h-[400px]">
+                {isLoadingPreview && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                )}
+
+                {/* PDF Preview (background) */}
+                <img
+                  src={previewUrl}
+                  className="w-full h-auto object-contain max-h-[600px] pointer-events-none"
+                  alt="PDF Preview"
+                  id="signature-preview-base"
+                />
+
+                {/* Draggable Signature Overlay */}
+                <div
+                  className="absolute border-2 border-primary/60 hover:border-primary bg-primary/10 transition-colors rounded group cursor-move"
+                  style={{
+                    left: `${signaturePosPercent.x * 100}%`,
+                    top: `${signaturePosPercent.y * 100}%`,
+                    transform: `translate(-50%, -50%) scale(${signatureScale})`,
+                    userSelect: "none",
+                    padding: "12px 16px",
+                    minWidth: "200px",
+                    minHeight: "60px",
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const container = e.currentTarget.parentElement;
+                    if (!container) return;
+
+                    const rect = container.getBoundingClientRect();
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startPosX = signaturePosPercent.x;
+                    const startPosY = signaturePosPercent.y;
+
+                    const onMove = (moveEvent: MouseEvent) => {
+                      const dx = moveEvent.clientX - startX;
+                      const dy = moveEvent.clientY - startY;
+                      const percentDx = dx / rect.width;
+                      const percentDy = dy / rect.height;
+                      let newX = Math.max(0, Math.min(1, startPosX + percentDx));
+                      let newY = Math.max(0, Math.min(1, startPosY + percentDy));
+                      setSignaturePosPercent({ x: newX, y: newY });
+                    };
+
+                    const onUp = () => {
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
+                >
+                  {/* Signature Appearance */}
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#000",
+                      background: "linear-gradient(135deg, #fff 0%, #f0f0f0 100%)",
+                      border: "2px solid #333",
+                      padding: "8px 12px",
+                      borderRadius: "4px",
+                      fontFamily: "Georgia, serif",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <div style={{ fontWeight: "bold", fontSize: "16px", marginBottom: "4px" }}>
+                      {signatureText || "Signature"}
+                    </div>
+                    {signatureLocation && (
+                      <div style={{ fontSize: "11px", color: "#555" }}>
+                        {signatureLocation}
+                      </div>
+                    )}
+                    <div style={{ fontSize: "10px", color: "#888", marginTop: "4px" }}>
+                      {new Date().toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded flex flex-col gap-1">
+                  <div>✋ Drag to position signature</div>
+                  <div>📝 Configure signature below</div>
+                </div>
+              </div>
+            )}
+
+            {/* Signature Configuration Settings */}
+            <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <PenTool size={20} /> Signature Configuration
+              </h3>
+
+              <div className="space-y-5">
+                {/* Certificate & Password */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Certificate File (.pfx or .p12) *
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pfx,.p12"
+                      onChange={(e) => setCertFile(e.target.files?.[0] || null)}
+                      className="w-full bg-black/20 text-xs border border-white/10 rounded py-2 px-3"
+                    />
+                    {certFile ? (
+                      <p className="text-xs text-primary mt-1">✓ {certFile.name}</p>
+                    ) : (
+                      <p className="text-xs text-red-400 mt-1">⚠ Required</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Certificate Password *
+                    </label>
+                    <input
+                      type="password"
+                      value={certPassword}
+                      onChange={(e) => setCertPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                    />
+                    {certPassword && certPassword.trim().length > 0 ? (
+                      <p className="text-xs text-primary mt-1">✓ Password entered</p>
+                    ) : (
+                      <p className="text-xs text-red-400 mt-1">⚠ Required</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Signature Text/Name & Location */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Signature Name</label>
+                    <input
+                      type="text"
+                      value={signatureText}
+                      onChange={(e) => setSignatureText(e.target.value)}
+                      placeholder="Your Name"
+                      className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Location (Optional)</label>
+                    <input
+                      type="text"
+                      value={signatureLocation}
+                      onChange={(e) => setSignatureLocation(e.target.value)}
+                      placeholder="City, Country"
+                      className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Scale Control */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Signature Size: {signatureScale.toFixed(1)}x
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value={signatureScale}
+                    onChange={(e) => setSignatureScale(parseFloat(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>Small</span>
+                    <span>Large</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setPreviewUrl(null);
+                  setPreviewFile(null);
+                  setSignaturePosPercent({ x: 0.5, y: 0.1 });
+                  setSignatureScale(1);
+                }}
+                className="px-6 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-sm font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Validation before processing
+                  if (!certFile) {
+                    setErrorMessage("Please upload a certificate file (.pfx or .p12)");
+                    setStatus("error");
+                    return;
+                  }
+                  if (!certPassword || certPassword.trim().length < 1) {
+                    setErrorMessage("Please enter the certificate password");
+                    setStatus("error");
+                    return;
+                  }
+                  if (previewFile) {
+                    handleFiles([previewFile]);
+                  }
+                }}
+                className="flex-1 px-6 py-2 rounded-lg bg-primary text-black font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!certFile || !certPassword || certPassword.trim().length === 0}
+              >
+                <PenTool className="w-4 h-4" />
+                Sign PDF
+              </button>
+            </div>
           </div>
         )}
 
@@ -963,58 +2078,159 @@ export function ToolProcessor({
                     onClick={() => setExtractFormat("xlsx")}
                     className={`px-4 py-2 rounded border transition-colors flex items-center gap-2 ${extractFormat === "xlsx" ? "bg-primary text-black border-primary" : "border-white/20 text-muted-foreground hover:bg-white/5"}`}
                   >
-                    <FileSpreadsheet size={16} /> Excel (One File)
+                    <FileSpreadsheet size={16} /> Excel (Separate Files)
                   </button>
+                </div>
+
+                {/* Merge Tables Option */}
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={mergeTables}
+                      onChange={(e) => setMergeTables(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-black/20 text-primary focus:ring-primary focus:ring-offset-0"
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium group-hover:text-primary transition-colors">
+                        Merge tables across pages
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Automatically combine tables that continue on multiple pages (e.g., long reports, invoices)
+                      </div>
+                    </div>
+                  </label>
                 </div>
               </div>
             )}
 
             {/* Redactor Options */}
-            {toolSlug === "pdf-redactor" && (
+            {toolSlug === "pdf-redactor" && previewFile && (
               <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <Eraser size={20} /> {t("redact_settings")}
+                  <Eraser size={20} /> Secure Redaction
                 </h3>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    {t("redact_label")}
+
+                {/* Selected File */}
+                <div className="mb-4 p-3 bg-black/20 rounded-lg border border-white/10">
+                  <div className="text-xs text-muted-foreground mb-1">Selected File:</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-medium">{previewFile.name}</span>
+                    <button
+                      onClick={() => {
+                        setPreviewFile(null);
+                        setRedactTexts([""]);
+                      }}
+                      className="text-xs text-muted-foreground hover:text-white transition-colors"
+                    >
+                      Change File
+                    </button>
+                  </div>
+                </div>
+
+                {/* Redaction Texts */}
+                <div className="space-y-3 mb-4">
+                  <label className="text-sm font-medium block">
+                    Text to Redact (Permanently Remove)
                   </label>
-                  <input
-                    type="text"
-                    value={redactText}
-                    onChange={(e) => setRedactText(e.target.value)}
-                    placeholder="e.g. Confidential"
-                    className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                  />
+                  {redactTexts.map((text, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={text}
+                        onChange={(e) => {
+                          const newTexts = [...redactTexts];
+                          newTexts[index] = e.target.value;
+                          setRedactTexts(newTexts);
+                        }}
+                        placeholder={index === 0 ? "e.g. Confidential" : "e.g. Secret, SSN, etc."}
+                        className="flex-1 bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                      />
+                      {redactTexts.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const newTexts = redactTexts.filter((_, i) => i !== index);
+                            setRedactTexts(newTexts);
+                          }}
+                          className="px-3 py-2 rounded border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setRedactTexts([...redactTexts, ""])}
+                    className="w-full py-2 rounded border border-dashed border-white/20 text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Plus size={16} /> Add Another Text to Redact
+                  </button>
+                </div>
+
+                <p className="text-xs text-muted-foreground mb-4">
+                  All occurrences of the specified text will be permanently redacted (blacked out) from the PDF.
+                </p>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setPreviewFile(null);
+                      setRedactTexts([""]);
+                    }}
+                    className="px-6 py-3 rounded-lg border border-white/10 hover:bg-white/5 text-sm font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Client-side validation before processing
+                      const validTexts = redactTexts.filter(t => t.trim().length > 0);
+                      if (validTexts.length === 0) {
+                        setErrorMessage("Please enter at least one text to redact from the PDF.");
+                        setStatus("error");
+                        return;
+                      }
+                      handleFiles([previewFile]);
+                    }}
+                    className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={redactTexts.filter(t => t.trim().length > 0).length === 0}
+                  >
+                    <Eraser size={16} /> Redact PDF
+                  </button>
                 </div>
               </div>
             )}
 
-            {toolSlug === "pdf-signer" && (
+            {toolSlug === "pdf-signer" && !previewFile && (
               <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <PenTool size={20} /> {t("sign_settings")}
+                  <PenTool size={20} /> Certificate & Password Required
                 </h3>
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {t("sign_cert")}
+                      Certificate File (.pfx or .p12)
                     </label>
                     <input
                       type="file"
                       accept=".pfx,.p12"
                       onChange={(e) => setCertFile(e.target.files?.[0] || null)}
-                      className="w-full bg-black/20 text-sm border border-white/10 rounded"
+                      className="w-full bg-black/20 text-sm border border-white/10 rounded py-2 px-3"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Upload your PKCS#12 certificate containing private key
+                    </p>
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {t("sign_pass")}
+                      Certificate Password
                     </label>
                     <input
                       type="password"
                       value={certPassword}
                       onChange={(e) => setCertPassword(e.target.value)}
+                      placeholder="Enter certificate password"
                       className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
                     />
                   </div>
@@ -1035,9 +2251,12 @@ export function ToolProcessor({
                     type="password"
                     value={pdfPassword}
                     onChange={(e) => setPdfPassword(e.target.value)}
-                    placeholder="Enter password to protect PDF"
+                    placeholder="Enter password (minimum 3 characters)"
                     className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
                   />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Password must be at least 3 characters long.
+                  </p>
                 </div>
 
                 {previewFile && (
@@ -1047,9 +2266,17 @@ export function ToolProcessor({
                       <span className="text-white">{previewFile.name}</span>
                     </div>
                     <button
-                      onClick={() => handleFiles([previewFile])}
-                      className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
-                      disabled={!pdfPassword}
+                      onClick={() => {
+                        // Client-side validation before processing
+                        if (!pdfPassword || pdfPassword.trim().length < 3) {
+                          setErrorMessage("Please enter a password (at least 3 characters) to protect your PDF.");
+                          setStatus("error");
+                          return;
+                        }
+                        handleFiles([previewFile]);
+                      }}
+                      className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!pdfPassword || pdfPassword.trim().length < 3}
                     >
                       <Lock size={16} /> {t("protect_btn")}
                     </button>
@@ -1071,9 +2298,12 @@ export function ToolProcessor({
                     type="password"
                     value={pdfPassword}
                     onChange={(e) => setPdfPassword(e.target.value)}
-                    placeholder="Enter password to unlock PDF"
+                    placeholder="Enter password (leave empty if PDF is not encrypted)"
                     className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
                   />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Note: Leave empty if the PDF is not password-protected.
+                  </p>
                 </div>
 
                 {previewFile && (
@@ -1083,9 +2313,18 @@ export function ToolProcessor({
                       <span className="text-white">{previewFile.name}</span>
                     </div>
                     <button
-                      onClick={() => handleFiles([previewFile])}
-                      className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
-                      disabled={!pdfPassword}
+                      onClick={() => {
+                        // Client-side validation - password is optional for unlock (PDF might not be encrypted)
+                        // But if user enters password, validate it's not empty
+                        if (pdfPassword && pdfPassword.trim().length === 0) {
+                          setErrorMessage("Please enter a valid password or leave it empty if the PDF is not encrypted.");
+                          setStatus("error");
+                          return;
+                        }
+                        handleFiles([previewFile]);
+                      }}
+                      className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={false}
                     >
                       <Unlock size={16} /> {t("unlock_btn")}
                     </button>
@@ -1102,184 +2341,235 @@ export function ToolProcessor({
               </div>
             )}
 
-            {/* Crop PDF Options with Preview */}
-            {toolSlug === "crop-pdf" && (
-              <div className="mb-8">
-                {previewUrl && previewFile ? (
-                  <div className="p-6 bg-white/5 rounded-xl border border-white/10">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                      <Crop size={20} /> Crop PDF
-                    </h3>
-                    
-                    {/* Preview Display */}
-                    <div className="mb-6 relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[400px]">
-                      {isLoadingPreview ? (
-                        <div className="flex flex-col items-center gap-3">
-                          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                          <span className="text-sm text-muted-foreground">Updating preview...</span>
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          <img
-                            src={previewUrl}
-                            alt="PDF Preview"
-                            className="max-w-full max-h-[400px] object-contain rounded-lg shadow-lg"
-                          />
-                          {/* Crop overlay indicator */}
-                          {(pdfCropWidth !== null && pdfCropHeight !== null) && (
+            {/* Crop PDF Options with Visual Drag-to-Crop */}
+            {toolSlug === "crop-pdf" && previewUrl && previewFile && (
+              <div className="space-y-6">
+                {/* Visual Crop Interface */}
+                <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Crop size={20} /> Crop PDF Pages
+                  </h3>
+
+                  {/* Preview with Draggable Crop Box */}
+                  <div className="mb-6 relative bg-black/50 rounded-lg p-4 flex items-center justify-center min-h-[500px] overflow-hidden">
+                    {isLoadingPreview ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Loading preview...</span>
+                      </div>
+                    ) : (
+                      <div className="relative inline-block">
+                        <img
+                          ref={cropPreviewRef}
+                          src={previewUrl}
+                          alt="PDF Preview"
+                          className="max-w-full max-h-[500px] object-contain select-none"
+                          draggable={false}
+                        />
+
+                        {/* Draggable & Resizable Crop Box */}
+                        {pdfCropWidth !== null && pdfCropHeight !== null && cropPreviewRef.current && (
+                          <div
+                            className="absolute border-2 border-primary bg-primary/20 cursor-move group"
+                            style={{
+                              left: `${pdfCropX}px`,
+                              top: `${pdfCropY}px`,
+                              width: `${pdfCropWidth}px`,
+                              height: `${pdfCropHeight}px`,
+                            }}
+                            onMouseDown={(e) => {
+                              if ((e.target as HTMLElement).classList.contains('resize-handle')) return;
+
+                              e.preventDefault();
+                              setIsDraggingCrop(true);
+                              const imgRect = cropPreviewRef.current!.getBoundingClientRect();
+                              const startX = e.clientX;
+                              const startY = e.clientY;
+                              const startCropX = pdfCropX;
+                              const startCropY = pdfCropY;
+
+                              const onMove = (moveEvent: MouseEvent) => {
+                                const dx = moveEvent.clientX - startX;
+                                const dy = moveEvent.clientY - startY;
+                                const newX = Math.max(0, Math.min(imgRect.width - pdfCropWidth!, startCropX + dx));
+                                const newY = Math.max(0, Math.min(imgRect.height - pdfCropHeight!, startCropY + dy));
+                                setPdfCropX(Math.round(newX));
+                                setPdfCropY(Math.round(newY));
+                              };
+
+                              const onUp = () => {
+                                setIsDraggingCrop(false);
+                                window.removeEventListener("mousemove", onMove);
+                                window.removeEventListener("mouseup", onUp);
+                              };
+
+                              window.addEventListener("mousemove", onMove);
+                              window.addEventListener("mouseup", onUp);
+                            }}
+                          >
+                            {/* Resize Handles */}
+                            {/* Bottom-right */}
                             <div
-                              className="absolute border-2 border-primary bg-primary/10 pointer-events-none"
-                              style={{
-                                left: `${(pdfCropX / (previewUrl ? 800 : 1)) * 100}%`,
-                                top: `${(pdfCropY / (previewUrl ? 600 : 1)) * 100}%`,
-                                width: `${(pdfCropWidth / (previewUrl ? 800 : 1)) * 100}%`,
-                                height: `${(pdfCropHeight / (previewUrl ? 600 : 1)) * 100}%`,
+                              className="resize-handle absolute bottom-0 right-0 w-4 h-4 bg-primary border border-white cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                              style={{ transform: "translate(50%, 50%)" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsResizingCrop(true);
+
+                                const imgRect = cropPreviewRef.current!.getBoundingClientRect();
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startWidth = pdfCropWidth!;
+                                const startHeight = pdfCropHeight!;
+
+                                const onMove = (moveEvent: MouseEvent) => {
+                                  const dx = moveEvent.clientX - startX;
+                                  const dy = moveEvent.clientY - startY;
+                                  const newWidth = Math.max(50, Math.min(imgRect.width - pdfCropX, startWidth + dx));
+                                  const newHeight = Math.max(50, Math.min(imgRect.height - pdfCropY, startHeight + dy));
+                                  setPdfCropWidth(Math.round(newWidth));
+                                  setPdfCropHeight(Math.round(newHeight));
+                                };
+
+                                const onUp = () => {
+                                  setIsResizingCrop(false);
+                                  window.removeEventListener("mousemove", onMove);
+                                  window.removeEventListener("mouseup", onUp);
+                                };
+
+                                window.addEventListener("mousemove", onMove);
+                                window.addEventListener("mouseup", onUp);
                               }}
                             />
-                          )}
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Crop Controls */}
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            X (Left Margin)
-                          </label>
-                          <input
-                            type="number"
-                            value={pdfCropX}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0;
-                              setPdfCropX(val);
-                              fetchPreview({ x: val, y: pdfCropY, width: pdfCropWidth, height: pdfCropHeight });
-                            }}
-                            placeholder="0"
-                            min="0"
-                            className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Y (Top Margin)
-                          </label>
-                          <input
-                            type="number"
-                            value={pdfCropY}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0;
-                              setPdfCropY(val);
-                              fetchPreview({ x: pdfCropX, y: val, width: pdfCropWidth, height: pdfCropHeight });
-                            }}
-                            placeholder="0"
-                            min="0"
-                            className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Width *
-                          </label>
-                          <input
-                            type="number"
-                            value={pdfCropWidth || ""}
-                            onChange={(e) => {
-                              const val = e.target.value ? parseFloat(e.target.value) : null;
-                              setPdfCropWidth(val);
-                              fetchPreview({ x: pdfCropX, y: pdfCropY, width: val, height: pdfCropHeight });
-                            }}
-                            placeholder="Required"
-                            min="1"
-                            className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Height *
-                          </label>
-                          <input
-                            type="number"
-                            value={pdfCropHeight || ""}
-                            onChange={(e) => {
-                              const val = e.target.value ? parseFloat(e.target.value) : null;
-                              setPdfCropHeight(val);
-                              fetchPreview({ x: pdfCropX, y: pdfCropY, width: pdfCropWidth, height: val });
-                            }}
-                            placeholder="Required"
-                            min="1"
-                            className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">
-                          Pages (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={pdfCropPages}
-                          onChange={(e) => setPdfCropPages(e.target.value)}
-                          placeholder="1-5 or 1,3,5 (leave empty for all)"
-                          className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Comma separated or ranges. Leave empty to crop all pages.
-                        </p>
-                      </div>
-                    </div>
+                            {/* Top-left */}
+                            <div
+                              className="resize-handle absolute top-0 left-0 w-4 h-4 bg-primary border border-white cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                              style={{ transform: "translate(-50%, -50%)" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsResizingCrop(true);
 
-                    <div className="mt-6 pt-6 border-t border-white/10">
-                      <div className="text-xs text-muted-foreground mb-4">
-                        {t("selected")}: <span className="text-white">{previewFile.name}</span>
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startCropX = pdfCropX;
+                                const startCropY = pdfCropY;
+                                const startWidth = pdfCropWidth!;
+                                const startHeight = pdfCropHeight!;
+
+                                const onMove = (moveEvent: MouseEvent) => {
+                                  const dx = moveEvent.clientX - startX;
+                                  const dy = moveEvent.clientY - startY;
+                                  const newX = Math.max(0, startCropX + dx);
+                                  const newY = Math.max(0, startCropY + dy);
+                                  const newWidth = Math.max(50, startWidth - dx);
+                                  const newHeight = Math.max(50, startHeight - dy);
+
+                                  setPdfCropX(Math.round(newX));
+                                  setPdfCropY(Math.round(newY));
+                                  setPdfCropWidth(Math.round(newWidth));
+                                  setPdfCropHeight(Math.round(newHeight));
+                                };
+
+                                const onUp = () => {
+                                  setIsResizingCrop(false);
+                                  window.removeEventListener("mousemove", onMove);
+                                  window.removeEventListener("mouseup", onUp);
+                                };
+
+                                window.addEventListener("mousemove", onMove);
+                                window.addEventListener("mouseup", onUp);
+                              }}
+                            />
+
+                            {/* Info overlay */}
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded pointer-events-none">
+                              {Math.round(pdfCropWidth)} × {Math.round(pdfCropHeight)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Instructions */}
+                        <div className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded flex flex-col gap-1">
+                          <div>✋ Drag to move</div>
+                          <div>↔️ Drag corners to resize</div>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => previewFile && handleFiles([previewFile])}
-                        disabled={pdfCropWidth === null || pdfCropHeight === null}
-                        className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Crop size={16} /> Apply Crop
-                      </button>
-                    </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="p-6 bg-white/5 rounded-xl border border-white/10">
-                    <h3 className="text-lg font-bold mb-4">Crop Settings</h3>
-                    <div className="text-center text-muted-foreground py-8">
-                      Upload a PDF file to see preview and crop options
-                    </div>
+
+                  {/* Pages Selection */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium mb-2">Pages to Crop (Optional)</label>
+                    <input
+                      type="text"
+                      value={pdfCropPages}
+                      onChange={(e) => setPdfCropPages(e.target.value)}
+                      placeholder="e.g., 1-5 or 1,3,5 (leave empty for all pages)"
+                      className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Leave empty to apply crop to all pages
+                    </p>
                   </div>
-                )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => {
+                        setPreviewUrl(null);
+                        setPreviewFile(null);
+                        setPdfCropX(50);
+                        setPdfCropY(50);
+                        setPdfCropWidth(400);
+                        setPdfCropHeight(500);
+                      }}
+                      className="px-6 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-sm font-semibold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => previewFile && handleFiles([previewFile])}
+                      className="flex-1 px-6 py-2 rounded-lg bg-primary text-black font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Crop className="w-4 h-4" />
+                      Apply Crop to PDF
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Rotate PDF Options with Preview */}
-            {toolSlug === "rotate-pdf" && (
+            {toolSlug === "rotate-pdf" && previewFile && (
               <div className="mb-8">
-                {previewUrl && previewFile ? (
-                  <div className="p-6 bg-white/5 rounded-xl border border-white/10">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                      <RotateCw size={20} /> Rotate PDF
-                    </h3>
-                    
-                    {/* Preview Display */}
-                    <div className="mb-6 relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[400px]">
-                      {isLoadingPreview ? (
-                        <div className="flex flex-col items-center gap-3">
-                          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                          <span className="text-sm text-muted-foreground">Updating preview...</span>
-                        </div>
-                      ) : (
-                        <img
-                          src={previewUrl}
-                          alt="PDF Preview"
-                          className="max-w-full max-h-[400px] object-contain rounded-lg shadow-lg"
-                        />
-                      )}
-                    </div>
+                <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <RotateCw size={20} /> Rotate PDF
+                  </h3>
+                  
+                  {/* Preview Display */}
+                  <div className="mb-6 relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[400px]">
+                    {isLoadingPreview ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Loading preview...</span>
+                      </div>
+                    ) : previewUrl ? (
+                      <img
+                        src={previewUrl}
+                        alt="PDF Preview"
+                        className="max-w-full max-h-[400px] object-contain rounded-lg shadow-lg"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm">Preparing preview...</span>
+                      </div>
+                    )}
+                  </div>
 
                     {/* Rotate Controls */}
                     <div className="flex items-center gap-4 justify-center">
@@ -1324,12 +2614,7 @@ export function ToolProcessor({
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="p-6 bg-white/5 rounded-xl border border-white/10 text-center text-muted-foreground">
-                    Upload a PDF file to see preview and rotate options
-                  </div>
-                )}
-              </div>
+                </div>
             )}
 
             {/* Organize PDF / Reorder Pages Options */}
@@ -1343,7 +2628,11 @@ export function ToolProcessor({
                   <input
                     type="text"
                     value={pageOrder}
-                    onChange={(e) => setPageOrder(e.target.value)}
+                    onChange={(e) => {
+                      // Sanitize input: only allow digits, commas, dashes, and spaces
+                      const sanitized = e.target.value.replace(/[^0-9,\-\s]/g, '');
+                      setPageOrder(sanitized);
+                    }}
                     placeholder="3,1,2,5,4 or 1-5,10,8-9"
                     className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
                   />
@@ -1352,6 +2641,36 @@ export function ToolProcessor({
                     for ranges (e.g., "1-5,10,8-9").
                   </p>
                 </div>
+
+                {previewFile && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="text-xs text-muted-foreground mb-4">
+                      {t("selected")}: <span className="text-white">{previewFile.name}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Validate page order before processing
+                        if (!pageOrder || pageOrder.trim().length === 0) {
+                          setErrorMessage("Page order is required. Please enter the desired page order (e.g., '3,1,2' or '1-5,10').");
+                          setStatus("error");
+                          return;
+                        }
+                        // Validate format
+                        const validFormat = /^[\d\s,\-]+$/.test(pageOrder);
+                        if (!validFormat) {
+                          setErrorMessage("Invalid page order format. Use only numbers, commas, and dashes (e.g., '3,1,2' or '1-5,10').");
+                          setStatus("error");
+                          return;
+                        }
+                        handleFiles([previewFile]);
+                      }}
+                      disabled={!pageOrder || pageOrder.trim().length === 0}
+                      className="w-full py-3 rounded-lg bg-primary text-black font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,243,255,0.2)]"
+                    >
+                      <CheckCircle size={16} /> Reorder Pages
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1458,267 +2777,6 @@ export function ToolProcessor({
                     </button>
                   </div>
                 </div>
-              )}
-
-            {/* Watermark Options - Inputs */}
-            {(toolSlug === "watermark-pdf" ||
-              toolSlug === "watermark-image") && (
-              <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <Type size={20} /> {t("watermark_settings")}
-                </h3>
-
-                {/* Type Selection */}
-                <div className="flex gap-2 p-1 bg-black/20 rounded-lg mb-6">
-                  <button
-                    onClick={() => setWatermarkType("text")}
-                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${watermarkType === "text" ? "bg-primary text-black shadow-lg" : "text-gray-400 hover:text-white"}`}
-                  >
-                    {t("wm_type_text")}
-                  </button>
-                  <button
-                    onClick={() => setWatermarkType("image")}
-                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${watermarkType === "image" ? "bg-primary text-black shadow-lg" : "text-gray-400 hover:text-white"}`}
-                  >
-                    {t("wm_type_image")}
-                  </button>
-                </div>
-
-                {watermarkType === "text" ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        {t("wm_text_label")}
-                      </label>
-                      <input
-                        type="text"
-                        value={watermarkText}
-                        onChange={(e) => setWatermarkText(e.target.value)}
-                        className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10 focus:border-primary outline-none"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">
-                          {t("wm_opacity")}
-                        </label>
-                        <input
-                          type="range"
-                          min="0.1"
-                          max="1"
-                          step="0.1"
-                          value={watermarkOpacity}
-                          onChange={(e) =>
-                            setWatermarkOpacity(parseFloat(e.target.value))
-                          }
-                          className="w-full accent-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">
-                          {t("wm_size")}
-                        </label>
-                        <input
-                          type="number"
-                          value={watermarkFontSize}
-                          onChange={(e) =>
-                            setWatermarkFontSize(parseInt(e.target.value))
-                          }
-                          className="w-full bg-black/20 rounded py-2 px-3 text-sm border border-white/10"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        {t("wm_color")}
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={watermarkColor}
-                          onChange={(e) => setWatermarkColor(e.target.value)}
-                          className="w-8 h-8 rounded cursor-pointer border-none"
-                        />
-                        <span className="text-xs font-mono opacity-50">
-                          {watermarkColor}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <label className="block w-full border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:bg-white/5 cursor-pointer transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) =>
-                          e.target.files && setWatermarkFile(e.target.files[0])
-                        }
-                      />
-                      <LucideImage className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <span className="text-xs text-muted-foreground">
-                        {watermarkFile
-                          ? watermarkFile.name
-                          : t("wm_upload_logo")}
-                      </span>
-                    </label>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        {t("wm_opacity")}
-                      </label>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="1"
-                        step="0.1"
-                        value={watermarkOpacity}
-                        onChange={(e) =>
-                          setWatermarkOpacity(parseFloat(e.target.value))
-                        }
-                        className="w-full accent-primary"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Position Grid */}
-                <div className="mt-4">
-                  <label className="text-xs text-muted-foreground mb-2 block">
-                    {t("wm_position")}
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      "top-left",
-                      "top-center",
-                      "top-right",
-                      "center-left",
-                      "center",
-                      "center-right",
-                      "bottom-left",
-                      "bottom-center",
-                      "bottom-right",
-                    ].map((pos) => (
-                      <button
-                        key={pos}
-                        onClick={() => setWatermarkPosition(pos)}
-                        className={`h-8 rounded border ${watermarkPosition === pos ? "bg-primary border-primary" : "border-white/10 hover:bg-white/5"}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Watermark Preview (Consolidated) */}
-            {(toolSlug === "watermark-pdf" || toolSlug === "watermark-image") &&
-              previewUrl && (
-                <>
-                  <div className="mb-8 relative border border-white/20 rounded-xl overflow-hidden bg-black/50 select-none flex items-center justify-center min-h-[400px]">
-                    {/* Preview Background */}
-                    <img
-                      src={previewUrl}
-                      className="w-full h-auto object-contain max-h-[600px] pointer-events-none"
-                      alt="Preview"
-                      id="watermark-preview-img"
-                    />
-
-                    {/* Watermark Overlay Logic */}
-                    <div
-                      className="absolute cursor-move border border-primary/50 hover:border-primary bg-black/10 transition-colors"
-                      style={{
-                        left: `${watermarkPosPercent.x * 100}%`,
-                        top: `${watermarkPosPercent.y * 100}%`,
-                        transform: "translate(-50%, -50%)",
-                        userSelect: "none",
-                      }}
-                      onMouseDown={(e) => {
-                        const container = e.currentTarget.parentElement;
-                        if (!container) return;
-
-                        const rect = container.getBoundingClientRect();
-                        const startX = e.clientX;
-                        const startY = e.clientY;
-                        const startPosX = watermarkPosPercent.x;
-                        const startPosY = watermarkPosPercent.y;
-
-                        const onMove = (moveEvent: MouseEvent) => {
-                          const dx = moveEvent.clientX - startX;
-                          const dy = moveEvent.clientY - startY;
-                          const percentDx = dx / rect.width;
-                          const percentDy = dy / rect.height;
-                          let newX = Math.max(
-                            0,
-                            Math.min(1, startPosX + percentDx)
-                          );
-                          let newY = Math.max(
-                            0,
-                            Math.min(1, startPosY + percentDy)
-                          );
-                          setWatermarkPosPercent({ x: newX, y: newY });
-                          setWatermarkPosition("custom");
-                        };
-
-                        const onUp = () => {
-                          window.removeEventListener("mousemove", onMove);
-                          window.removeEventListener("mouseup", onUp);
-                        };
-
-                        window.addEventListener("mousemove", onMove);
-                        window.addEventListener("mouseup", onUp);
-                      }}
-                    >
-                      {watermarkType === "text" ? (
-                        <div
-                          style={{
-                            fontSize: `${watermarkFontSize}px`,
-                            color: watermarkColor,
-                            opacity: watermarkOpacity,
-                            whiteSpace: "nowrap",
-                            padding: "8px",
-                            textShadow: "0 0 2px rgba(0,0,0,0.5)",
-                            fontFamily: "Arial, sans-serif",
-                          }}
-                        >
-                          {watermarkText}
-                        </div>
-                      ) : (
-                        watermarkFile && (
-                          <div style={{ opacity: watermarkOpacity }}>
-                            <img
-                              src={URL.createObjectURL(watermarkFile)}
-                              className="max-h-32 object-contain"
-                              alt="Watermark"
-                            />
-                          </div>
-                        )
-                      )}
-                    </div>
-                    <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded">
-                      Preview Mode (Drag to move)
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 mb-8">
-                    <button
-                      onClick={() => {
-                        setPreviewUrl(null);
-                        setPreviewFile(null);
-                        setWatermarkPosPercent({ x: 0.5, y: 0.5 });
-                      }}
-                      className="px-6 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-sm font-semibold transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => previewFile && handleFiles([previewFile])}
-                      className="flex-1 px-6 py-2 rounded-lg bg-primary text-black font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Apply Watermark
-                    </button>
-                  </div>
-                </>
               )}
 
             {/* Preview & Options for Image Tools */}

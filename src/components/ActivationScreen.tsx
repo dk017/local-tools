@@ -59,14 +59,21 @@ export default function ActivationScreen({
           </div>
 
           <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">
-            Activation Required
+            Welcome to Offline Tools Pro
           </h2>
-          <p className="text-white/60 mb-8 leading-relaxed">
-            This is the{" "}
-            <span className="text-white font-medium">Pro Desktop Version</span>.{" "}
-            <br />
-            Please enter your subscription ID to unlock your tools.
+          <p className="text-white/60 mb-4 leading-relaxed">
+            100% offline processing • Zero cloud uploads • Unlimited files
           </p>
+          <div className="mb-6 px-6 py-4 bg-primary/10 border border-primary/20 rounded-xl">
+            <div className="flex items-baseline justify-center gap-2 mb-1">
+              <span className="text-4xl font-bold text-white">$59</span>
+              <span className="text-lg text-white/70">/year</span>
+              <span className="ml-2 text-white/50 line-through text-sm">$120</span>
+            </div>
+            <p className="text-xs text-white/60 text-center">
+              50% off launch price • Less than $5/month
+            </p>
+          </div>
 
           <div className="w-full space-y-4">
             <div className="relative group">
@@ -115,15 +122,24 @@ export default function ActivationScreen({
               )}
             </button>
 
-            <p className="text-xs text-white/30 mt-4">
-              Don't have a subscription?{" "}
-              <a
-                href="https://yourdomain.com/#pricing"
-                className="underline hover:text-white/50 transition-colors"
+            <div className="mt-6 pt-4 border-t border-white/10 space-y-2">
+              <p className="text-xs text-white/40">
+                Don't have a subscription yet?
+              </p>
+              <button
+                onClick={() => {
+                  // Open pricing page in default browser
+                  const { open } = require('@tauri-apps/plugin-opener');
+                  open(process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL || 'https://yourdomain.com/#pricing');
+                }}
+                className="w-full py-2.5 px-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-medium text-white transition-all"
               >
-                Subscribe Now
-              </a>
-            </p>
+                Get Your Subscription - $59/year
+              </button>
+              <p className="text-xs text-white/30 text-center">
+                Cancel anytime • 30-day money back guarantee
+              </p>
+            </div>
           </div>
         </div>
       </div>

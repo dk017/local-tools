@@ -37,6 +37,7 @@ import { cn } from "../lib/utils";
 // import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
 import { pickFiles, FileAsset, readFileAsset } from "../lib/file-picker";
+import { validateFiles } from "../lib/file-validation";
 import { IS_TAURI } from "../config";
 import { v4 as uuidv4 } from "uuid";
 import { useDropzone } from "react-dropzone";
@@ -230,7 +231,19 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
             });
 
           if (newAssets.length === 0) return prev;
-          return [...prev, ...newAssets];
+          
+          // Validate files before adding
+          const allFiles = [...prev, ...newAssets];
+          const validation = validateFiles(mode, allFiles);
+          
+          if (!validation.valid) {
+            setError(validation.error || "Invalid files selected.");
+            return prev; // Don't add invalid files
+          }
+          
+          // Clear error if validation passes
+          setError(null);
+          return allFiles;
         });
       }
     },
@@ -287,7 +300,18 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
               // If no new unique files, return previous state
               if (uniqueNewAssets.length === 0) return prev;
 
-              return [...prev, ...uniqueNewAssets];
+              // Validate files before adding
+              const allFiles = [...prev, ...uniqueNewAssets];
+              const validation = validateFiles(mode, allFiles);
+              
+              if (!validation.valid) {
+                setError(validation.error || "Invalid files selected.");
+                return prev; // Don't add invalid files
+              }
+              
+              // Clear error if validation passes
+              setError(null);
+              return allFiles;
             });
           }
         }
@@ -313,6 +337,12 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
   const previewDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
   // Cache for preview images
   const previewCacheRef = React.useRef<Map<string, string>>(new Map());
+  // Ref to track manual preview updates (to prevent useEffect interference)
+  const manualPreviewUpdateRef = React.useRef<boolean>(false);
+  // Preview version counter to force image refresh
+  const [previewVersion, setPreviewVersion] = React.useState(0);
+  // Ref to track current preview source for cleanup
+  const currentPreviewSrcRef = React.useRef<string | null>(null);
 
   // Generate cache key from params
   const getCacheKey = React.useCallback((params: any): string => {
@@ -325,24 +355,60 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
   }, [files, mode]);
 
   // Fetch preview with parameters
-  const fetchPreview = React.useCallback(async (params: any, debounceMs: number = 300) => {
+  const fetchPreview = React.useCallback(async (params: any, debounceMs: number = 300, skipCache: boolean = false) => {
     if (files.length === 0) return;
     
-    // Check cache first
     const cacheKey = getCacheKey(params);
-    const cachedPreview = previewCacheRef.current.get(cacheKey);
-    if (cachedPreview) {
-      setPreviewSrc(cachedPreview);
-      return;
+    
+    // Check cache first (unless skipping cache)
+    if (!skipCache) {
+      const cachedPreview = previewCacheRef.current.get(cacheKey);
+      if (cachedPreview) {
+        // Convert cached base64 to blob URL for refresh (same as new previews)
+        if (cachedPreview.startsWith('data:image')) {
+          (async () => {
+            try {
+              const response = await fetch(cachedPreview);
+              const blob = await response.blob();
+              // Revoke old blob URL if it exists
+              if (currentPreviewSrcRef.current && currentPreviewSrcRef.current.startsWith('blob:')) {
+                URL.revokeObjectURL(currentPreviewSrcRef.current);
+              }
+              const blobUrl = URL.createObjectURL(blob);
+              currentPreviewSrcRef.current = blobUrl;
+              setPreviewSrc(null);
+              setPreviewVersion(prev => prev + 1);
+              requestAnimationFrame(() => {
+                setPreviewSrc(blobUrl);
+              });
+            } catch (e) {
+              console.warn('Failed to convert cached preview to blob:', e);
+              setPreviewSrc(null);
+              setPreviewVersion(prev => prev + 1);
+              requestAnimationFrame(() => {
+                setPreviewSrc(cachedPreview);
+              });
+            }
+          })();
+        } else {
+          setPreviewSrc(null);
+          setPreviewVersion(prev => prev + 1);
+          requestAnimationFrame(() => {
+            setPreviewSrc(cachedPreview);
+          });
+        }
+        return;
+      }
     }
     
     // Clear previous debounce timer
     if (previewDebounceRef.current) {
       clearTimeout(previewDebounceRef.current);
+      previewDebounceRef.current = null;
     }
     
-    // Set new debounce timer
-    previewDebounceRef.current = setTimeout(async () => {
+    // Execute preview function
+    const executePreview = async () => {
       setIsLoadingPreview(true);
       const target = files[0];
       const actualPayload = {
@@ -364,7 +430,36 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
               previewCacheRef.current.delete(firstKey);
             }
           }
-          setPreviewSrc(res.image);
+          // Convert base64 to blob URL to force browser refresh
+          // This ensures the browser treats each preview as a new image
+          let imageSrc = res.image;
+          if (imageSrc.startsWith('data:image')) {
+            try {
+              // Convert base64 to blob and create new blob URL
+              const response = await fetch(imageSrc);
+              const blob = await response.blob();
+              // Revoke old blob URL if it exists
+              if (currentPreviewSrcRef.current && currentPreviewSrcRef.current.startsWith('blob:')) {
+                URL.revokeObjectURL(currentPreviewSrcRef.current);
+              }
+              imageSrc = URL.createObjectURL(blob);
+              currentPreviewSrcRef.current = imageSrc;
+            } catch (e) {
+              // Fallback to original if conversion fails
+              console.warn('Failed to convert base64 to blob:', e);
+            }
+          }
+          
+          // Force React to update by clearing first, then setting
+          // This ensures the image element re-renders with new src
+          setPreviewSrc(null);
+          // Increment preview version to force browser refresh
+          setPreviewVersion(prev => prev + 1);
+          // Use requestAnimationFrame to ensure state update is processed
+          requestAnimationFrame(() => {
+            currentPreviewSrcRef.current = imageSrc;
+            setPreviewSrc(imageSrc);
+          });
         } else if (res.errors && res.errors.length > 0) {
           console.error("Preview error:", res.errors);
         }
@@ -373,7 +468,14 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       } finally {
         setIsLoadingPreview(false);
       }
-    }, debounceMs);
+    };
+    
+    // If debounce is 0, execute immediately; otherwise use setTimeout
+    if (debounceMs === 0) {
+      executePreview();
+    } else {
+      previewDebounceRef.current = setTimeout(executePreview, debounceMs);
+    }
   }, [files, mode, execute, getCacheKey]);
 
   // Load previews for thumbnails
@@ -460,9 +562,16 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
   // Fetch Preview for specific modes (moved after variable declarations)
   React.useEffect(() => {
+    // Skip if this is a manual update (from button click)
+    if (manualPreviewUpdateRef.current) {
+      manualPreviewUpdateRef.current = false;
+      return;
+    }
+    
     if ((mode === "watermark" || mode === "page_numbers" || mode === "rotate" || mode === "crop") && files.length > 0) {
       if (mode === "rotate") {
-        fetchPreview({ angle: rotationAngle }, 0);
+        // For rotate, we fetch preview when angle changes, but skip cache to ensure fresh preview
+        fetchPreview({ angle: rotationAngle }, 0, true);
       } else if (mode === "crop") {
         fetchPreview({ x: cropX, y: cropY, width: cropWidth, height: cropHeight }, 0);
       } else {
@@ -482,6 +591,11 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
           .catch((err: any) => console.error("Preview failed", err));
       }
     } else {
+      // Clean up blob URL when clearing preview
+      if (currentPreviewSrcRef.current && currentPreviewSrcRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(currentPreviewSrcRef.current);
+        currentPreviewSrcRef.current = null;
+      }
       setPreviewSrc(null);
     }
   }, [mode, files, rotationAngle, cropX, cropY, cropWidth, cropHeight, fetchPreview, execute]);
@@ -757,6 +871,21 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
     });
 
     if (newAssets.length > 0) {
+      // Validate files before adding
+      const allFiles = append 
+        ? [...files, ...newAssets.filter((f) => !files.some(existing => existing.name === f.name))]
+        : newAssets;
+      
+      const validation = validateFiles(mode, allFiles);
+      
+      if (!validation.valid) {
+        setError(validation.error || "Invalid files selected.");
+        return;
+      }
+      
+      // Clear previous errors if validation passes
+      setError(null);
+      
       if (append) {
         // Filter duplicates by name for simplicity (or path if available)
         setFiles((prev) => {
@@ -770,12 +899,29 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
         setFiles(newAssets);
       }
       setResult(null);
-      setError(null);
     }
   };
 
   const handleProcess = async () => {
     if (files.length === 0) return;
+
+    // Validate before processing
+    const validation = validateFiles(mode, files, {
+      password,
+      pageOrder,
+      deletePages,
+      redactText,
+      certFile,
+      cropWidth,
+      cropHeight,
+      splitRange,
+      splitMode,
+    });
+    
+    if (!validation.valid) {
+      setError(validation.error || "Validation failed. Please check your inputs.");
+      return;
+    }
 
     setIsProcessing(true);
     setError(null);
@@ -1036,6 +1182,95 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                 </SortableContext>
               </DndContext>
 
+              {/* Rotation Controls - Below File List */}
+              {mode === "rotate" && files.length > 0 && (
+                <div className="mb-8 p-6 bg-card/50 border border-border rounded-xl">
+                  <label className="text-sm font-medium text-foreground mb-4 block">
+                    Rotation
+                  </label>
+                  
+                  {/* Interactive Rotate Controls */}
+                  <div className="flex items-center gap-4 justify-center mb-4">
+                    <button
+                      onClick={() => {
+                        const newAngle = (rotationAngle - 90 + 360) % 360;
+                        setRotationAngle(newAngle);
+                        // Force preview refresh by skipping cache
+                        fetchPreview({ angle: newAngle }, 0, true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-lg transition-all"
+                    >
+                      <RotateCcw size={18} />
+                      <span>Left</span>
+                    </button>
+                    
+                    <div className="px-6 py-2 bg-primary/20 border border-primary/30 rounded-lg font-bold text-primary min-w-[80px] text-center">
+                      {rotationAngle}°
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        const newAngle = (rotationAngle + 90) % 360;
+                        // Mark as manual update to prevent useEffect interference
+                        manualPreviewUpdateRef.current = true;
+                        // Update angle first
+                        setRotationAngle(newAngle);
+                        // Force preview refresh by skipping cache
+                        fetchPreview({ angle: newAngle }, 0, true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-lg transition-all"
+                    >
+                      <RotateCw size={18} />
+                      <span>Right</span>
+                    </button>
+                  </div>
+
+                  {/* Quick Select Buttons */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[90, 180, 270].map((deg) => (
+                      <button
+                        key={deg}
+                        onClick={() => {
+                          // Mark as manual update to prevent useEffect interference
+                          manualPreviewUpdateRef.current = true;
+                          // Update angle first
+                          setRotationAngle(deg);
+                          // Force preview refresh by skipping cache
+                          fetchPreview({ angle: deg }, 0, true);
+                        }}
+                        className={cn(
+                          "px-3 py-2 text-xs rounded-lg transition-all border",
+                          rotationAngle === deg
+                            ? "bg-primary/10 border-primary text-primary font-medium"
+                            : "bg-secondary border-transparent text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {deg}°
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Preview Display */}
+                  {previewSrc && (
+                    <div className="mt-6 relative bg-secondary/50 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
+                      {isLoadingPreview ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Updating preview...</span>
+                        </div>
+                      ) : (
+                        <img
+                          key={`preview-${rotationAngle}-${previewVersion}`}
+                          src={previewSrc || ''}
+                          alt="PDF Preview"
+                          className="max-w-full max-h-[400px] object-contain rounded-lg shadow-lg"
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Result Area */}
               {result && (
                 <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-xl mb-8">
@@ -1091,7 +1326,16 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-destructive text-lg mb-1">
-                      Process Failed
+                      {error.includes("This tool only accepts") || 
+                       error.includes("Invalid file type") || 
+                       error.includes("Password is required") ||
+                       error.includes("Page order is required") ||
+                       error.includes("Pages to delete") ||
+                       error.includes("Text to redact") ||
+                       error.includes("Certificate") ||
+                       error.includes("Crop dimensions")
+                        ? "Validation Error"
+                        : "Process Failed"}
                     </h3>
                     <p className="text-sm text-foreground/80 leading-relaxed mb-3">
                       {error.includes("os error 232") ||
@@ -1099,9 +1343,19 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                         ? "The background service stopped unexpectedly. This might be due to a missing dependency or a crash in the processing engine."
                         : error}
                     </p>
-                    <div className="bg-black/30 p-3 rounded-lg border border-white/5 font-mono text-xs text-muted-foreground break-all">
-                      {error}
-                    </div>
+                    {/* Only show technical details for processing errors, not validation errors */}
+                    {!error.includes("This tool only accepts") && 
+                     !error.includes("Invalid file type") && 
+                     !error.includes("Password is required") &&
+                     !error.includes("Page order is required") &&
+                     !error.includes("Pages to delete") &&
+                     !error.includes("Text to redact") &&
+                     !error.includes("Certificate") &&
+                     !error.includes("Crop dimensions") && (
+                      <div className="bg-black/30 p-3 rounded-lg border border-white/5 font-mono text-xs text-muted-foreground break-all">
+                        {error}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1218,80 +1472,8 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
             )}
 
             {mode === "rotate" && (
-              <div className="space-y-4">
-                {/* Preview Display */}
-                {previewSrc && files.length > 0 && (
-                  <div className="mb-6 relative bg-secondary/50 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
-                    {isLoadingPreview ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <span className="text-sm text-muted-foreground">Updating preview...</span>
-                      </div>
-                    ) : (
-                      <img
-                        src={previewSrc}
-                        alt="PDF Preview"
-                        className="max-w-full max-h-[300px] object-contain rounded-lg shadow-lg"
-                      />
-                    )}
-                  </div>
-                )}
-
-                <label className="text-sm font-medium text-foreground">
-                  Rotation
-                </label>
-                
-                {/* Interactive Rotate Controls */}
-                <div className="flex items-center gap-4 justify-center">
-                  <button
-                    onClick={() => {
-                      const newAngle = (rotationAngle - 90) % 360;
-                      setRotationAngle(newAngle);
-                      fetchPreview({ angle: newAngle }, 0);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-lg transition-all"
-                  >
-                    <RotateCcw size={18} />
-                    <span>Left</span>
-                  </button>
-                  
-                  <div className="px-6 py-2 bg-primary/20 border border-primary/30 rounded-lg font-bold text-primary min-w-[80px] text-center">
-                    {rotationAngle}°
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      const newAngle = (rotationAngle + 90) % 360;
-                      setRotationAngle(newAngle);
-                      fetchPreview({ angle: newAngle }, 0);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 border border-border rounded-lg transition-all"
-                  >
-                    <RotateCw size={18} />
-                    <span>Right</span>
-                  </button>
-                </div>
-
-                {/* Quick Select Buttons */}
-                <div className="grid grid-cols-3 gap-2 mt-4">
-                  {[90, 180, 270].map((deg) => (
-                    <button
-                      key={deg}
-                      onClick={() => {
-                        setRotationAngle(deg);
-                        fetchPreview({ angle: deg }, 0);
-                      }}
-                      className={cn(
-                        "px-3 py-2 text-xs rounded-lg transition-all border",
-                        rotationAngle === deg
-                          ? "bg-primary/10 border-primary text-primary font-medium"
-                          : "bg-secondary border-transparent text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {deg}°
-                    </button>
-                  ))}
-                </div>
+              <div className="text-xs text-muted-foreground p-4 bg-secondary/20 rounded-lg">
+                Use the rotation controls below the file list to adjust the preview.
               </div>
             )}
 

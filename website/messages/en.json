@@ -13,12 +13,13 @@
     },
     "Hero": {
         "badge": "v1.0 · Desktop Suite + Web Demo",
-        "title": "Your Data, Your Device.",
-        "subtitle": "Process PDFs and images 100% offline. No uploads, no tracking, unlimited speed.",
-        "cta_primary": "Get Annual Desktop License",
-        "cta_secondary": "Try Tools in Your Browser",
-        "stat_offline": "100% Offline Desktop Engine",
-        "stat_privacy": "No Uploads. No Tracking.",
+        "title": "Your Data Never Leaves Your Device.",
+        "subtitle": "Professional PDF and image tools that run 100% offline on your computer. No uploads, no cloud, no limits—just instant results.",
+        "cta_primary": "Get Desktop License - $59/year",
+        "cta_secondary": "See All Tools",
+        "cta_secondary_link": "Or try free online tools",
+        "stat_offline": "100% Offline Processing",
+        "stat_privacy": "Zero Cloud Uploads",
         "stat_speed": "Up to 100x Faster than Web Tools"
     },
     "Features": {
@@ -48,22 +49,24 @@
         "s1_desc": "Physically impossible for data to leak. Works without ethernet/wifi.",
         "s2_title": "Native Performance",
         "s2_desc": "Utilize 100% of your CPU/GPU. Crunch 1000 page PDFs in milliseconds.",
-        "s3_title": "One Payment, Forever",
-        "s3_desc": "Own your tools. Annual subscription. Unlimited local processing."
+        "s3_title": "Simple Annual Pricing",
+        "s3_desc": "$59/year for unlimited processing. No pay-per-file. No upload limits. Cancel anytime."
     },
     "Pricing": {
-        "title": "One Payment. Full Offline Suite.",
-        "subtitle": "Pay once, own the full Windows desktop suite forever. Use the online tools as a free companion.",
-        "badge": "ANNUAL LICENSE",
+        "title": "Simple, Transparent Pricing",
+        "subtitle": "Get unlimited offline processing for less than $5/month. One annual subscription unlocks everything.",
+        "badge": "50% OFF LAUNCH PRICE",
         "price": "$59",
+        "price_period": "/year",
         "old_price": "$120",
-        "desc": "Full access to all PDF & image tools in the Local Tools desktop app for Windows, plus free web previews.",
-        "cta": "Get Annual Desktop License",
-        "f1": "All current & future PDF tools included",
-        "f2": "All current & future image tools included",
-        "f3": "Commercial use allowed on your licensed device(s)",
-        "f4": "Priority email support and regular updates",
-        "money_back": "30-Day Money Back Guarantee"
+        "desc": "Billed annually. Cancel anytime. All tools, unlimited use, zero cloud uploads.",
+        "cta": "Get Desktop License Now",
+        "f1": "All 50+ PDF & image tools included",
+        "f2": "Unlimited files, unlimited processing",
+        "f3": "Commercial use rights included",
+        "f4": "Free updates for your subscription period",
+        "f5": "Priority email support",
+        "money_back": "Cancel Anytime • 30-Day Money Back Guarantee"
     },
     "ToolsPage": {
         "merge-pdf": {
@@ -191,6 +194,13 @@
             "f1": "Custom Text",
             "f2": "Opacity Control",
             "f3": "Brand Protection"
+        },
+        "crop-pdf": {
+            "h1": "Crop PDF Pages",
+            "p1": "Trim and crop PDF pages to remove unwanted margins and content.",
+            "f1": "Visual Cropping",
+            "f2": "Precise Control",
+            "f3": "Batch Processing"
         },
         "repair-pdf": {
             "h1": "Repair PDF",
@@ -726,5 +736,25 @@
         "supports": "Supports PDF, PNG, JPG",
         "limit": "Up to {count} files",
         "file_too_large": "File is too large using the Web Version (Limit: {limit}). Download the Desktop App for unlimited size."
+    },
+    "Validation": {
+        "single_file_required": "This tool only accepts one file. Please select a single {type} file.",
+        "exactly_two_files_required": "This tool requires exactly 2 PDF files for comparison. Please select exactly 2 files.",
+        "too_many_files": "This tool accepts up to {max} files. You selected {count} files. Please select fewer files.",
+        "invalid_file_type": "Invalid file type. This tool only accepts {type} files.",
+        "file_too_large_web": "File \"{filename}\" is too large ({size}MB). Maximum size for web version is {limit}MB. Please use the desktop app for larger files."
+    },
+    "EmailCapture": {
+        "title": "Get 20% Off Launch Pricing",
+        "subtitle": "Join professionals who process sensitive documents offline. Get exclusive discount + free PDF workflow guide.",
+        "benefit1": "Early access to new tools before public release",
+        "benefit2": "Free 50-page PDF workflow optimization guide ($29 value)",
+        "benefit3": "20% off coupon code ($24 savings on your first year)",
+        "email_placeholder": "Enter your email address",
+        "submit_button": "Get My 20% Off Code",
+        "submitting": "Sending...",
+        "privacy_note": "We respect your privacy. Unsubscribe anytime. No spam, ever.",
+        "success_title": "Check Your Email!",
+        "success_message": "We've sent your 20% discount code and the free PDF guide to your inbox."
     }
 }

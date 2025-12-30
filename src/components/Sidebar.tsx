@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '../lib/utils';
-import { Home, Image, FileText, Settings, Menu } from 'lucide-react';
+import { Home, Image, FileText, Settings, Menu, FileEdit } from 'lucide-react';
 
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
@@ -13,6 +13,7 @@ export const Sidebar: React.FC = () => {
         { id: 'home', icon: Home, label: t('sidebar.home'), path: '/' },
         { id: 'image', icon: Image, label: t('sidebar.images'), path: '/image-converter' },
         { id: 'pdf', icon: FileText, label: t('sidebar.pdf_tools'), path: '/pdf-tools' },
+        { id: 'pdf-editor', icon: FileEdit, label: 'PDF Editor', path: '/pdf-editor' },
         { id: 'settings', icon: Settings, label: t('sidebar.settings'), path: '/settings' },
     ];
 

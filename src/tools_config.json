@@ -212,6 +212,13 @@
         "description": "Reorder and organize PDF pages in any order you want."
     },
     {
+        "slug": "rotate-pdf",
+        "tool": "pdf",
+        "mode": "rotate",
+        "title": "Rotate PDF - Rotate PDF Pages",
+        "description": "Rotate PDF pages by 90, 180, or 270 degrees clockwise or counterclockwise."
+    },
+    {
         "slug": "remove-image-background",
         "tool": "image",
         "mode": "remove_bg",

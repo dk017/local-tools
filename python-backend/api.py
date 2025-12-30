@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 
 # Import our local tool modules
-from modules import image_tools, pdf_tools
+from modules import image_tools, pdf_tools, pdf_editor
 
 app = FastAPI()
 
@@ -292,7 +292,15 @@ async def image_endpoint(
             return result
 
         if result.get("errors"):
-            raise HTTPException(status_code=400, detail=str(result["errors"]))
+            # Format errors as user-friendly messages
+            error_messages = []
+            for err in result["errors"]:
+                if isinstance(err, dict):
+                    error_messages.append(err.get("error", str(err)))
+                else:
+                    error_messages.append(str(err))
+            error_text = ". ".join(error_messages) if error_messages else "Processing failed"
+            raise HTTPException(status_code=400, detail=error_text)
 
         processed_files = result.get("processed_files", [])
         if not processed_files:
@@ -416,7 +424,15 @@ async def pdf_endpoint(
         result = await run_in_threadpool(pdf_tools.handle_pdf_action, action, payload)
 
         if result.get("errors"):
-            raise HTTPException(status_code=400, detail=str(result["errors"]))
+            # Format errors as user-friendly messages
+            error_messages = []
+            for err in result["errors"]:
+                if isinstance(err, dict):
+                    error_messages.append(err.get("error", str(err)))
+                else:
+                    error_messages.append(str(err))
+            error_text = ". ".join(error_messages) if error_messages else "Processing failed"
+            raise HTTPException(status_code=400, detail=error_text)
 
         # Special Case: Preview and Palette returns JSON, not file
         if action == "preview" or action == "extract_palette":
@@ -445,6 +461,126 @@ async def pdf_endpoint(
 
     except HTTPException as he:
         raise he
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- PDF Editor Endpoints ---
+
+@app.post("/api/pdf-editor/info")
+async def pdf_editor_get_info(file: UploadFile = File(...)):
+    """Get PDF document information (page count, dimensions)"""
+    try:
+        file_path = save_upload(file)
+        payload = {"file": file_path}
+        result = pdf_editor.get_pdf_info(payload)
+
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+
+        return {"status": "success", "data": result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pdf-editor/render")
+async def pdf_editor_render_page(
+    file: UploadFile = File(...),
+    page: int = Form(0),
+    dpi: int = Form(150)
+):
+    """Render a specific PDF page to image"""
+    try:
+        file_path = save_upload(file)
+        payload = {
+            "file": file_path,
+            "page": page,
+            "dpi": dpi
+        }
+        result = pdf_editor.render_pdf_page(payload)
+
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+
+        return {"status": "success", "data": result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pdf-editor/load-annotations")
+async def pdf_editor_load_annotations(file: UploadFile = File(...)):
+    """Load existing annotations from a PDF"""
+    try:
+        file_path = save_upload(file)
+        payload = {"file": file_path}
+        result = pdf_editor.load_annotations(payload)
+
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+
+        return {"status": "success", "data": result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pdf-editor/save")
+async def pdf_editor_save_annotations(
+    file: UploadFile = File(...),
+    annotations: str = Form(...),
+    flatten: bool = Form(False)
+):
+    """Save annotations to PDF and return the file"""
+    try:
+        file_path = save_upload(file)
+
+        # Parse annotations JSON
+        try:
+            annotations_data = json.loads(annotations)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid annotations JSON")
+
+        # Generate output path
+        base, ext = os.path.splitext(file_path)
+        output_path = f"{base}_annotated{ext}"
+
+        payload = {
+            "file": file_path,
+            "output": output_path,
+            "annotations": annotations_data,
+            "flatten": flatten
+        }
+
+        result = pdf_editor.save_annotations(payload)
+
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+
+        output_file = result.get("output_file")
+        if not output_file or not os.path.exists(output_file):
+            raise HTTPException(status_code=500, detail="Failed to create annotated PDF")
+
+        # Return the annotated PDF file
+        return FileResponse(
+            output_file,
+            filename=os.path.basename(output_file),
+            media_type="application/pdf"
+        )
+
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

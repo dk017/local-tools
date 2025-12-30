@@ -4,6 +4,7 @@ import { Features } from "@/components/Features";
 import { ProblemSolution } from "@/components/ProblemSolution";
 import { Pricing } from "@/components/Pricing";
 import { Footer } from "@/components/Footer";
+import { EmailCaptureModal } from "@/components/EmailCaptureModal";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <ProblemSolution />
       <Pricing />
       <Footer />
+      <EmailCaptureModal />
     </div>
   );
 }

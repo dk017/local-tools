@@ -27,7 +27,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"]
+    expose_headers=["Content-Disposition", "X-Processing-Warning"]
 )
 
 TEMP_DIR = tempfile.gettempdir()
@@ -35,10 +35,25 @@ TEMP_DIR = tempfile.gettempdir()
 async def save_upload_file(upload_file: UploadFile) -> str:
     try:
         suffix = os.path.splitext(upload_file.filename)[1]
+        print(f"[UPLOAD] Saving file: {upload_file.filename}, suffix: {suffix}", flush=True)
+
+        # Read the content
+        content = await upload_file.read()
+        print(f"[UPLOAD] Read {len(content)} bytes. First 20 bytes: {content[:20]}", flush=True)
+
+        # Save to temp file
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=TEMP_DIR) as tmp:
-            shutil.copyfileobj(upload_file.file, tmp)
-            return tmp.name
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        # Verify what was written
+        with open(tmp_path, 'rb') as verify:
+            verify_bytes = verify.read(20)
+            print(f"[UPLOAD] Verified temp file. First 20 bytes: {verify_bytes}", flush=True)
+
+        return tmp_path
     except Exception as e:
+        print(f"[UPLOAD] Error saving file: {e}", flush=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/pdf/{action}")
@@ -52,6 +67,7 @@ async def pdf_endpoint(
     level: Optional[int] = Form(None),
     watermark_type: Optional[str] = Form(None),
     text: Optional[str] = Form(None),
+    texts: Optional[str] = Form(None),
     opacity: Optional[float] = Form(None),
     watermark_file: Optional[UploadFile] = File(None),
     color: Optional[str] = Form(None),
@@ -65,7 +81,8 @@ async def pdf_endpoint(
     height: Optional[float] = Form(None),
     page_order: Optional[str] = Form(None),
     angle: Optional[float] = Form(None),
-    page: Optional[int] = Form(None)
+    page: Optional[int] = Form(None),
+    merge_tables: Optional[str] = Form(None)
 ):
     saved_files = []
     for f in files:
@@ -89,6 +106,7 @@ async def pdf_endpoint(
         "level": level,
         "watermark_type": watermark_type,
         "text": text,
+        "texts": texts,
         "opacity": opacity,
         "watermark_file": saved_watermark_file,
         "color": color,
@@ -102,7 +120,8 @@ async def pdf_endpoint(
         "height": height,
         "page_order": page_order,
         "angle": angle,
-        "page": page
+        "page": page,
+        "merge_tables": merge_tables
     }
 
     # Handle split/preview specifically where we might need file path
@@ -119,29 +138,56 @@ async def pdf_endpoint(
 
     debug_log(f"Action: {action}, Payload keys: {list(payload.keys())}")
     if "file" in payload: debug_log(f"File: {payload['file']}")
+    if action == "extract_tables":
+        print(f"[DEBUG] extract_tables called with merge_tables={merge_tables}")
 
     try:
         result = handle_pdf_action(action, payload)
         debug_log(f"Result for {action}: {result}")
         print(f"Action Result for {action}: {result}")
 
-        if result.get("errors"):
-             debug_log(f"Errors found: {result['errors']}")
-             raise HTTPException(status_code=400, detail=str(result["errors"]))
-
         # Special Case: Preview and Palette returns JSON, not file
         if action == "preview" or action == "extract_palette":
             return result
 
         processed_files = result.get("processed_files", [])
-        if not processed_files:
+        errors = result.get("errors", [])
+
+        # Handle errors and partial success
+        if errors and not processed_files:
+             # Complete failure - no files processed
+             debug_log(f"Complete failure - errors found: {errors}")
+             error_messages = []
+             for err in errors:
+                 if isinstance(err, dict) and "error" in err:
+                     error_messages.append(err["error"])
+                 else:
+                     error_messages.append(str(err))
+             error_detail = ". ".join(error_messages) if error_messages else "Processing failed"
+             print(f"ERROR DETAIL TO SEND: {error_detail}")
+             raise HTTPException(status_code=400, detail=error_detail)
+
+        if not processed_files and not errors:
+             # No files and no errors - shouldn't happen
              debug_log("No processed files and no errors returned!")
              print(f"CRITICAL ERROR: Action {action} returned no files and no errors. Result: {result}")
              raise HTTPException(status_code=500, detail=f"Processing failed. Result: {result}")
 
+        # Prepare warning header for partial success
+        warning_header = None
+        if errors and processed_files:
+            # Partial success - some succeeded, some failed
+            error_count = len(errors)
+            success_count = len(processed_files)
+            warning_header = f"{success_count} table(s) extracted successfully, {error_count} failed"
+            print(f"PARTIAL SUCCESS: {warning_header}")
+
         # Return single file or zip if multiple
         if len(processed_files) == 1:
-             return FileResponse(processed_files[0], filename=os.path.basename(processed_files[0]))
+             response = FileResponse(processed_files[0], filename=os.path.basename(processed_files[0]))
+             if warning_header:
+                 response.headers["X-Processing-Warning"] = warning_header
+             return response
         else:
              # Create zip
              zip_filename = f"processed_files_{action}.zip"
@@ -150,11 +196,14 @@ async def pdf_endpoint(
                  for file in processed_files:
                      zipf.write(file, os.path.basename(file))
 
-             return FileResponse(
-                 zip_path, 
+             response = FileResponse(
+                 zip_path,
                  filename=zip_filename,
                  media_type="application/zip"
              )
+             if warning_header:
+                 response.headers["X-Processing-Warning"] = warning_header
+             return response
 
     except HTTPException as he:
         raise he
@@ -272,7 +321,15 @@ async def image_endpoint(
             return result
 
         if result.get("errors"):
-             raise HTTPException(status_code=400, detail=str(result["errors"]))
+             # Extract just the error messages, not the full file paths
+             error_messages = []
+             for err in result["errors"]:
+                 if isinstance(err, dict) and "error" in err:
+                     error_messages.append(err["error"])
+                 else:
+                     error_messages.append(str(err))
+             error_detail = ". ".join(error_messages) if error_messages else "Processing failed"
+             raise HTTPException(status_code=400, detail=error_detail)
 
         processed_files = result.get("processed_files", [])
         if not processed_files:
@@ -299,4 +356,5 @@ async def image_endpoint(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    # Use port 8001 to avoid conflict with desktop app (main.py uses 8000)
+    uvicorn.run("server:app", host="0.0.0.0", port=8001, reload=True)

@@ -204,6 +204,7 @@ export default async function ToolPage({
     (slug.includes("image") &&
       slug !== "pdf-to-images" &&
       slug !== "extract-images-from-pdf") ||
+    slug === "images-to-pdf" ||  // Converts images to PDF - accepts images as input
     slug === "remove-image-background" ||
     slug === "passport-photo" ||
     slug === "extract-palette" ||

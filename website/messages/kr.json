@@ -178,6 +178,13 @@
             "f2": "투명도 조절",
             "f3": "브랜드 보호"
         },
+        "crop-pdf": {
+            "h1": "PDF 페이지 자르기",
+            "p1": "불필요한 여백과 콘텐츠를 제거하기 위해 PDF 페이지를 자릅니다.",
+            "f1": "시각적 자르기",
+            "f2": "정밀 제어",
+            "f3": "일괄 처리"
+        },
         "repair-pdf": {
             "h1": "PDF 복구",
             "p1": "손상된 PDF 파일을 복구하세요.",
@@ -689,5 +696,12 @@
         "supports": "Supports PDF, PNG, JPG",
         "limit": "Up to {count} files",
         "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+    },
+    "Validation": {
+        "single_file_required": "This tool only accepts one file. Please select a single {type} file.",
+        "exactly_two_files_required": "This tool requires exactly 2 PDF files for comparison. Please select exactly 2 files.",
+        "too_many_files": "This tool accepts up to {max} files. You selected {count} files. Please select fewer files.",
+        "invalid_file_type": "Invalid file type. This tool only accepts {type} files.",
+        "file_too_large_web": "File \"{filename}\" is too large ({size}MB). Maximum size for web version is {limit}MB. Please use the desktop app for larger files."
     }
 }

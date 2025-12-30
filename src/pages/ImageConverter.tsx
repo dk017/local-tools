@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { usePython } from '../hooks/usePython';
 import { Upload, FileImage, CheckCircle, AlertCircle, Loader2, X, Maximize2, Minimize2, FileOutput, Stamp, AppWindow, Palette, Crop, ImagePlus, Type, Trash2 } from 'lucide-react';
 import { pickFiles, FileAsset, readFileAsset } from '../lib/file-picker';
+import { validateFiles } from '../lib/file-validation';
 import Cropper from 'react-easy-crop';
 import { UserSquare2 } from 'lucide-react';
 // import { motion, AnimatePresence } from 'framer-motion';
@@ -222,9 +223,18 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
             description: 'Images'
         });
         if (assets.length > 0) {
+            // Validate files before adding
+            const validation = validateFiles(mode, assets);
+            
+            if (!validation.valid) {
+                setError(validation.error || "Invalid files selected.");
+                return;
+            }
+            
+            // Clear previous errors if validation passes
+            setError(null);
             setFiles(assets);
             setResult(null);
-            setError(null);
         }
     };
 
@@ -258,6 +268,16 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
 
     const handleProcess = async () => {
         if (files.length === 0) return;
+
+        // Validate before processing
+        // Note: For image crop, we don't validate dimensions as it's interactive
+        // Only validate for PDF crop which uses explicit width/height
+        const validation = validateFiles(mode, files);
+        
+        if (!validation.valid) {
+            setError(validation.error || "Validation failed. Please check your inputs.");
+            return;
+        }
 
         setIsProcessing(true);
         setError(null);
@@ -583,10 +603,18 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                                         </div>
                                     )}
                                     {error && (
-                                        <div className="max-w-xl mx-auto mt-8 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3">
-                                            <AlertCircle className="w-5 h-5 text-destructive" />
-                                            <div className="text-sm text-destructive">
-                                                {error}
+                                        <div className="max-w-xl mx-auto mt-8 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3">
+                                            <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-destructive mb-1">
+                                                    {error.includes("This tool only accepts") || 
+                                                     error.includes("Invalid file type")
+                                                        ? "Validation Error"
+                                                        : "Processing Error"}
+                                                </h4>
+                                                <p className="text-sm text-destructive/90">
+                                                    {error}
+                                                </p>
                                             </div>
                                         </div>
                                     )}

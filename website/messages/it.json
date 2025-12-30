@@ -173,6 +173,13 @@
             "f2": "Controllo Opacità",
             "f3": "Protezione Brand"
         },
+        "crop-pdf": {
+            "h1": "Ritaglia Pagine PDF",
+            "p1": "Ritaglia le pagine PDF per rimuovere margini e contenuti indesiderati.",
+            "f1": "Ritaglio Visivo",
+            "f2": "Controllo Preciso",
+            "f3": "Elaborazione in Batch"
+        },
         "repair-pdf": {
             "h1": "Ripara PDF",
             "p1": "Ripara file PDF corrotti o danneggiati.",
@@ -689,5 +696,12 @@
         "supports": "Supports PDF, PNG, JPG",
         "limit": "Up to {count} files",
         "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+    },
+    "Validation": {
+        "single_file_required": "This tool only accepts one file. Please select a single {type} file.",
+        "exactly_two_files_required": "This tool requires exactly 2 PDF files for comparison. Please select exactly 2 files.",
+        "too_many_files": "This tool accepts up to {max} files. You selected {count} files. Please select fewer files.",
+        "invalid_file_type": "Invalid file type. This tool only accepts {type} files.",
+        "file_too_large_web": "File \"{filename}\" is too large ({size}MB). Maximum size for web version is {limit}MB. Please use the desktop app for larger files."
     }
 }
