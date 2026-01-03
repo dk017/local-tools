@@ -461,59 +461,60 @@ export default function PdfCanvas({
   };
 
   /**
-   * Handle keyboard events
+   * Stable handler reference for keyboard shortcuts
+   * Memoized to prevent event listener thrashing
    */
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // If editing text, handle text-specific keys
+    if (editingAnnotationId) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelTextEditing();
+      }
+      return; // Don't process other shortcuts while editing
+    }
+
+    // Tool shortcuts (only when not editing)
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      switch (e.key.toLowerCase()) {
+        case 'v':
+          onToolChange?.('select');
+          break;
+        case 't':
+          onToolChange?.('text');
+          break;
+        case 'h':
+          onToolChange?.('highlight');
+          break;
+        case 'r':
+          onToolChange?.('rect');
+          break;
+        case 'c':
+          onToolChange?.('circle');
+          break;
+        case 'n':
+          onToolChange?.('comment');
+          break;
+        case 'escape':
+          onSelectAnnotation(null);
+          setShowCommentPopover(null);
+          break;
+      }
+    }
+
+    // Delete selected annotation
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (selectedAnnotationId && !editingAnnotationId) {
+        e.preventDefault();
+        onDeleteAnnotation(selectedAnnotationId);
+      }
+    }
+  }, [selectedAnnotationId, editingAnnotationId, onDeleteAnnotation, onSelectAnnotation, onToolChange, cancelTextEditing]);
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // If editing text, handle text-specific keys
-      if (editingAnnotationId) {
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          cancelTextEditing();
-        }
-        return; // Don't process other shortcuts while editing
-      }
-
-      // Tool shortcuts (only when not editing)
-      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-        switch (e.key.toLowerCase()) {
-          case 'v':
-            onToolChange?.('select');
-            break;
-          case 't':
-            onToolChange?.('text');
-            break;
-          case 'h':
-            onToolChange?.('highlight');
-            break;
-          case 'r':
-            onToolChange?.('rect');
-            break;
-          case 'c':
-            onToolChange?.('circle');
-            break;
-          case 'n':
-            onToolChange?.('comment');
-            break;
-          case 'escape':
-            onSelectAnnotation(null);
-            setShowCommentPopover(null);
-            break;
-        }
-      }
-
-      // Delete selected annotation
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedAnnotationId && !editingAnnotationId) {
-          e.preventDefault();
-          onDeleteAnnotation(selectedAnnotationId);
-        }
-      }
-    };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedAnnotationId, editingAnnotationId, onDeleteAnnotation, onSelectAnnotation, onToolChange, cancelTextEditing]);
+  }, [handleKeyDown]);
 
   /**
    * Get cursor style based on tool

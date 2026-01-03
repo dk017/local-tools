@@ -10,6 +10,7 @@ import {
   FileUp,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Loader2,
   Trash2,
   ArrowRight,
@@ -343,6 +344,21 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
   const [previewVersion, setPreviewVersion] = React.useState(0);
   // Ref to track current preview source for cleanup
   const currentPreviewSrcRef = React.useRef<string | null>(null);
+  // Ref to track component mounted state (prevents state updates after unmount)
+  const isMountedRef = React.useRef<boolean>(true);
+
+  // Set up mounted state tracking
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Clean up any pending debounce timer
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current);
+        previewDebounceRef.current = null;
+      }
+    };
+  }, []);
 
   // Generate cache key from params
   const getCacheKey = React.useCallback((params: any): string => {
@@ -357,9 +373,9 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
   // Fetch preview with parameters
   const fetchPreview = React.useCallback(async (params: any, debounceMs: number = 300, skipCache: boolean = false) => {
     if (files.length === 0) return;
-    
+
     const cacheKey = getCacheKey(params);
-    
+
     // Check cache first (unless skipping cache)
     if (!skipCache) {
       const cachedPreview = previewCacheRef.current.get(cacheKey);
@@ -370,6 +386,8 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
             try {
               const response = await fetch(cachedPreview);
               const blob = await response.blob();
+              // Check if still mounted before updating state
+              if (!isMountedRef.current) return;
               // Revoke old blob URL if it exists
               if (currentPreviewSrcRef.current && currentPreviewSrcRef.current.startsWith('blob:')) {
                 URL.revokeObjectURL(currentPreviewSrcRef.current);
@@ -379,36 +397,47 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
               setPreviewSrc(null);
               setPreviewVersion(prev => prev + 1);
               requestAnimationFrame(() => {
-                setPreviewSrc(blobUrl);
+                if (isMountedRef.current) {
+                  setPreviewSrc(blobUrl);
+                }
               });
             } catch (e) {
               console.warn('Failed to convert cached preview to blob:', e);
+              if (!isMountedRef.current) return;
               setPreviewSrc(null);
               setPreviewVersion(prev => prev + 1);
               requestAnimationFrame(() => {
-                setPreviewSrc(cachedPreview);
+                if (isMountedRef.current) {
+                  setPreviewSrc(cachedPreview);
+                }
               });
             }
           })();
         } else {
+          if (!isMountedRef.current) return;
           setPreviewSrc(null);
           setPreviewVersion(prev => prev + 1);
           requestAnimationFrame(() => {
-            setPreviewSrc(cachedPreview);
+            if (isMountedRef.current) {
+              setPreviewSrc(cachedPreview);
+            }
           });
         }
         return;
       }
     }
-    
+
     // Clear previous debounce timer
     if (previewDebounceRef.current) {
       clearTimeout(previewDebounceRef.current);
       previewDebounceRef.current = null;
     }
-    
+
     // Execute preview function
     const executePreview = async () => {
+      // Check if still mounted before starting
+      if (!isMountedRef.current) return;
+
       setIsLoadingPreview(true);
       const target = files[0];
       const actualPayload = {
@@ -420,6 +449,10 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
       try {
         const res = await execute("pdf_tools", "preview", actualPayload);
+
+        // Check if still mounted after async operation
+        if (!isMountedRef.current) return;
+
         if (res.image) {
           // Cache the result
           previewCacheRef.current.set(cacheKey, res.image);
@@ -438,6 +471,10 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
               // Convert base64 to blob and create new blob URL
               const response = await fetch(imageSrc);
               const blob = await response.blob();
+
+              // Check if still mounted after fetch
+              if (!isMountedRef.current) return;
+
               // Revoke old blob URL if it exists
               if (currentPreviewSrcRef.current && currentPreviewSrcRef.current.startsWith('blob:')) {
                 URL.revokeObjectURL(currentPreviewSrcRef.current);
@@ -449,7 +486,10 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
               console.warn('Failed to convert base64 to blob:', e);
             }
           }
-          
+
+          // Check if still mounted before updating state
+          if (!isMountedRef.current) return;
+
           // Force React to update by clearing first, then setting
           // This ensures the image element re-renders with new src
           setPreviewSrc(null);
@@ -457,8 +497,10 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
           setPreviewVersion(prev => prev + 1);
           // Use requestAnimationFrame to ensure state update is processed
           requestAnimationFrame(() => {
-            currentPreviewSrcRef.current = imageSrc;
-            setPreviewSrc(imageSrc);
+            if (isMountedRef.current) {
+              currentPreviewSrcRef.current = imageSrc;
+              setPreviewSrc(imageSrc);
+            }
           });
         } else if (res.errors && res.errors.length > 0) {
           console.error("Preview error:", res.errors);
@@ -466,10 +508,12 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       } catch (err: any) {
         console.error("Preview failed", err);
       } finally {
-        setIsLoadingPreview(false);
+        if (isMountedRef.current) {
+          setIsLoadingPreview(false);
+        }
       }
     };
-    
+
     // If debounce is 0, execute immediately; otherwise use setTimeout
     if (debounceMs === 0) {
       executePreview();
@@ -521,6 +565,18 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
     };
   }, [files]);
 
+  // Cleanup thumbnail blob URLs when component unmounts
+  React.useEffect(() => {
+    return () => {
+      // Revoke all thumbnail blob URLs to prevent memory leaks
+      Object.values(thumbnails).forEach((url) => {
+        if (typeof url === "string" && url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, []);
+
   // Settings
   const [splitMode, setSplitMode] = useState<"all" | "range">("all");
   const [splitRange, setSplitRange] = useState("");
@@ -559,6 +615,10 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
   // Organize Settings
   const [pageOrder, setPageOrder] = useState("");
+
+  // Confirmation Dialog State (for destructive operations)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
 
   // Fetch Preview for specific modes (moved after variable declarations)
   React.useEffect(() => {
@@ -902,6 +962,55 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
     }
   };
 
+  // Check if the current operation is destructive and needs confirmation
+  const isDestructiveOperation = (operationMode: string): boolean => {
+    const destructiveOps = [
+      "delete_pages",
+      "redact",
+      "scrub",
+      "remove_metadata",
+    ];
+    return destructiveOps.includes(operationMode);
+  };
+
+  // Get confirmation message for destructive operations
+  const getConfirmationMessage = (operationMode: string): string => {
+    switch (operationMode) {
+      case "delete_pages":
+        return `Are you sure you want to permanently delete pages "${deletePages}" from the PDF? This action cannot be undone.`;
+      case "redact":
+        return `Are you sure you want to permanently redact all occurrences of "${redactText}"? This will black out the text and cannot be undone.`;
+      case "scrub":
+        return "Are you sure you want to scrub all metadata, hidden data, and embedded content from the PDF? This action cannot be undone.";
+      case "remove_metadata":
+        return "Are you sure you want to remove all metadata from the PDF? This includes author, creation date, and other document properties.";
+      default:
+        return "Are you sure you want to proceed with this operation?";
+    }
+  };
+
+  // Handler for initiate process (checks for confirmation first)
+  const initiateProcess = () => {
+    if (files.length === 0) return;
+
+    // Check if this is a destructive operation
+    if (isDestructiveOperation(mode)) {
+      setConfirmMessage(getConfirmationMessage(mode));
+      setShowConfirmDialog(true);
+      return;
+    }
+
+    // Non-destructive operations proceed directly
+    handleProcess();
+  };
+
+  // Handler for confirmed destructive operations
+  const handleConfirmedProcess = () => {
+    setShowConfirmDialog(false);
+    setConfirmMessage("");
+    handleProcess();
+  };
+
   const handleProcess = async () => {
     if (files.length === 0) return;
 
@@ -917,7 +1026,7 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       splitRange,
       splitMode,
     });
-    
+
     if (!validation.valid) {
       setError(validation.error || "Validation failed. Please check your inputs.");
       return;
@@ -1062,7 +1171,7 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
               : t("common.select_files")}
           </button>
           <button
-            onClick={handleProcess}
+            onClick={initiateProcess}
             disabled={
               files.length === 0 ||
               isProcessing ||
@@ -1921,6 +2030,52 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       {!IS_TAURI && (
         <div className="mt-20">
           <ToolInfo slug={mode} />
+        </div>
+      )}
+
+      {/* Confirmation Dialog for Destructive Operations */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-border bg-destructive/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Confirm Action</h3>
+                  <p className="text-xs text-muted-foreground">This action cannot be undone</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {confirmMessage}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-border bg-secondary/20 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowConfirmDialog(false);
+                  setConfirmMessage("");
+                }}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmedProcess}
+                className="px-4 py-2 text-sm font-medium text-white bg-destructive hover:bg-destructive/90 rounded-lg transition-colors shadow-lg shadow-destructive/20"
+              >
+                Yes, Proceed
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

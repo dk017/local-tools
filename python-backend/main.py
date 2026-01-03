@@ -135,12 +135,14 @@ def process_request(request):
             }
 
     except Exception as e:
+        # Log full traceback server-side for debugging
         logger.exception(f"Error processing request {req_id}")
+        # Return generic error to client without exposing internals
         return {
             "type": "result",
             "request_id": req_id,
             "status": "error",
-            "error": {"code": "INTERNAL_ERROR", "message": f"{str(e)}\n{traceback.format_exc()}"}
+            "error": {"code": "INTERNAL_ERROR", "message": "An internal error occurred during processing."}
         }
 
 def stdin_loop():

@@ -132,8 +132,25 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
         };
     }, [files]);
 
+    // Cleanup thumbnail URLs when component unmounts or files change
+    React.useEffect(() => {
+        return () => {
+            // Revoke all thumbnail blob URLs to prevent memory leaks
+            Object.values(thumbnails).forEach(url => {
+                if (typeof url === 'string' && url.startsWith('blob:')) {
+                    URL.revokeObjectURL(url);
+                }
+            });
+        };
+    }, []);
+
+    // Track blob URLs we create for main image (not from cache)
+    const mainImageBlobRef = React.useRef<string | null>(null);
+
     // Main Image loading logic (for Single view modes)
     React.useEffect(() => {
+        let isMounted = true;
+
         if ((mode === 'passport' || mode === 'watermark' || mode === 'crop' || mode === 'design') && files.length > 0) {
             const target = files[0];
 
@@ -154,23 +171,56 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                     const contents = await readFileAsset(target);
                     const blob = new Blob([contents as any]);
                     const url = URL.createObjectURL(blob);
-                    setImageSrc(url);
+
+                    // Revoke previous blob URL before setting new one
+                    if (mainImageBlobRef.current) {
+                        URL.revokeObjectURL(mainImageBlobRef.current);
+                    }
+                    mainImageBlobRef.current = url;
+
+                    if (isMounted) {
+                        setImageSrc(url);
+                    }
                 } catch (e: any) {
                     console.error("Failed to read file:", e);
-                    setImageLoadError(e.toString());
+                    if (isMounted) {
+                        setImageLoadError(e.toString());
+                    }
                 }
             };
             loadFile();
         } else {
+            // Revoke blob URL when clearing
+            if (mainImageBlobRef.current) {
+                URL.revokeObjectURL(mainImageBlobRef.current);
+                mainImageBlobRef.current = null;
+            }
             setImageSrc(null);
             setImageLoadError(null);
             setImgNaturalDim(null);
-            // setDisplayDim({ w: 0, h: 0 });
         }
+
+        return () => {
+            isMounted = false;
+        };
     }, [files, mode, thumbnails]);
+
+    // Cleanup main image blob URL on unmount
+    React.useEffect(() => {
+        return () => {
+            if (mainImageBlobRef.current) {
+                URL.revokeObjectURL(mainImageBlobRef.current);
+            }
+        };
+    }, []);
+
+    // Track watermark blob URL for cleanup
+    const watermarkBlobRef = React.useRef<string | null>(null);
 
     // Load Watermark Image
     React.useEffect(() => {
+        let isMounted = true;
+
         if (watermarkFile) {
             if (watermarkFile.preview) {
                 setWatermarkPreviewSrc(watermarkFile.preview);
@@ -179,15 +229,43 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                     try {
                         const contents = await readFileAsset(watermarkFile);
                         const blob = new Blob([contents as any]);
-                        setWatermarkPreviewSrc(URL.createObjectURL(blob));
+                        const url = URL.createObjectURL(blob);
+
+                        // Revoke previous blob URL
+                        if (watermarkBlobRef.current) {
+                            URL.revokeObjectURL(watermarkBlobRef.current);
+                        }
+                        watermarkBlobRef.current = url;
+
+                        if (isMounted) {
+                            setWatermarkPreviewSrc(url);
+                        }
                     } catch (e) { console.error(e) }
                 }
                 load();
             }
         } else {
+            // Revoke blob URL when clearing
+            if (watermarkBlobRef.current) {
+                URL.revokeObjectURL(watermarkBlobRef.current);
+                watermarkBlobRef.current = null;
+            }
             setWatermarkPreviewSrc(null);
         }
+
+        return () => {
+            isMounted = false;
+        };
     }, [watermarkFile]);
+
+    // Cleanup watermark blob URL on unmount
+    React.useEffect(() => {
+        return () => {
+            if (watermarkBlobRef.current) {
+                URL.revokeObjectURL(watermarkBlobRef.current);
+            }
+        };
+    }, []);
 
 
     // Track Image Resize
@@ -313,6 +391,7 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                 payload.target_format = format;
             } else if (mode === 'resize') {
                 action = 'resize';
+                payload.resize_mode = resizeConfig.type === 'percentage' ? 'percentage' : 'pixel';
                 if (resizeConfig.type === 'percentage') {
                     payload.percentage = resizeConfig.percentage;
                 } else {

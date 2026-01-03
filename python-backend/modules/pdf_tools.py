@@ -315,6 +315,81 @@ def merge_pdfs(payload):
 
     return {"processed_files": processed_files, "errors": errors}
 
+def _validate_page_spec(pages_str, total_pages, max_specs=1000, max_range=500):
+    """
+    Validates and parses a page specification string.
+
+    Args:
+        pages_str: Page specification (e.g., "1,3,5" or "1-5,10")
+        total_pages: Total pages in the document
+        max_specs: Maximum number of comma-separated specifications
+        max_range: Maximum size of a single range
+
+    Returns:
+        Tuple of (page_indices list, error_message or None)
+    """
+    import re
+
+    if not pages_str or not pages_str.strip():
+        return [], "Page specification is required"
+
+    # Validate format (only digits, commas, dashes, and spaces)
+    if not re.match(r'^[\d\s,\-]+$', pages_str):
+        return [], f"Invalid page format. Use only numbers, commas, and dashes (e.g., '1,3,5' or '1-5')"
+
+    parts = [p.strip() for p in pages_str.split(",")]
+
+    # Limit parts to prevent DoS
+    if len(parts) > max_specs:
+        return [], f"Too many page specifications (max {max_specs})"
+
+    page_indices = []
+    for part in parts:
+        if not part:
+            continue
+
+        if "-" in part:
+            range_parts = part.split("-")
+            if len(range_parts) != 2:
+                return [], f"Invalid range format: '{part}'. Use format like '1-5'"
+
+            try:
+                start, end = int(range_parts[0]), int(range_parts[1])
+            except ValueError:
+                return [], f"Invalid page numbers in range: '{part}'"
+
+            if start < 1 or end < 1:
+                return [], f"Page numbers must be >= 1. Invalid range: '{part}'"
+
+            if start > end:
+                return [], f"Invalid range: '{part}'. Start must be <= end."
+
+            if end - start + 1 > max_range:
+                return [], f"Range too large: '{part}'. Maximum range size is {max_range} pages."
+
+            if end > total_pages:
+                return [], f"Page {end} exceeds document length ({total_pages} pages)"
+
+            for p in range(start - 1, end):
+                if 0 <= p < total_pages:
+                    page_indices.append(p)
+        else:
+            try:
+                p = int(part)
+            except ValueError:
+                return [], f"Invalid page number: '{part}'"
+
+            if p < 1 or p > total_pages:
+                return [], f"Page {part} is out of range (1-{total_pages})"
+
+            page_indices.append(p - 1)
+
+    if not page_indices:
+        return [], "No valid pages specified"
+
+    return page_indices, None
+
+
 def split_pdf(payload):
     """Split PDF into individual pages or extract specific pages."""
     file_path = payload.get("file") or (payload.get("files", [None])[0])
@@ -341,7 +416,14 @@ def split_pdf(payload):
             doc.close()
             return {"processed_files": [], "errors": errors}
 
+        # Limit total pages for "split all" mode to prevent resource exhaustion
+        MAX_SPLIT_ALL_PAGES = 500
         if mode == "all" or not pages:
+            if total_pages > MAX_SPLIT_ALL_PAGES:
+                errors.append({"file": file_path, "error": f"PDF has {total_pages} pages. Maximum for 'split all' is {MAX_SPLIT_ALL_PAGES} pages. Use page ranges instead."})
+                doc.close()
+                return {"processed_files": [], "errors": errors}
+
             # Split into individual pages
             for page_num in range(total_pages):
                 new_doc = fitz.open()
@@ -351,30 +433,20 @@ def split_pdf(payload):
                 new_doc.close()
                 processed_files.append(output_path)
         elif mode == "range" and pages:
-            # Extract page range (e.g., "1-5" or "1,3,5")
-            try:
-                if "-" in pages:
-                    start, end = map(int, pages.split("-"))
-                    for page_num in range(start - 1, min(end, total_pages)):
-                        new_doc = fitz.open()
-                        new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
-                        output_path = f"{base}_page_{page_num + 1}{ext}"
-                        new_doc.save(output_path)
-                        new_doc.close()
-                        processed_files.append(output_path)
-                else:
-                    # Comma-separated pages
-                    page_list = [int(p.strip()) - 1 for p in pages.split(",")]
-                    for page_num in page_list:
-                        if 0 <= page_num < total_pages:
-                            new_doc = fitz.open()
-                            new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
-                            output_path = f"{base}_page_{page_num + 1}{ext}"
-                            new_doc.save(output_path)
-                            new_doc.close()
-                            processed_files.append(output_path)
-            except ValueError:
-                errors.append({"file": file_path, "error": f"Invalid page range: {pages}"})
+            # Extract page range with validation
+            page_indices, error = _validate_page_spec(pages, total_pages)
+            if error:
+                errors.append({"file": file_path, "error": error})
+                doc.close()
+                return {"processed_files": [], "errors": errors}
+
+            for page_num in page_indices:
+                new_doc = fitz.open()
+                new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+                output_path = f"{base}_page_{page_num + 1}{ext}"
+                new_doc.save(output_path)
+                new_doc.close()
+                processed_files.append(output_path)
 
         if doc:
             doc.close()
@@ -396,7 +468,13 @@ def compress_pdf(payload):
     - 3 (Extreme): Aggressive compression with image downsampling
     """
     files = payload.get("files", [])
-    level = int(payload.get("level", 1))  # Default to medium compression
+
+    # Validate and clamp compression level to valid range 0-3
+    try:
+        level = int(payload.get("level", 1))
+        level = max(0, min(3, level))  # Clamp to 0-3
+    except (ValueError, TypeError):
+        level = 1  # Default to medium compression
 
     processed_files = []
     errors = []
@@ -640,17 +718,33 @@ def unlock_pdf(payload):
 
     return {"processed_files": processed_files, "errors": errors}
 
+def _clamp(value, min_val, max_val, default):
+    """Clamp a value to a range, returning default if invalid."""
+    try:
+        val = float(value) if value is not None else default
+        return max(min_val, min(max_val, val))
+    except (ValueError, TypeError):
+        return default
+
+
 def watermark_pdf(payload):
     """Add watermark to PDF pages."""
     files = payload.get("files", [])
     watermark_type = payload.get("watermark_type", "text")
     text = payload.get("text", "CONFIDENTIAL")
-    opacity = float(payload.get("opacity", 0.5))
+
+    # Validate and clamp numeric parameters
+    opacity = _clamp(payload.get("opacity"), 0.0, 1.0, 0.5)
     watermark_file = payload.get("watermark_file")
     color = str(payload.get("color", "gray"))
-    font_size = int(payload.get("font_size", 72))
-    x_percent = float(payload.get("x", 0.5))  # 0-1 range
-    y_percent = float(payload.get("y", 0.5))  # 0-1 range
+    font_size = int(_clamp(payload.get("font_size"), 8, 500, 72))  # Min 8pt, max 500pt
+    x_percent = _clamp(payload.get("x"), 0.0, 1.0, 0.5)  # 0-1 range
+    y_percent = _clamp(payload.get("y"), 0.0, 1.0, 0.5)  # 0-1 range
+
+    # Validate text length to prevent memory issues
+    MAX_WATERMARK_TEXT_LENGTH = 500
+    if text and len(text) > MAX_WATERMARK_TEXT_LENGTH:
+        text = text[:MAX_WATERMARK_TEXT_LENGTH]
 
     processed_files = []
     errors = []

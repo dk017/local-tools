@@ -342,32 +342,43 @@ export default function PdfEditorPage() {
     if (!pdfFile) return;
     if (page < 0 || (pdfInfo && page >= pdfInfo.pageCount)) return;
 
-    await loadPage(pdfFile, page);
+    try {
+      await loadPage(pdfFile, page);
+    } catch (err) {
+      // loadPage handles its own errors, but catch any unhandled ones
+      console.error('Unhandled error in page change:', err);
+      setError('Failed to navigate to page');
+    }
   };
 
   const handlePrevPage = () => handlePageChange(currentPage - 1);
   const handleNextPage = () => handlePageChange(currentPage + 1);
 
   /**
+   * Stable handler reference for undo/redo keyboard shortcuts
+   * Using useCallback with undo/redo as dependencies since they're
+   * already memoized in the context provider
+   */
+  const handleUndoRedoKeyDown = useCallback((e: KeyboardEvent) => {
+    // Undo: Ctrl+Z or Cmd+Z
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+    }
+    // Redo: Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y
+    if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+      e.preventDefault();
+      redo();
+    }
+  }, [undo, redo]);
+
+  /**
    * Global keyboard shortcuts for undo/redo
    */
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Undo: Ctrl+Z or Cmd+Z
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      }
-      // Redo: Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y
-      if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
-        e.preventDefault();
-        redo();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo]);
+    window.addEventListener('keydown', handleUndoRedoKeyDown);
+    return () => window.removeEventListener('keydown', handleUndoRedoKeyDown);
+  }, [handleUndoRedoKeyDown]);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">

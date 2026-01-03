@@ -17,8 +17,10 @@ except ImportError:
     from security import validate_input_file
 
 # PREVENT DECOMPRESSION BOMBS
-# 100M pixels = approx 10k x 10k image. Adjust as needed.
-Image.MAX_IMAGE_PIXELS = 100_000_000
+# 20M pixels = approx 4.5k x 4.5k image. This is a more conservative limit
+# that prevents excessive memory usage while still supporting high-resolution images.
+# For reference: 20MP = ~60MB uncompressed RGB, 100MP = ~300MB
+Image.MAX_IMAGE_PIXELS = 20_000_000
 
 def handle_image_action(action, payload):
     logger.info(f"Handling image action: {action}")
@@ -121,8 +123,20 @@ def resize_images(payload):
     width = payload.get("width")
     height = payload.get("height")
     percentage = payload.get("percentage")
+    resize_mode = payload.get("resize_mode", "pixel")  # "pixel" or "percentage"
     maintain_aspect = payload.get("maintain_aspect", True)
-    
+
+    # Convert numeric strings to proper types
+    try:
+        if width is not None:
+            width = int(float(width))
+        if height is not None:
+            height = int(float(height))
+        if percentage is not None:
+            percentage = float(percentage)
+    except (ValueError, TypeError):
+        pass
+
     processed_files = []
     errors = []
 
@@ -135,11 +149,13 @@ def resize_images(payload):
                 original_w, original_h = img.size
                 new_w, new_h = original_w, original_h
 
-                if percentage:
+                # Use resize_mode to determine which parameters to use
+                if resize_mode == "percentage" and percentage:
                     factor = percentage / 100.0
                     new_w = int(original_w * factor)
                     new_h = int(original_h * factor)
                 else:
+                    # Pixel mode (default)
                     if width and height:
                         if maintain_aspect:
                             # If both provided with aspect, fit within box

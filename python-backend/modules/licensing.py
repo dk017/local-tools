@@ -167,27 +167,33 @@ def activate_license(license_key: str, instance_name: str = None):
     if not license_key:
         return {"success": False, "error": "No license key provided"}
 
-    # MOCK MODE (If no API Key provided, for dev testing if user hasn't set it)
-    # WARNING: This should be disabled in production build
+    # MOCK MODE - Only available when explicitly enabled via environment variable
+    # This prevents accidental mock activation in production when API key is missing
     if not LEMONSQUEEZY_API_KEY:
-        logger.warning("Mocking License Activation (No LEMONSQUEEZY_API_KEY set)")
-        if license_key.startswith("test_"):
-             # Mock subscription activation
-             expires_at = (datetime.now() + timedelta(days=365)).isoformat()
-             mock_data = {
-                 "status": "active",
-                 "key": license_key,
-                 "subscription_id": license_key,
-                 "instance_id": instance_id,
-                 "activated_at": datetime.now().isoformat(),
-                 "expires_at": expires_at,
-                 "type": "subscription"
-             }
-             with open(LICENSE_FILE, "w") as f:
-                 json.dump(mock_data, f)
-             return {"success": True, "message": "Mock activation successful", "data": mock_data}
+        # Check if mock mode is explicitly enabled for development
+        if os.environ.get("DEV_MOCK_LICENSE") == "true":
+            logger.warning("DEV: Mock license activation enabled via DEV_MOCK_LICENSE")
+            if license_key.startswith("test_"):
+                # Mock subscription activation
+                expires_at = (datetime.now() + timedelta(days=365)).isoformat()
+                mock_data = {
+                    "status": "active",
+                    "key": license_key,
+                    "subscription_id": license_key,
+                    "instance_id": instance_id,
+                    "activated_at": datetime.now().isoformat(),
+                    "expires_at": expires_at,
+                    "type": "subscription"
+                }
+                with open(LICENSE_FILE, "w") as f:
+                    json.dump(mock_data, f)
+                return {"success": True, "message": "Mock activation successful", "data": mock_data}
+            else:
+                return {"success": False, "error": "Mock Activation Failed: Key must start with 'test_'"}
         else:
-             return {"success": False, "error": "Mock Activation Failed: Key must start with 'test_'"}
+            # Production: API key is required
+            logger.error("License activation failed: LEMONSQUEEZY_API_KEY is not configured")
+            return {"success": False, "error": "License service is not configured. Please contact support."}
 
     # REAL ACTIVATION - For subscriptions, validate with API
     try:

@@ -46,6 +46,7 @@ const resources = {
         start_processing: "Start Processing",
         processing: "Processing...",
         add_more: "Add More",
+        add_replace: "Add / Replace",
         replace_all: "Replace All",
         export: "Export",
         settings: "Settings",
