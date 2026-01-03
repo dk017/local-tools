@@ -34,7 +34,7 @@ export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className 
     );
     
     // File size limits: Web only (Desktop is unlimited)
-    // Images: 3MB, PDFs: 5MB for web version
+    // Images: 20MB, PDFs: 20MB for web version
     let MAX_SIZE: number;
     let sizeLimitText: string;
     
@@ -42,15 +42,15 @@ export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className 
         MAX_SIZE = Infinity;
         sizeLimitText = 'Unlimited';
     } else if (isImageTool) {
-        MAX_SIZE = 3 * 1024 * 1024; // 3MB
-        sizeLimitText = '3MB';
+        MAX_SIZE = 20 * 1024 * 1024; // 20MB
+        sizeLimitText = '20MB';
     } else if (isPdfTool) {
-        MAX_SIZE = 5 * 1024 * 1024; // 5MB
-        sizeLimitText = '5MB';
+        MAX_SIZE = 20 * 1024 * 1024; // 20MB
+        sizeLimitText = '20MB';
     } else {
         // Fallback for unknown types
-        MAX_SIZE = 5 * 1024 * 1024; // 5MB default
-        sizeLimitText = '5MB';
+        MAX_SIZE = 20 * 1024 * 1024; // 20MB default
+        sizeLimitText = '20MB';
     }
 
     const onDropRejected = useCallback((fileRejections: any[]) => {
@@ -120,6 +120,12 @@ export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className 
                 {!(maxFiles === 1 && isPdfTool && !isImageTool) && (
                     <p className="text-sm text-muted-foreground">
                         {maxFiles === 1 ? t('supports') : t('limit', { count: maxFiles })}
+                    </p>
+                )}
+                {/* Show file size limit for web version */}
+                {!isDesktop && (
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                        Max file size: {sizeLimitText}
                     </p>
                 )}
             </div>

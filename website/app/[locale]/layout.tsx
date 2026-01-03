@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "../globals.css";
 import { Navbar } from "@/components/Navbar";
 import { NextIntlClientProvider } from 'next-intl';
@@ -37,6 +38,15 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="dark scroll-smooth">
+      <head>
+        {/* Plausible Analytics - Privacy-friendly, no cookies */}
+        <Script
+          defer
+          data-domain="localtools.pro"
+          src="https://plausible.io/js/script.js"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className={`${inter.className} bg-background text-foreground antialiased min-h-screen selection:bg-cyan-500/30`}>
         <NextIntlClientProvider messages={messages}>
           <ActivationWrapper>

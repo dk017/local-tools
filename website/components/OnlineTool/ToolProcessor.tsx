@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useReducer, useCallback } from "react";
 import { FileUploader } from "./FileUploader";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -132,6 +132,92 @@ const COUNTRIES = [
 
 import { API_BASE_URL } from "@/lib/config";
 
+// ============================================================================
+// STATE MANAGEMENT
+// ============================================================================
+// Note: This component has grown organically and has many individual useState
+// calls. The states are logically grouped into categories below for clarity.
+// A full refactor to useReducer for all states is a larger effort that would
+// require extensive testing. The watermark state has been consolidated as an
+// example pattern for future refactoring.
+//
+// State Categories:
+// 1. Core Status: status, downloadUrl, fileName, errorMessage
+// 2. File Staging: stagedFiles (for reordering/merge tools)
+// 3. Watermark Settings: consolidated into watermarkState reducer
+// 4. Preview/Crop: previewUrl, crop, zoom, croppedAreaPixels, etc.
+// 5. PDF Tools: pdfCropX/Y/Width/Height, pageOrder, rotationAngle, etc.
+// 6. Image Tools: resizeMode/Width/Height, compressionLevel, etc.
+// 7. Advanced Tools: redactTexts, certFile, signatureText, etc.
+// ============================================================================
+
+// Watermark state consolidated using useReducer pattern
+interface WatermarkState {
+  type: "text" | "image";
+  text: string;
+  opacity: number;
+  file: File | null;
+  color: string;
+  fontSize: number;
+  position: string;
+  posPercent: { x: number; y: number };
+  scale: number;
+}
+
+type WatermarkAction =
+  | { type: "SET_TYPE"; payload: "text" | "image" }
+  | { type: "SET_TEXT"; payload: string }
+  | { type: "SET_OPACITY"; payload: number }
+  | { type: "SET_FILE"; payload: File | null }
+  | { type: "SET_COLOR"; payload: string }
+  | { type: "SET_FONT_SIZE"; payload: number }
+  | { type: "SET_POSITION"; payload: string }
+  | { type: "SET_POS_PERCENT"; payload: { x: number; y: number } }
+  | { type: "SET_SCALE"; payload: number }
+  | { type: "RESET" };
+
+const watermarkInitialState: WatermarkState = {
+  type: "text",
+  text: "CONFIDENTIAL",
+  opacity: 0.5,
+  file: null,
+  color: "#000000",
+  fontSize: 60,
+  position: "center",
+  posPercent: { x: 0.5, y: 0.5 },
+  scale: 1,
+};
+
+function watermarkReducer(
+  state: WatermarkState,
+  action: WatermarkAction
+): WatermarkState {
+  switch (action.type) {
+    case "SET_TYPE":
+      return { ...state, type: action.payload };
+    case "SET_TEXT":
+      return { ...state, text: action.payload };
+    case "SET_OPACITY":
+      return { ...state, opacity: action.payload };
+    case "SET_FILE":
+      return { ...state, file: action.payload };
+    case "SET_COLOR":
+      return { ...state, color: action.payload };
+    case "SET_FONT_SIZE":
+      return { ...state, fontSize: action.payload };
+    case "SET_POSITION":
+      return { ...state, position: action.payload };
+    case "SET_POS_PERCENT":
+      return { ...state, posPercent: action.payload };
+    case "SET_SCALE":
+      return { ...state, scale: action.payload };
+    case "RESET":
+      return watermarkInitialState;
+    default:
+      return state;
+  }
+}
+
 interface ToolProcessorProps {
   toolSlug: string;
   apiEndpoint: string;
@@ -152,8 +238,10 @@ export function ToolProcessor({
       return 2;
     }
     
-    // Single-file tools
+    // Single-file tools (require interactive UI)
+    // Note: Batch-capable image tools (convert, resize, compress, etc.) are NOT in this list
     const singleFileTools = [
+      // PDF tools (single file)
       "rotate-pdf",
       "compress-pdf",
       "pdf-to-word",
@@ -186,18 +274,13 @@ export function ToolProcessor({
       "delete-pages",
       "page-numbers",
       "pdf-scrubber",
-      "convert-image",
-      "resize-image",
-      "upscale-image",
-      "compress-image",
-      "passport-photo",
-      "generate-icons",
-      "extract-palette",
-      "crop-image",
-      "heic-to-jpg",
-      "photo-studio",
-      "grid-split",
-      "remove-image-metadata",
+      // Image tools that MUST remain single-file (interactive UI)
+      "passport-photo",     // Interactive cropper with country selection
+      "generate-icons",     // Single image to icon set
+      "extract-palette",    // Single image color analysis
+      "crop-image",         // Interactive cropper
+      "photo-studio",       // Interactive editor
+      "grid-split",         // Single image split
     ];
     
     return singleFileTools.includes(toolSlug) ? 1 : 10;
@@ -454,19 +537,64 @@ export function ToolProcessor({
     });
   };
 
-  // Watermark State
-  const [watermarkType, setWatermarkType] = useState<"text" | "image">("text");
-  const [watermarkText, setWatermarkText] = useState<string>("CONFIDENTIAL");
-  const [watermarkOpacity, setWatermarkOpacity] = useState<number>(0.5);
-  const [watermarkFile, setWatermarkFile] = useState<File | null>(null);
-  const [watermarkColor, setWatermarkColor] = useState<string>("#000000");
-  const [watermarkFontSize, setWatermarkFontSize] = useState<number>(60);
-  const [watermarkPosition, setWatermarkPosition] = useState<string>("center");
-  const [watermarkPosPercent, setWatermarkPosPercent] = useState({
-    x: 0.5,
-    y: 0.5,
-  });
-  const [watermarkScale, setWatermarkScale] = useState<number>(1);
+  // Watermark State (consolidated with useReducer)
+  const [watermarkState, dispatchWatermark] = useReducer(
+    watermarkReducer,
+    watermarkInitialState
+  );
+
+  // Backward-compatible setters for watermark state
+  // These maintain the existing API while using the reducer internally
+  const setWatermarkType = useCallback(
+    (type: "text" | "image") => dispatchWatermark({ type: "SET_TYPE", payload: type }),
+    []
+  );
+  const setWatermarkText = useCallback(
+    (text: string) => dispatchWatermark({ type: "SET_TEXT", payload: text }),
+    []
+  );
+  const setWatermarkOpacity = useCallback(
+    (opacity: number) => dispatchWatermark({ type: "SET_OPACITY", payload: opacity }),
+    []
+  );
+  const setWatermarkFile = useCallback(
+    (file: File | null) => dispatchWatermark({ type: "SET_FILE", payload: file }),
+    []
+  );
+  const setWatermarkColor = useCallback(
+    (color: string) => dispatchWatermark({ type: "SET_COLOR", payload: color }),
+    []
+  );
+  const setWatermarkFontSize = useCallback(
+    (fontSize: number) => dispatchWatermark({ type: "SET_FONT_SIZE", payload: fontSize }),
+    []
+  );
+  const setWatermarkPosition = useCallback(
+    (position: string) => dispatchWatermark({ type: "SET_POSITION", payload: position }),
+    []
+  );
+  const setWatermarkPosPercent = useCallback(
+    (posPercent: { x: number; y: number }) =>
+      dispatchWatermark({ type: "SET_POS_PERCENT", payload: posPercent }),
+    []
+  );
+  const setWatermarkScale = useCallback(
+    (scale: number) => dispatchWatermark({ type: "SET_SCALE", payload: scale }),
+    []
+  );
+
+  // Destructure for backward compatibility with existing code
+  const {
+    type: watermarkType,
+    text: watermarkText,
+    opacity: watermarkOpacity,
+    file: watermarkFile,
+    color: watermarkColor,
+    fontSize: watermarkFontSize,
+    position: watermarkPosition,
+    posPercent: watermarkPosPercent,
+    scale: watermarkScale,
+  } = watermarkState;
 
   // Crop State (Visual)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -718,13 +846,9 @@ export function ToolProcessor({
       return;
     }
 
+    // Single-file interactive tools: crop-image, passport-photo
     if (
-      (toolSlug === "crop-image" ||
-        toolSlug === "passport-photo" ||
-        toolSlug === "convert-image" ||
-        toolSlug === "heic-to-jpg" ||
-        toolSlug === "compress-image" ||
-        toolSlug === "resize-image") &&
+      (toolSlug === "crop-image" || toolSlug === "passport-photo") &&
       files.length > 0
     ) {
       const file = files[0];
@@ -732,21 +856,8 @@ export function ToolProcessor({
       reader.onload = () => {
         setPreviewUrl(reader.result as string);
         setPreviewFile(file);
-
-        // Init resize dims
-        if (toolSlug === "resize-image") {
-          const img = new Image();
-          img.onload = () => {
-            setResizeWidth(img.width);
-            setResizeHeight(img.height);
-          };
-          img.src = reader.result as string;
-        }
       };
       reader.readAsDataURL(file);
-      // Return early to prevent auto-upload
-      return;
-      // Return early to prevent auto-upload
       return;
     }
 
@@ -764,10 +875,54 @@ export function ToolProcessor({
       return;
     }
 
-    // Auto-preview for tools that need preview (including reorder-pages)
+    // BATCH IMAGE TOOLS: convert, resize, compress, heic-to-jpg, remove-bg, watermark, upscale
+    const batchImageTools = [
+      "convert-image",
+      "resize-image",
+      "compress-image",
+      "heic-to-jpg",
+      "remove-image-background",
+      "remove-image-metadata",
+      "upscale-image",
+      "watermark-image",
+    ];
+
+    if (batchImageTools.includes(toolSlug) && files.length > 0) {
+      const newStaged: StagedFile[] = files.map((f) => ({
+        id: `${f.name}-${Date.now()}-${Math.random()}`,
+        file: f,
+        preview:
+          f.type.startsWith("image/") || f.name.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i)
+            ? URL.createObjectURL(f)
+            : undefined,
+      }));
+      setStagedFiles((prev) => [...prev, ...newStaged]);
+
+      // Set first file as preview for settings UI display
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreviewUrl(reader.result as string);
+        setPreviewFile(files[0]);
+
+        // For resize-image, also init dimensions from first file
+        if (toolSlug === "resize-image") {
+          const img = new Image();
+          img.onload = () => {
+            setResizeWidth(img.width);
+            setResizeHeight(img.height);
+          };
+          img.src = reader.result as string;
+        }
+      };
+      reader.readAsDataURL(files[0]);
+
+      return;
+    }
+
+    // Auto-preview for PDF tools that need preview (including reorder-pages)
+    // Note: watermark-image is now handled in batch image tools section above
     if (
       (toolSlug === "watermark-pdf" ||
-        toolSlug === "watermark-image" ||
         toolSlug === "extract-palette" ||
         toolSlug === "protect-pdf" ||
         toolSlug === "unlock-pdf" ||
@@ -781,8 +936,8 @@ export function ToolProcessor({
       files.length > 0
     ) {
       const file = files[0];
-      if (toolSlug === "watermark-image" || toolSlug === "extract-palette") {
-        // Client-side preview for image
+      if (toolSlug === "extract-palette") {
+        // Client-side preview for image (single file)
         const reader = new FileReader();
         reader.onload = () => {
           setPreviewUrl(reader.result as string);
@@ -1322,7 +1477,17 @@ export function ToolProcessor({
               onClick={() => handleFiles(stagedFiles.map((f) => f.file))}
               className="w-1/2 bg-primary text-black font-bold rounded-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(0,243,255,0.2)]"
             >
-              {toolSlug === "merge-pdf" ? "Merge PDF" : "Convert to PDF"}
+              {toolSlug === "merge-pdf" ? "Merge PDFs" :
+               toolSlug === "images-to-pdf" ? "Convert to PDF" :
+               toolSlug === "convert-image" ? "Convert Images" :
+               toolSlug === "resize-image" ? "Resize Images" :
+               toolSlug === "compress-image" ? "Compress Images" :
+               toolSlug === "watermark-image" ? "Apply Watermark" :
+               toolSlug === "heic-to-jpg" ? "Convert HEIC" :
+               toolSlug === "remove-image-background" ? "Remove Background" :
+               toolSlug === "remove-image-metadata" ? "Remove Metadata" :
+               toolSlug === "upscale-image" ? "Upscale Images" :
+               `Process ${stagedFiles.length} File${stagedFiles.length > 1 ? 's' : ''}`}
             </button>
           </div>
         </div>
@@ -1333,7 +1498,24 @@ export function ToolProcessor({
         status !== "complete" &&
         status !== "processing" &&
         status !== "uploading" &&
-        !(previewFile && (toolSlug === "rotate-pdf" || toolSlug === "crop-pdf" || toolSlug === "watermark-pdf" || toolSlug === "watermark-image" || toolSlug === "pdf-redactor" || toolSlug === "protect-pdf" || toolSlug === "unlock-pdf" || toolSlug === "pdf-signer")) && (
+        !(previewFile && (
+          toolSlug === "rotate-pdf" ||
+          toolSlug === "crop-pdf" ||
+          toolSlug === "watermark-pdf" ||
+          toolSlug === "watermark-image" ||
+          toolSlug === "pdf-redactor" ||
+          toolSlug === "protect-pdf" ||
+          toolSlug === "unlock-pdf" ||
+          toolSlug === "pdf-signer" ||
+          toolSlug === "resize-image" ||
+          toolSlug === "convert-image" ||
+          toolSlug === "compress-image" ||
+          toolSlug === "heic-to-jpg" ||
+          toolSlug === "upscale-image" ||
+          toolSlug === "crop-image" ||
+          toolSlug === "passport-photo" ||
+          toolSlug === "extract-palette"
+        )) && (
           <div>
               <FileUploader
               onFilesSelected={handleFileSelect}
@@ -1346,12 +1528,12 @@ export function ToolProcessor({
                 <p className="font-semibold mb-1">Web Version File Size Limits:</p>
                 <ul className="list-disc list-inside space-y-1 text-xs">
                   {acceptedFileTypes && Object.keys(acceptedFileTypes).some(key => key.startsWith('image/')) ? (
-                    <li>Images: Maximum 3MB per file</li>
+                    <li>Images: Maximum 20MB per file</li>
                   ) : null}
                   {acceptedFileTypes && Object.keys(acceptedFileTypes).some(key => key === 'application/pdf') ? (
-                    <li>PDFs: Maximum 5MB per file</li>
+                    <li>PDFs: Maximum 20MB per file</li>
                   ) : null}
-                  <li className="text-primary/80">💡 For larger files, use our desktop app (unlimited file sizes)</li>
+                  <li className="text-primary/80">For larger files, use our desktop app (unlimited file sizes)</li>
                 </ul>
               </div>
             )}
@@ -1743,6 +1925,7 @@ export function ToolProcessor({
                 onClick={() => {
                   setPreviewUrl(null);
                   setPreviewFile(null);
+                  setStagedFiles([]);
                   setWatermarkPosPercent({ x: 0.5, y: 0.5 });
                   setWatermarkScale(1);
                 }}
@@ -1751,11 +1934,22 @@ export function ToolProcessor({
                 Cancel
               </button>
               <button
-                onClick={() => previewFile && handleFiles([previewFile])}
+                onClick={() => {
+                  // For watermark-image with staged files, process all of them
+                  // For watermark-pdf or single file, process just the previewFile
+                  const filesToProcess = (toolSlug === "watermark-image" && stagedFiles.length > 0)
+                    ? stagedFiles.map((f) => f.file)
+                    : previewFile ? [previewFile] : [];
+                  if (filesToProcess.length > 0) {
+                    handleFiles(filesToProcess);
+                  }
+                }}
                 className="flex-1 px-6 py-2 rounded-lg bg-primary text-black font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
               >
                 <CheckCircle className="w-4 h-4" />
-                Apply Watermark
+                {(toolSlug === "watermark-image" && stagedFiles.length > 1)
+                  ? `Apply to ${stagedFiles.length} Images`
+                  : "Apply Watermark"}
               </button>
             </div>
           </div>
@@ -3039,17 +3233,28 @@ export function ToolProcessor({
                       onClick={() => {
                         setPreviewUrl(null);
                         setPreviewFile(null);
+                        setStagedFiles([]);
                       }}
                       className="px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-sm font-semibold transition-colors w-1/3"
                     >
                       {t("change_file")}
                     </button>
                     <button
-                      onClick={() => previewFile && handleFiles([previewFile])}
+                      onClick={() => {
+                        // Process all staged files if available, otherwise single previewFile
+                        const filesToProcess = stagedFiles.length > 0
+                          ? stagedFiles.map((f) => f.file)
+                          : previewFile ? [previewFile] : [];
+                        if (filesToProcess.length > 0) {
+                          handleFiles(filesToProcess);
+                        }
+                      }}
                       className="flex-1 px-6 py-3 rounded-xl bg-primary text-black font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,243,255,0.2)]"
                     >
                       <Zap size={20} />
-                      {toolSlug === "convert-image"
+                      {stagedFiles.length > 1
+                        ? `Process ${stagedFiles.length} Images`
+                        : toolSlug === "convert-image"
                         ? t("convert_now")
                         : t("process_image")}
                     </button>

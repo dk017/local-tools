@@ -4,9 +4,12 @@ import tempfile
 import zipfile
 import sys
 from typing import List, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Force reload modules in development (when reload=True)
 if 'modules.pdf_tools' in sys.modules:
@@ -18,12 +21,26 @@ from modules.pdf_tools import handle_pdf_action
 from modules.image_tools import handle_image_action
 from debug_utils import debug_log
 
+# Rate limiter setup
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Allow CORS for localhost development
+# CORS configuration - allow both production and development origins
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+# Always include production domain
+PRODUCTION_ORIGINS = [
+    "https://localtools.pro",
+    "https://www.localtools.pro",
+    "http://localtools.pro",
+    "http://www.localtools.pro",
+]
+ALL_ORIGINS = list(set(CORS_ORIGINS + PRODUCTION_ORIGINS))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=ALL_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,7 +74,9 @@ async def save_upload_file(upload_file: UploadFile) -> str:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/pdf/{action}")
+@limiter.limit("30/minute")  # 30 requests per minute per IP
 async def pdf_endpoint(
+    request: Request,
     action: str,
     files: List[UploadFile] = File(...),
     output_name: Optional[str] = Form(None),
@@ -244,7 +263,9 @@ async def deactivate_license():
     return await run_in_threadpool(licensing.deactivate_license)
 
 @app.post("/api/image/{action}")
+@limiter.limit("30/minute")  # 30 requests per minute per IP
 async def image_endpoint(
+    request: Request,
     action: str,
     files: List[UploadFile] = File(...),
     watermark_type: Optional[str] = Form(None),

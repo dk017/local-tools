@@ -20,12 +20,20 @@ app = FastAPI()
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:8080").split(",")
 CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS if origin.strip()]
 
-# If CORS_ORIGINS is set to "*" explicitly, allow all (development only)
-# Otherwise, use the configured origins
-if os.getenv("CORS_ORIGINS") == "*":
+# Only allow wildcard origins when explicitly enabled via separate env var
+# This prevents accidental "*" configuration in production
+if os.getenv("CORS_ALLOW_ALL") == "true":
+    # Development/testing mode - allow all origins
     allow_origins = ["*"]
     # Note: allow_credentials cannot be True when allow_origins=["*"]
     allow_credentials = False
+elif os.getenv("CORS_ORIGINS") == "*":
+    # Reject wildcard without explicit CORS_ALLOW_ALL flag
+    import logging
+    logging.warning("CORS_ORIGINS='*' ignored in production. Set CORS_ALLOW_ALL=true to enable (not recommended).")
+    # Fall back to localhost origins for safety
+    allow_origins = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8080"]
+    allow_credentials = True
 else:
     allow_origins = CORS_ORIGINS
     allow_credentials = True
@@ -44,8 +52,8 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 # File upload size limits (in bytes) - Web version only
 # Desktop version has no limits (handled by client-side validation)
-MAX_IMAGE_SIZE = 3 * 1024 * 1024  # 3MB for images (web)
-MAX_PDF_SIZE = 5 * 1024 * 1024    # 5MB for PDFs (web)
+MAX_IMAGE_SIZE = 20 * 1024 * 1024  # 20MB for images (web)
+MAX_PDF_SIZE = 20 * 1024 * 1024    # 20MB for PDFs (web)
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", "52428800"))  # Default: 50MB (fallback)
 MAX_TOTAL_SIZE = int(os.getenv("MAX_TOTAL_SIZE", "104857600"))  # Default: 100MB for multiple files
 
@@ -73,10 +81,10 @@ def validate_file_size(file: UploadFile) -> None:
     # Set appropriate limit based on file type
     if is_image:
         max_size = MAX_IMAGE_SIZE
-        limit_text = "3MB"
+        limit_text = "20MB"
     elif is_pdf:
         max_size = MAX_PDF_SIZE
-        limit_text = "5MB"
+        limit_text = "20MB"
     else:
         # Fallback to default for unknown types
         max_size = MAX_FILE_SIZE
@@ -195,10 +203,12 @@ async def process_request(module_name: str, action: str, request: Request):
             raise HTTPException(status_code=404, detail="Module not found")
 
     except Exception as e:
+        # Log full traceback server-side for debugging
         traceback.print_exc()
+        # Return generic error to client without exposing internals
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "error": str(e), "trace": traceback.format_exc()}
+            content={"status": "error", "error": "An internal error occurred during processing."}
         )
 
 
@@ -668,10 +678,12 @@ async def handle_py_invoke(request: Request):
     except HTTPException:
         raise
     except Exception as e:
+        # Log full traceback server-side for debugging
         traceback.print_exc()
+        # Return generic error to client without exposing internals
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "error": str(e), "trace": traceback.format_exc()}
+            content={"status": "error", "error": "An internal error occurred during processing."}
         )
 
 # --- Licensing Endpoints ---
