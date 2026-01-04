@@ -10,11 +10,6 @@ export function Pricing() {
   // Get checkout URL - NEXT_PUBLIC_ vars are embedded at build time
   const checkoutUrl = process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL || "#";
 
-  // Debug: Log to console (remove in production)
-  if (typeof window !== "undefined") {
-    console.log("Checkout URL:", checkoutUrl);
-  }
-
   return (
     <section className="py-20 px-6 max-w-7xl mx-auto" id="pricing">
       <div className="text-center mb-16">
