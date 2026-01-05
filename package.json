@@ -41,6 +41,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.17",
     "@tauri-apps/cli": "^2",
+    "@types/node": "^20.0.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-easy-crop": "^1.16.0",
