@@ -56,6 +56,11 @@ jobs:
       - name: Bundle Tesseract (Windows)
         run: npm run bundle:tesseract:win
 
+      - name: Rename Tesseract binary (Windows)
+        run: |
+          cd src-tauri/binaries/tesseract
+          cp tesseract.exe tesseract-x86_64-pc-windows-msvc.exe
+
       - name: Build frontend
         run: npm run build
 
@@ -131,6 +136,12 @@ jobs:
       - name: Bundle Tesseract (Linux)
         run: npm run bundle:tesseract:unix
 
+      - name: Rename Tesseract binary (Linux)
+        run: |
+          cd src-tauri/binaries/tesseract
+          cp tesseract tesseract-x86_64-unknown-linux-gnu
+          chmod +x tesseract-x86_64-unknown-linux-gnu
+
       - name: Build frontend
         run: npm run build
 
@@ -164,8 +175,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-apple-darwin
-          # For Apple Silicon, also add: aarch64-apple-darwin
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -186,8 +196,15 @@ jobs:
         run: |
           pyinstaller python-backend.spec --clean --noconfirm
           mkdir -p ../src-tauri/binaries
-          cp dist/python-backend ../src-tauri/binaries/python-backend-x86_64-apple-darwin
-          chmod +x ../src-tauri/binaries/python-backend-x86_64-apple-darwin
+          # Detect architecture
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "arm64" ]; then
+            cp dist/python-backend ../src-tauri/binaries/python-backend-aarch64-apple-darwin
+            chmod +x ../src-tauri/binaries/python-backend-aarch64-apple-darwin
+          else
+            cp dist/python-backend ../src-tauri/binaries/python-backend-x86_64-apple-darwin
+            chmod +x ../src-tauri/binaries/python-backend-x86_64-apple-darwin
+          fi
 
       - name: Install Homebrew dependencies
         run: |
@@ -195,6 +212,18 @@ jobs:
 
       - name: Bundle Tesseract (macOS)
         run: npm run bundle:tesseract:unix
+
+      - name: Rename Tesseract binary (macOS)
+        run: |
+          cd src-tauri/binaries/tesseract
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "arm64" ]; then
+            cp tesseract tesseract-aarch64-apple-darwin
+            chmod +x tesseract-aarch64-apple-darwin
+          else
+            cp tesseract tesseract-x86_64-apple-darwin
+            chmod +x tesseract-x86_64-apple-darwin
+          fi
 
       - name: Build frontend
         run: npm run build
