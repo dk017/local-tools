@@ -34,6 +34,23 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        working-directory: python-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build Python backend (Windows)
+        working-directory: python-backend
+        run: |
+          pyinstaller python-backend.spec --clean --noconfirm
+          cp dist/python-backend.exe ../src-tauri/binaries/python-backend-x86_64-pc-windows-msvc.exe
+
       - name: Bundle Tesseract (Windows)
         run: npm run bundle:tesseract:win
 
@@ -90,6 +107,24 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        working-directory: python-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build Python backend (Linux)
+        working-directory: python-backend
+        run: |
+          pyinstaller python-backend.spec --clean --noconfirm
+          cp dist/python-backend ../src-tauri/binaries/python-backend-x86_64-unknown-linux-gnu
+          chmod +x ../src-tauri/binaries/python-backend-x86_64-unknown-linux-gnu
+
       - name: Bundle Tesseract (Linux)
         run: npm run bundle:tesseract:unix
 
@@ -131,6 +166,24 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        working-directory: python-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build Python backend (macOS)
+        working-directory: python-backend
+        run: |
+          pyinstaller python-backend.spec --clean --noconfirm
+          cp dist/python-backend ../src-tauri/binaries/python-backend-x86_64-apple-darwin
+          chmod +x ../src-tauri/binaries/python-backend-x86_64-apple-darwin
 
       - name: Install Homebrew dependencies
         run: |
