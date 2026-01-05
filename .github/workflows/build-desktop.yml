@@ -47,8 +47,10 @@ jobs:
 
       - name: Build Python backend (Windows)
         working-directory: python-backend
+        shell: bash
         run: |
           pyinstaller python-backend.spec --clean --noconfirm
+          mkdir -p ../src-tauri/binaries
           cp dist/python-backend.exe ../src-tauri/binaries/python-backend-x86_64-pc-windows-msvc.exe
 
       - name: Bundle Tesseract (Windows)
@@ -122,6 +124,7 @@ jobs:
         working-directory: python-backend
         run: |
           pyinstaller python-backend.spec --clean --noconfirm
+          mkdir -p ../src-tauri/binaries
           cp dist/python-backend ../src-tauri/binaries/python-backend-x86_64-unknown-linux-gnu
           chmod +x ../src-tauri/binaries/python-backend-x86_64-unknown-linux-gnu
 
@@ -182,6 +185,7 @@ jobs:
         working-directory: python-backend
         run: |
           pyinstaller python-backend.spec --clean --noconfirm
+          mkdir -p ../src-tauri/binaries
           cp dist/python-backend ../src-tauri/binaries/python-backend-x86_64-apple-darwin
           chmod +x ../src-tauri/binaries/python-backend-x86_64-apple-darwin
 
