@@ -14,18 +14,17 @@ export default function ActivationWrapper({ children }: { children: React.ReactN
     }, [execute]);
 
     const checkLicense = async () => {
-        console.log("DEBUG: License Check BYPASSED for Testing.");
-        // Force Unlock
-        setIsLocked(false);
-        setLoading(false);
-        return;
+        // Allow bypass only in development mode with explicit env var
+        if (import.meta.env.DEV && import.meta.env.VITE_SKIP_LICENSE === 'true') {
+            console.log("DEV: License check bypassed via VITE_SKIP_LICENSE");
+            setIsLocked(false);
+            setLoading(false);
+            return;
+        }
 
-        /* 
-        console.log("DEBUG: Calling Licensing Backend...");
         try {
             // Using Desktop Sidecar Native Communication
             const data = await execute("licensing", "status", {});
-            console.log("DEBUG: License Backend Response:", data);
 
             if (data && data.valid) {
                 setIsLocked(false);
@@ -40,7 +39,6 @@ export default function ActivationWrapper({ children }: { children: React.ReactN
         } finally {
             setLoading(false);
         }
-        */
     };
 
     useEffect(() => {

@@ -55,6 +55,7 @@ src-tauri/target/
 .env
 .env.local
 .env*.local
+.env.txt
 
 # Development scripts
 develop.ps1
@@ -75,5 +76,6 @@ test_*.py
 # Old/unused configs (keep nginx.prod.conf and docker-compose.prod.yml)
 nginx.conf
 Dockerfile.frontend
-Dockerfile.websitenul
+Dockerfile.website
+nul
 */nul
