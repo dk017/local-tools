@@ -40,9 +40,22 @@ jobs:
             echo "🛑 Stopping containers..."
             docker compose -f docker-compose.prod.yml down || true
 
+            # Clean up Docker to free disk space
+            echo "🧹 Cleaning up Docker resources..."
+            docker system prune -af --volumes || true
+            docker builder prune -af || true
+            
+            # Check disk space
+            echo "💾 Disk space before build:"
+            df -h
+
             # Rebuild containers
             echo "🔨 Rebuilding containers..."
             docker compose -f docker-compose.prod.yml build --no-cache backend frontend || { echo "❌ Build failed!"; exit 1; }
+            
+            # Clean up build cache after build
+            echo "🧹 Cleaning up build cache..."
+            docker builder prune -af || true
 
             # Start containers
             echo "▶️ Starting containers..."
