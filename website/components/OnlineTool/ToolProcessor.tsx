@@ -1470,7 +1470,7 @@ export function ToolProcessor({
                 onFilesSelected={(files) => handleFileSelect(files)}
                 accept={acceptedFileTypes}
                 maxFiles={maxFiles}
-                className="h-14 p-0 border-white/20 hover:border-primary/50"
+                compact
               />
             </div>
             <button

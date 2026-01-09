@@ -11,6 +11,9 @@ tmp_ret = collect_all('py_pdf_parser')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 # Base excludes list
+# NOTE: Do NOT exclude pip, wheel, setuptools, or distutils here.
+# PyInstaller's internal hooks need to manage these modules and will fail
+# with "already imported as ExcludedModule" errors if we exclude them.
 excludes_list = [
     # ML/AI frameworks (not used)
     'torch', 'torchvision', 'tensorflow', 'tensorboard',
@@ -25,10 +28,6 @@ excludes_list = [
     'pytest', 'unittest', 'test', 'tests', '_pytest',
     'nose', 'doctest', 'coverage',
 
-    # Development tools
-    'pip', 'wheel',
-    'pkg_resources._vendor',
-
     # Unused standard library modules
     'pydoc', 'pdb', 'profile', 'pstats',
     'turtle', 'curses',
@@ -39,10 +38,6 @@ excludes_list = [
     # Unused data formats
     'sqlite3',  # Only if you don't use SQLite
 ]
-
-# Only exclude distutils on Python < 3.12 (it doesn't exist in 3.12+)
-if sys.version_info < (3, 12):
-    excludes_list.extend(['setuptools', 'distutils'])
 
 a = Analysis(
     ['main.py'],

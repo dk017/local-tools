@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileUploaderProps {
@@ -11,9 +11,10 @@ interface FileUploaderProps {
     accept?: Record<string, string[]>;
     maxFiles?: number;
     className?: string;
+    compact?: boolean;
 }
 
-export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className }: FileUploaderProps) {
+export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className, compact = false }: FileUploaderProps) {
     const t = useTranslations('FileUploader');
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -95,6 +96,33 @@ export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className 
         maxSize: MAX_SIZE
     });
 
+    // Compact mode - minimal UI for adding more files
+    if (compact) {
+        return (
+            <div
+                {...getRootProps()}
+                className={cn(
+                    "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-center gap-3 group h-14",
+                    isDragActive ? "border-primary bg-primary/10" : "border-white/20 hover:border-primary/50 hover:bg-white/5",
+                    className
+                )}
+            >
+                <input {...getInputProps()} />
+                <Plus className={cn(
+                    "w-5 h-5 transition-colors",
+                    isDragActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                )} />
+                <span className={cn(
+                    "text-sm font-medium transition-colors",
+                    isDragActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                )}>
+                    {isDragActive ? "Drop here" : "Add more files"}
+                </span>
+            </div>
+        );
+    }
+
+    // Full mode - default upload UI
     return (
         <div
             {...getRootProps()}
