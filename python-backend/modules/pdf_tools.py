@@ -546,7 +546,7 @@ def compress_pdf(payload):
                 doc.close()
 
                 # Further compress with pikepdf
-                with pikepdf.open(output_path) as pdf:
+                with pikepdf.open(output_path, allow_overwriting_input=True) as pdf:
                     pdf.save(
                         output_path,
                         compress_streams=True,
@@ -606,7 +606,7 @@ def compress_pdf(payload):
                 doc.close()
 
                 # Final pass with pikepdf
-                with pikepdf.open(output_path) as pdf:
+                with pikepdf.open(output_path, allow_overwriting_input=True) as pdf:
                     pdf.save(
                         output_path,
                         compress_streams=True,
