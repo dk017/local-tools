@@ -41,7 +41,16 @@ impl PythonBridge {
         let app_handle = app.clone();
 
         tauri::async_runtime::spawn(async move {
-            let sidecar_command = app_handle.shell().sidecar("python-backend").unwrap();
+            let mut sidecar_command = app_handle.shell().sidecar("python-backend").unwrap();
+
+            // Pass LEMONSQUEEZY_API_KEY to Python backend if available
+            // This can come from:
+            // 1. Environment variable at build time (embedded in the binary)
+            // 2. Environment variable at runtime (set by user/installer)
+            if let Ok(api_key) = std::env::var("LEMONSQUEEZY_API_KEY") {
+                sidecar_command = sidecar_command.env("LEMONSQUEEZY_API_KEY", api_key);
+            }
+
             let (mut rx, child) = sidecar_command.spawn().expect("Failed to spawn python sidecar");
             
             // Store child to write to stdin later

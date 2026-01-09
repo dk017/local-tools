@@ -23,6 +23,8 @@ npm run tauri dev              # Start desktop app in dev mode (auto-starts Vite
 npm run build                  # Build frontend only (TypeScript + Vite)
 npm run tauri build            # Build complete desktop installer
 npm run tauri:build            # Bundle Tesseract + build (Windows full build)
+npm run tauri:build:production # RECOMMENDED: Full production build with license config (Windows)
+npm run tauri:build:production:unix # RECOMMENDED: Full production build with license config (Unix)
 
 # Bundling assets (before production build)
 npm run bundle:tesseract:win   # Windows: Bundle Tesseract OCR
@@ -266,18 +268,52 @@ if (IS_TAURI) {
 
 ### Building Desktop Installer
 
-**Full production build**:
+**IMPORTANT: License Configuration Required**
+
+Before building for production, you MUST configure the LemonSqueezy API key:
+
+1. Create `.env` file from template:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Add your API key to `.env`:
+   ```
+   LEMONSQUEEZY_API_KEY=your_actual_api_key_here
+   ```
+
+3. Build using the production scripts:
+   ```bash
+   # Windows (RECOMMENDED)
+   npm run tauri:build:production
+
+   # Linux/macOS
+   npm run tauri:build:production:unix
+   ```
+
+These scripts automatically:
+- Load the API key from `.env`
+- Bundle Tesseract OCR
+- Build the installer with license validation enabled
+
+**Manual build (alternative)**:
 ```bash
-# 1. Bundle Tesseract (required for OCR tools)
+# 1. Set environment variable
+$env:LEMONSQUEEZY_API_KEY="your_key_here"  # Windows PowerShell
+export LEMONSQUEEZY_API_KEY="your_key_here"  # Linux/macOS
+
+# 2. Bundle Tesseract (required for OCR tools)
 npm run bundle:tesseract:win
 
-# 2. Build Tauri app
+# 3. Build Tauri app
 npm run tauri build
 
 # Output:
 # - src-tauri/target/release/bundle/msi/Local Tools_0.1.0_x64_en-US.msi
 # - src-tauri/target/release/bundle/nsis/Local Tools_0.1.0_x64-setup.exe
 ```
+
+**Without the API key**, customers will see "License service is not configured" when trying to activate. See `LICENSING_SETUP.md` for detailed instructions.
 
 **TypeScript errors**: Build fails on unused imports/variables
 ```typescript

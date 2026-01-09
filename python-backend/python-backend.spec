@@ -19,9 +19,36 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['torch', 'torchvision', 'tensorflow', 'tensorboard', 'matplotlib', 'av', 'onnxruntime', 'moviepy', 'numba', 'llvmlite', 'notebook', 'ipython', 'tkinter'],
+    excludes=[
+        # ML/AI frameworks (not used)
+        'torch', 'torchvision', 'tensorflow', 'tensorboard',
+        'matplotlib', 'av', 'onnxruntime', 'moviepy',
+        'numba', 'llvmlite', 'notebook', 'ipython',
+
+        # GUI toolkits (not needed for backend)
+        'tkinter', 'PyQt5', 'PyQt6', 'PySide2', 'PySide6',
+        'wx', 'gi', 'gtk',
+
+        # Testing frameworks
+        'pytest', 'unittest', 'test', 'tests', '_pytest',
+        'nose', 'doctest', 'coverage',
+
+        # Development tools
+        'setuptools', 'distutils', 'pip', 'wheel',
+        'pkg_resources._vendor',
+
+        # Unused standard library modules
+        'pydoc', 'pdb', 'profile', 'pstats',
+        'turtle', 'curses',
+
+        # Unused network/web
+        'http.server', 'wsgiref', 'xmlrpc',
+
+        # Unused data formats
+        'sqlite3',  # Only if you don't use SQLite
+    ],
     noarchive=False,
-    optimize=0,
+    optimize=2,  # Changed from 0 to 2 for better optimization
 )
 pyz = PYZ(a.pure)
 
@@ -34,8 +61,8 @@ exe = EXE(
     name='python-backend',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
+    strip=True,  # Changed from False - strips debug symbols for smaller size
+    upx=True,  # Already enabled - compresses executable
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
