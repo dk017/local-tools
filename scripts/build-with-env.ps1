@@ -8,7 +8,7 @@ param(
 Write-Host "[*] Building Tauri Desktop App with License Configuration..." -ForegroundColor Cyan
 
 # Check if .env file exists
-$envFile = Join-Path $PSScriptRoot ".." ".env"
+$envFile = Join-Path -Path $PSScriptRoot -ChildPath ".." | Join-Path -ChildPath ".env"
 if (Test-Path $envFile) {
     Write-Host "[+] Loading environment variables from .env file..." -ForegroundColor Green
 
@@ -46,7 +46,7 @@ Write-Host ""
 # Bundle Tesseract unless skipped
 if (-not $SkipBundle) {
     Write-Host "[*] Bundling Tesseract OCR..." -ForegroundColor Cyan
-    & npm run bundle:tesseract:win
+    npm run bundle:tesseract:win
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[-] Failed to bundle Tesseract" -ForegroundColor Red
         exit 1
@@ -56,7 +56,7 @@ if (-not $SkipBundle) {
 
 # Build Tauri app
 Write-Host "[*] Building Tauri application..." -ForegroundColor Cyan
-& npm run tauri build
+npm run tauri build
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[-] Build failed" -ForegroundColor Red
     exit 1

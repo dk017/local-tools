@@ -1,58 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import ActivationScreen from './ActivationScreen';
-import { usePython } from '../hooks/usePython';
+import { useLicense } from '../hooks/useLicense';
 
 export default function ActivationWrapper({ children }: { children: React.ReactNode }) {
-    const [isLocked, setIsLocked] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const { valid, loading, status, validateLicense, activateLicense } = useLicense();
 
-    const { execute } = usePython();
-
-    // Debug log
-    useEffect(() => {
-        console.log("DEBUG: ActivationWrapper mounted. Execute available:", !!execute);
-    }, [execute]);
-
-    const checkLicense = async () => {
-        // Allow bypass only in development mode with explicit env var
-        if (import.meta.env.DEV && import.meta.env.VITE_SKIP_LICENSE === 'true') {
-            console.log("DEV: License check bypassed via VITE_SKIP_LICENSE");
-            setIsLocked(false);
-            setLoading(false);
-            return;
-        }
-
-        try {
-            // Using Desktop Sidecar Native Communication
-            const data = await execute("licensing", "status", {});
-
-            if (data && data.valid) {
-                setIsLocked(false);
-            } else {
-                setIsLocked(true);
-            }
-        } catch (e) {
-            console.error("License check failed:", e);
-            // In production, failure usually means sidecar issue or no license.
-            // Lock to be safe.
-            setIsLocked(true);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        checkLicense();
-        // Optional: Poll every few minutes
-    }, []);
-
-    if (loading) {
-        return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+    // Show loading state only on initial load
+    if (loading && status === 'checking') {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center text-white">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                    <p>Checking license...</p>
+                </div>
+            </div>
+        );
     }
 
-    if (isLocked) {
-        return <ActivationScreen onActivated={() => checkLicense()} />;
+    // Show activation screen if license is invalid
+    if (!valid) {
+        return (
+            <ActivationScreen 
+                onActivated={() => validateLicense()} 
+                onActivate={activateLicense}
+            />
+        );
     }
 
+    // License is valid - show app
     return <>{children}</>;
 }

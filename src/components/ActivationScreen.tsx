@@ -4,8 +4,10 @@ import { usePython } from "../hooks/usePython";
 
 export default function ActivationScreen({
   onActivated,
+  onActivate,
 }: {
   onActivated: () => void;
+  onActivate?: (licenseKey: string) => Promise<{ success: boolean; error?: string }>;
 }) {
   const [licenseKey, setLicenseKey] = useState("");
   const [status, setStatus] = useState<
@@ -22,12 +24,23 @@ export default function ActivationScreen({
     setErrorMessage("");
 
     try {
-      // Using Desktop Sidecar Native Communication
-      const data = await execute("licensing", "activate", {
-        license_key: licenseKey.trim(),
-      });
+      let result: { success: boolean; error?: string };
+      
+      if (onActivate) {
+        // Use the provided activate function (from useLicense hook)
+        result = await onActivate(licenseKey.trim());
+      } else {
+        // Fallback to direct execution (backward compatibility)
+        const data = await execute("licensing", "activate", {
+          license_key: licenseKey.trim(),
+        });
+        result = {
+          success: data.success,
+          error: data.error,
+        };
+      }
 
-      if (data.success) {
+      if (result.success) {
         setStatus("success");
         setTimeout(() => {
           onActivated();
@@ -35,7 +48,7 @@ export default function ActivationScreen({
       } else {
         setStatus("error");
         setErrorMessage(
-          data.error || "Activation failed. Please check your subscription ID."
+          result.error || "Activation failed. Please check your subscription ID."
         );
       }
     } catch (e: any) {
