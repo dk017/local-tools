@@ -4,7 +4,7 @@ pymupdf
 pypdf
 pandas
 openpyxl
-pyinstaller
+pyinstaller>=6.3.0
 pdf2docx
 fastapi
 uvicorn
