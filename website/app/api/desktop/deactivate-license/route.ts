@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     // Log deactivation request (for monitoring)
-    const headersList = headers();
+    const headersList = await headers();
     const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
 
     console.log({

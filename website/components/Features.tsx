@@ -1,67 +1,74 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Image as ImageIcon, Lock, ShieldCheck, Zap, Layers } from 'lucide-react';
+import { FileText, Image as ImageIcon, Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export function Features() {
     const t = useTranslations('Features');
 
-    const features = [
+    const categories = [
         {
-            title: t('f1_title'),
-            desc: t('f1_desc'),
-            icon: Layers,
-            className: "md:col-span-2",
+            title: t('cat_pdf'),
+            desc: t('cat_pdf_desc'),
+            tools: t('pdf_tools'),
+            icon: FileText,
+            color: 'text-blue-400 bg-blue-400/10 border-blue-400/20'
         },
         {
-            title: t('f2_title'),
-            desc: t('f2_desc'),
-            icon: ShieldCheck,
-            className: "md:col-span-1",
-        },
-        {
-            title: t('f3_title'),
-            desc: t('f3_desc'),
+            title: t('cat_image'),
+            desc: t('cat_image_desc'),
+            tools: t('image_tools'),
             icon: ImageIcon,
-            className: "md:col-span-1",
+            color: 'text-purple-400 bg-purple-400/10 border-purple-400/20'
         },
         {
-            title: t('f4_title'),
-            desc: t('f4_desc'),
-            icon: Lock,
-            className: "md:col-span-2",
-        },
-        {
-            title: t('f5_title'),
-            desc: t('f5_desc'),
-            icon: Zap,
-            className: "md:col-span-3",
+            title: t('cat_security'),
+            desc: t('cat_security_desc'),
+            tools: t('security_tools'),
+            icon: Shield,
+            color: 'text-green-400 bg-green-400/10 border-green-400/20'
         }
     ];
 
     return (
         <section className="py-20 px-6 max-w-7xl mx-auto" id="features">
-            <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">{t('title')}</h2>
-                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t('subtitle')}</p>
-            </div>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-center mb-16"
+            >
+                <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+                    {t('title')}
+                </h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                    {t('subtitle')}
+                </p>
+            </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {features.map((f, i) => (
+                {categories.map((cat, i) => (
                     <motion.div
                         key={i}
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: i * 0.1 }}
-                        className={`p-8 rounded-3xl bg-secondary/5 border border-white/5 hover:border-primary/30 transition-all hover:bg-white/5 group ${f.className}`}
+                        className="p-8 rounded-3xl bg-secondary/5 border border-white/5 hover:border-primary/30 transition-all hover:bg-white/5 group"
                     >
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                            <f.icon className="w-6 h-6 text-primary" />
+                        <div className={`w-14 h-14 rounded-2xl ${cat.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                            <cat.icon className="w-7 h-7" />
                         </div>
-                        <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{f.title}</h3>
-                        <p className="text-muted-foreground">{f.desc}</p>
+                        <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                            {cat.title}
+                        </h3>
+                        <p className="text-muted-foreground mb-4">
+                            {cat.desc}
+                        </p>
+                        <div className="text-sm text-muted-foreground/70 border-t border-white/5 pt-4">
+                            {cat.tools}
+                        </div>
                     </motion.div>
                 ))}
             </div>

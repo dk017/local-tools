@@ -402,6 +402,20 @@
             "f1": "Rimozione EXIF",
             "f2": "Protezione privacy",
             "f3": "Immagini pulite"
+        },
+        "pdf-to-word": {
+            "h1": "Converti PDF in Word",
+            "p1": "Trasforma i PDF in documenti Word modificabili. Scarica l'app desktop per convertire contratti privati senza caricarli.",
+            "f1": "Testo modificabile",
+            "f2": "Layout preservato",
+            "f3": "Conversione cloud"
+        },
+        "organize-pdf": {
+            "h1": "Organizza pagine PDF",
+            "p1": "Riordina, elimina e organizza le pagine nei tuoi documenti PDF. Perfetto per preparare documenti offline.",
+            "f1": "Trascina e rilascia",
+            "f2": "Elimina pagine",
+            "f3": "Privacy offline"
         }
     },
     "Tools": {

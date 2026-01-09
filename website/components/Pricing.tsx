@@ -29,7 +29,7 @@ export function Pricing() {
             {t("badge")}
           </div>
 
-          <div className="flex items-baseline gap-2 mb-2 mt-4">
+          <div className="flex items-baseline gap-2 mb-1 mt-4">
             <span className="text-6xl font-bold tracking-tight text-white">
               {t("price")}
             </span>
@@ -41,6 +41,7 @@ export function Pricing() {
             </span>
           </div>
 
+          <p className="text-primary text-sm font-medium mb-2">{t("value_callout")}</p>
           <p className="text-muted-foreground mb-8 text-sm">{t("desc")}</p>
 
           <a
@@ -66,6 +67,22 @@ export function Pricing() {
           <div className="mt-8 pt-8 border-t border-white/5 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
             <Zap className="w-4 h-4 text-yellow-500" />
             <span>{t("money_back")}</span>
+          </div>
+        </motion.div>
+
+        {/* Competitor comparison */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="mt-8 text-center"
+        >
+          <p className="text-sm text-muted-foreground mb-3">{t("compare_title")}</p>
+          <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground/70">
+            <span className="line-through">{t("compare_adobe")}</span>
+            <span className="line-through">{t("compare_ilovepdf")}</span>
+            <span className="line-through">{t("compare_smallpdf")}</span>
           </div>
         </motion.div>
       </div>

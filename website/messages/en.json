@@ -12,9 +12,9 @@
         "layers": "Layers"
     },
     "Hero": {
-        "badge": "v1.0 · Desktop Suite + Web Demo",
-        "title": "Your Data Never Leaves Your Device.",
-        "subtitle": "Professional PDF and image tools that run 100% offline on your computer. No uploads, no cloud, no limits—just instant results.",
+        "badge": "Desktop-First PDF & Image Suite",
+        "title": "Process Sensitive Documents Without Uploading Them",
+        "subtitle": "50+ professional PDF and image tools that run entirely on your computer. Built for lawyers, accountants, healthcare teams, and anyone who handles confidential files.",
         "cta_primary": "Get Desktop License - $59/year",
         "cta_secondary": "See All Tools",
         "cta_secondary_link": "Or try free online tools",
@@ -22,19 +22,68 @@
         "stat_privacy": "Zero Cloud Uploads",
         "stat_speed": "Up to 100x Faster than Web Tools"
     },
+    "TrustIndicators": {
+        "title": "Built for Privacy-Critical Industries",
+        "legal": "Legal",
+        "legal_desc": "Contracts, NDAs, case files",
+        "healthcare": "Healthcare",
+        "healthcare_desc": "Patient records, HIPAA workflows",
+        "finance": "Finance",
+        "finance_desc": "Tax docs, statements, audits",
+        "hr": "HR & Admin",
+        "hr_desc": "Employee records, contracts"
+    },
+    "Benefits": {
+        "title": "Why Professionals Choose Offline Processing",
+        "b1_title": "Zero Data Exposure",
+        "b1_desc": "Your documents never leave your computer. Physically impossible for data to leak—even we can't see your files.",
+        "b2_title": "Instant Processing",
+        "b2_desc": "No upload bars. No server queues. Process large PDFs in seconds using your own hardware. Works without internet.",
+        "b3_title": "One Price, Everything Included",
+        "b3_desc": "$59/year for all 50+ tools. No per-file fees. No usage limits. Cancel anytime with 30-day money-back guarantee."
+    },
+    "Process": {
+        "title": "Get Started in Minutes",
+        "step1_title": "Download & Install",
+        "step1_desc": "One-click installer for Windows and Mac. Under 100MB.",
+        "step2_title": "Activate License",
+        "step2_desc": "Enter your license key once. Works offline after activation.",
+        "step3_title": "Process Unlimited Files",
+        "step3_desc": "Drag, drop, done. All 50+ tools ready to use."
+    },
+    "FAQ": {
+        "title": "Frequently Asked Questions",
+        "q1": "Does the license work offline?",
+        "a1": "Yes. After initial activation (which requires internet), the app works completely offline. No internet required for any tool.",
+        "q2": "What happens when my subscription expires?",
+        "a2": "The app continues working with the tools available at renewal time. You just won't receive new features or updates until you renew.",
+        "q3": "Can I use this for commercial work?",
+        "a3": "Absolutely. Commercial use rights are included with every license. Use it for client work, internal documents, whatever you need.",
+        "q4": "Is there a free trial?",
+        "a4": "Try our web demo tools for free with no signup. The desktop app has a 30-day money-back guarantee—full refund, no questions asked.",
+        "q5": "What file types are supported?",
+        "a5": "PDF, DOCX, XLSX, PPTX, PNG, JPG, WEBP, HEIC, and more. Check our tools page for the complete list.",
+        "q6": "How do I get support?",
+        "a6": "Email us at support@localtools.com. Priority support is included with every license—we typically respond within 24 hours."
+    },
+    "FinalCTA": {
+        "title": "Ready to Process Documents Privately?",
+        "subtitle": "Download the desktop app and start processing files offline. No uploads, no cloud, no risk.",
+        "cta_primary": "Get Desktop License - $59/year",
+        "cta_secondary": "Or try free web tools first"
+    },
     "Features": {
-        "title": "Engineered for Speed & Secrecy",
-        "subtitle": "Built as a desktop-first suite with optional web previews—process gigabytes of PDFs and images locally, without relying on any cloud service.",
-        "f1_title": "Neural PDF & Image Toolkit",
-        "f1_desc": "Dozens of tools for merging, splitting, signing, redacting, converting Office files, and editing images—powered by your own hardware.",
-        "f2_title": "Ironclad Privacy",
-        "f2_desc": "100% Air-gapped compatible. No data ever leaves your machine.",
-        "f3_title": "AI Image Ops",
-        "f3_desc": "Remove backgrounds and upscale images using local ONNX models.",
-        "f4_title": "Enterprise Security",
-        "f4_desc": "Metadata scrubbing and encryption standard for sensitive ops.",
-        "f5_title": "Zero Latency",
-        "f5_desc": "No upload bars. No processing queues. Instant results."
+        "title": "Everything You Need, Nothing in the Cloud",
+        "subtitle": "50+ tools for documents and images—all running locally on your machine.",
+        "cat_pdf": "PDF Tools",
+        "cat_pdf_desc": "Merge, split, compress, convert, sign, OCR, redact, and more.",
+        "cat_image": "Image Tools",
+        "cat_image_desc": "Remove backgrounds, resize, convert formats, watermark, and compress.",
+        "cat_security": "Security Features",
+        "cat_security_desc": "Air-gapped processing, AES-256 encryption, metadata scrubbing, zero telemetry.",
+        "pdf_tools": "Merge • Split • Compress • Convert • Sign • OCR • Redact • Watermark",
+        "image_tools": "Remove BG • Resize • Convert • Compress • Watermark • Upscale",
+        "security_tools": "Air-Gapped • AES-256 • No Telemetry • Metadata Scrubbing"
     },
     "ProblemSolution": {
         "problem_title": "Online PDF Tools Are Leaky",
@@ -59,6 +108,7 @@
         "price": "$59",
         "price_period": "/year",
         "old_price": "$120",
+        "value_callout": "Less than $5/month",
         "desc": "Billed annually. Cancel anytime. All tools, unlimited use, zero cloud uploads.",
         "cta": "Get Desktop License Now",
         "f1": "All 50+ PDF & image tools included",
@@ -66,7 +116,11 @@
         "f3": "Commercial use rights included",
         "f4": "Free updates for your subscription period",
         "f5": "Priority email support",
-        "money_back": "Cancel Anytime • 30-Day Money Back Guarantee"
+        "money_back": "Cancel Anytime • 30-Day Money Back Guarantee",
+        "compare_title": "Compare to cloud alternatives that upload your files:",
+        "compare_adobe": "Adobe Acrobat: $180/yr",
+        "compare_ilovepdf": "iLovePDF Pro: $84/yr",
+        "compare_smallpdf": "SmallPDF: $108/yr"
     },
     "ToolsPage": {
         "merge-pdf": {
@@ -421,6 +475,13 @@
             "f1": "EXIF Removal",
             "f2": "Privacy Protection",
             "f3": "Clean Images"
+        },
+        "organize-pdf": {
+            "h1": "Organize PDF Pages",
+            "p1": "Rearrange, delete, and organize pages in your PDF documents. Perfect for preparing documents offline.",
+            "f1": "Drag & Drop",
+            "f2": "Delete Pages",
+            "f3": "Offline Privacy"
         }
     },
     "Tools": {

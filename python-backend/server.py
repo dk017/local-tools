@@ -3,7 +3,7 @@ import shutil
 import tempfile
 import zipfile
 import sys
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -20,6 +20,62 @@ if 'modules.image_tools' in sys.modules:
 from modules.pdf_tools import handle_pdf_action
 from modules.image_tools import handle_image_action
 from debug_utils import debug_log
+
+# =============================================================================
+# WEB VERSION SECURITY LIMITS
+# These limits only apply to the web version (server.py)
+# Desktop version (main.py) has no file size limits
+# =============================================================================
+MAX_PDF_SIZE_MB = 5       # 5MB for PDFs (web version)
+MAX_IMAGE_SIZE_MB = 3     # 3MB for images (web version)
+MAX_PDF_SIZE = MAX_PDF_SIZE_MB * 1024 * 1024
+MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_MB * 1024 * 1024
+
+# File type magic bytes for validation
+PDF_MAGIC = b'%PDF'
+IMAGE_MAGIC = {
+    b'\x89PNG': 'PNG',
+    b'\xff\xd8\xff': 'JPEG',
+    b'RIFF': 'WEBP',  # WEBP starts with RIFF
+    b'GIF8': 'GIF',
+    b'BM': 'BMP',
+}
+
+def get_file_type_from_extension(filename: str) -> str:
+    """Determine file type from extension."""
+    if not filename:
+        return 'unknown'
+    ext = filename.lower().split('.')[-1]
+    if ext == 'pdf':
+        return 'pdf'
+    elif ext in ('jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'heic', 'heif'):
+        return 'image'
+    return 'unknown'
+
+def validate_file_type(content: bytes, expected_type: str) -> Tuple[bool, str]:
+    """
+    Validate file content matches expected type using magic bytes.
+    Returns (is_valid, error_message).
+    """
+    if len(content) < 8:
+        return False, "File is too small or empty"
+
+    if expected_type == 'pdf':
+        if content[:4] == PDF_MAGIC:
+            return True, ""
+        return False, "Invalid PDF file (file header doesn't match PDF format)"
+
+    elif expected_type == 'image':
+        for magic, name in IMAGE_MAGIC.items():
+            if content[:len(magic)] == magic:
+                return True, ""
+        # Allow HEIC/HEIF which have different headers (ftyp box)
+        if b'ftyp' in content[:12]:
+            return True, ""
+        return False, "Invalid image file (unsupported format or corrupted)"
+
+    # Unknown types pass through (don't block Office files, etc.)
+    return True, ""
 
 # Rate limiter setup
 limiter = Limiter(key_func=get_remote_address)
@@ -49,14 +105,51 @@ app.add_middleware(
 
 TEMP_DIR = tempfile.gettempdir()
 
-async def save_upload_file(upload_file: UploadFile) -> str:
+async def save_upload_file(upload_file: UploadFile, expected_type: str = None) -> str:
+    """
+    Save uploaded file with security validation.
+
+    Args:
+        upload_file: The uploaded file
+        expected_type: Expected file type ('pdf', 'image', or None to auto-detect)
+
+    Returns:
+        Path to saved temporary file
+
+    Raises:
+        HTTPException: If file fails validation (size, type, etc.)
+    """
     try:
         suffix = os.path.splitext(upload_file.filename)[1]
         print(f"[UPLOAD] Saving file: {upload_file.filename}, suffix: {suffix}", flush=True)
 
         # Read the content
         content = await upload_file.read()
-        print(f"[UPLOAD] Read {len(content)} bytes. First 20 bytes: {content[:20]}", flush=True)
+        content_size = len(content)
+        print(f"[UPLOAD] Read {content_size} bytes. First 20 bytes: {content[:20]}", flush=True)
+
+        # Auto-detect file type if not specified
+        if expected_type is None:
+            expected_type = get_file_type_from_extension(upload_file.filename)
+
+        # === SECURITY: File Size Validation ===
+        if expected_type == 'pdf':
+            if content_size > MAX_PDF_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"PDF file too large ({content_size / 1024 / 1024:.1f}MB). Maximum size for web version is {MAX_PDF_SIZE_MB}MB. Please use the desktop app for larger files."
+                )
+        elif expected_type == 'image':
+            if content_size > MAX_IMAGE_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"Image file too large ({content_size / 1024 / 1024:.1f}MB). Maximum size for web version is {MAX_IMAGE_SIZE_MB}MB. Please use the desktop app for larger files."
+                )
+
+        # === SECURITY: File Type Validation ===
+        is_valid, error_msg = validate_file_type(content, expected_type)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=error_msg)
 
         # Save to temp file
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=TEMP_DIR) as tmp:
@@ -69,6 +162,8 @@ async def save_upload_file(upload_file: UploadFile) -> str:
             print(f"[UPLOAD] Verified temp file. First 20 bytes: {verify_bytes}", flush=True)
 
         return tmp_path
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
         print(f"[UPLOAD] Error saving file: {e}", flush=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -103,18 +198,29 @@ async def pdf_endpoint(
     page: Optional[int] = Form(None),
     merge_tables: Optional[str] = Form(None)
 ):
+    # Track all temp files for cleanup
+    temp_files_to_cleanup = []
+
     saved_files = []
     for f in files:
-        saved_files.append(await save_upload_file(f))
+        # For PDF endpoints, validate files as PDFs (except for special actions)
+        file_type = 'pdf'
+        if action in ('images_to_pdf',):
+            file_type = 'image'  # This action accepts images
+        path = await save_upload_file(f, expected_type=file_type)
+        saved_files.append(path)
+        temp_files_to_cleanup.append(path)
 
-    # Save watermark file if present
+    # Save watermark file if present (can be image)
     saved_watermark_file = None
     if watermark_file:
-        saved_watermark_file = await save_upload_file(watermark_file)
+        saved_watermark_file = await save_upload_file(watermark_file, expected_type='image')
+        temp_files_to_cleanup.append(saved_watermark_file)
 
     saved_cert_file = None
     if cert_file:
-        saved_cert_file = await save_upload_file(cert_file)
+        saved_cert_file = await save_upload_file(cert_file, expected_type=None)  # Cert files have various formats
+        temp_files_to_cleanup.append(saved_cert_file)
 
     payload = {
         "files": saved_files,
@@ -232,9 +338,16 @@ async def pdf_endpoint(
         print(f"Server Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        # Cleanup temp upload files (processed files might be needed for download)
-        # Ideally we'd have a cron job to clean up processed files later
-        pass
+        # Cleanup temp UPLOAD files (the original uploads, not processed outputs)
+        # Processed files are returned to client and will be cleaned up by OS temp cleanup
+        for temp_file in temp_files_to_cleanup:
+            try:
+                if temp_file and os.path.exists(temp_file):
+                    os.remove(temp_file)
+                    print(f"[CLEANUP] Removed temp file: {temp_file}", flush=True)
+            except Exception as cleanup_error:
+                # Don't fail the request if cleanup fails, just log it
+                print(f"[CLEANUP] Warning: Failed to remove temp file {temp_file}: {cleanup_error}", flush=True)
 
 # --- Licensing Endpoints ---
 from modules import licensing
@@ -292,14 +405,21 @@ async def image_endpoint(
     maintain_aspect: Optional[bool] = Form(None)
 ):
     print(f"DEBUG: Received crop_box raw: {crop_box}")
+
+    # Track all temp files for cleanup
+    temp_files_to_cleanup = []
+
     saved_files = []
     for f in files:
-        saved_files.append(await save_upload_file(f))
+        path = await save_upload_file(f, expected_type='image')
+        saved_files.append(path)
+        temp_files_to_cleanup.append(path)
 
     # Save watermark file if present
     saved_watermark_file = None
     if watermark_file:
-        saved_watermark_file = await save_upload_file(watermark_file)
+        saved_watermark_file = await save_upload_file(watermark_file, expected_type='image')
+        temp_files_to_cleanup.append(saved_watermark_file)
 
     payload = {
         "files": saved_files,
@@ -374,6 +494,15 @@ async def image_endpoint(
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Cleanup temp UPLOAD files (the original uploads, not processed outputs)
+        for temp_file in temp_files_to_cleanup:
+            try:
+                if temp_file and os.path.exists(temp_file):
+                    os.remove(temp_file)
+                    print(f"[CLEANUP] Removed temp file: {temp_file}", flush=True)
+            except Exception as cleanup_error:
+                print(f"[CLEANUP] Warning: Failed to remove temp file {temp_file}: {cleanup_error}", flush=True)
 
 if __name__ == "__main__":
     import uvicorn

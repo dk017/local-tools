@@ -407,6 +407,20 @@
             "f1": "Suppression EXIF",
             "f2": "Protection de la vie privée",
             "f3": "Images propres"
+        },
+        "pdf-to-word": {
+            "h1": "Convertir PDF en Word",
+            "p1": "Transformez vos PDF en documents Word éditables. Téléchargez l'application de bureau pour convertir des contrats privés sans les télécharger.",
+            "f1": "Texte éditable",
+            "f2": "Mise en page préservée",
+            "f3": "Conversion cloud"
+        },
+        "organize-pdf": {
+            "h1": "Organiser les pages PDF",
+            "p1": "Réorganisez, supprimez et organisez les pages de vos documents PDF. Parfait pour préparer des documents hors ligne.",
+            "f1": "Glisser-déposer",
+            "f2": "Supprimer des pages",
+            "f3": "Confidentialité hors ligne"
         }
     },
     "Tools": {
