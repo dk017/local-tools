@@ -26,8 +26,8 @@ from debug_utils import debug_log
 # These limits only apply to the web version (server.py)
 # Desktop version (main.py) has no file size limits
 # =============================================================================
-MAX_PDF_SIZE_MB = 5       # 5MB for PDFs (web version)
-MAX_IMAGE_SIZE_MB = 3     # 3MB for images (web version)
+MAX_PDF_SIZE_MB = 20      # 20MB for PDFs (web version)
+MAX_IMAGE_SIZE_MB = 20    # 20MB for images (web version)
 MAX_PDF_SIZE = MAX_PDF_SIZE_MB * 1024 * 1024
 MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_MB * 1024 * 1024
 

@@ -1,7 +1,7 @@
 import { tools } from "@/data/tools";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { Check, Shield } from "lucide-react";
+import { Shield, Lock, Zap, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { getTranslations } from "next-intl/server";
@@ -283,18 +283,27 @@ export default async function ToolPage({
             {t("why_offline")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {["f1", "f2", "f3"].map((key, i) => (
-              <div
-                key={i}
-                className="p-6 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-4">
-                  <Check className="w-5 h-5 text-green-500" />
-                </div>
-                <h3 className="font-semibold mb-2">{getToolText(key)}</h3>
-                <p className="text-sm text-muted-foreground">{t("why_desc")}</p>
+            <div className="p-6 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <Lock className="w-5 h-5 text-primary" />
               </div>
-            ))}
+              <h3 className="font-semibold mb-2">{t("benefit1_title")}</h3>
+              <p className="text-sm text-muted-foreground">{t("benefit1_desc")}</p>
+            </div>
+            <div className="p-6 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <Zap className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">{t("benefit2_title")}</h3>
+              <p className="text-sm text-muted-foreground">{t("benefit2_desc")}</p>
+            </div>
+            <div className="p-6 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <WifiOff className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">{t("benefit3_title")}</h3>
+              <p className="text-sm text-muted-foreground">{t("benefit3_desc")}</p>
+            </div>
           </div>
         </div>
       </section>
