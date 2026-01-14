@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Crop,
   Maximize2,
+  Hash,
 } from "lucide-react";
 import Cropper, { Area } from "react-easy-crop";
 import dynamic from "next/dynamic";
@@ -131,6 +132,7 @@ const COUNTRIES = [
 ];
 
 import { API_BASE_URL } from "@/lib/config";
+import { cn } from "@/lib/utils";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -358,7 +360,17 @@ export function ToolProcessor({
     
     // File type validation
     const isPdfTool = (toolSlug.includes("pdf") &&
-                      toolSlug !== "images-to-pdf") ||  // Exclude images-to-pdf (accepts images, not PDFs)
+                      toolSlug !== "images-to-pdf" &&     // Exclude - accepts images
+                      toolSlug !== "csv-to-pdf" &&        // Exclude - accepts CSV
+                      toolSlug !== "txt-to-pdf" &&        // Exclude - accepts TXT
+                      toolSlug !== "tiff-to-pdf" &&       // Exclude - accepts TIFF
+                      toolSlug !== "rtf-to-pdf" &&        // Exclude - accepts RTF
+                      toolSlug !== "xml-to-pdf" &&        // Exclude - accepts XML
+                      toolSlug !== "word-to-pdf" &&       // Exclude - accepts Word
+                      toolSlug !== "excel-to-pdf" &&      // Exclude - accepts Excel
+                      toolSlug !== "powerpoint-to-pdf" && // Exclude - accepts PPT
+                      toolSlug !== "ppt-to-pdf" &&        // Exclude - accepts PPT
+                      toolSlug !== "html-to-pdf") ||      // Exclude - accepts HTML
                       toolSlug === "pdf-diff" ||
                       toolSlug === "extract-tables" ||
                       toolSlug === "extract-text" ||
@@ -385,10 +397,15 @@ export function ToolProcessor({
                        toolSlug === "remove-image-metadata";
     
     const isWordTool = toolSlug === "word-to-pdf";
-    const isPowerPointTool = toolSlug === "powerpoint-to-pdf";
+    const isPowerPointTool = toolSlug === "powerpoint-to-pdf" || toolSlug === "ppt-to-pdf";
     const isExcelTool = toolSlug === "excel-to-pdf";
     const isHtmlTool = toolSlug === "html-to-pdf";
     const isHeicTool = toolSlug === "heic-to-jpg";
+    const isCsvTool = toolSlug === "csv-to-pdf";
+    const isTxtTool = toolSlug === "txt-to-pdf";
+    const isTiffTool = toolSlug === "tiff-to-pdf";
+    const isRtfTool = toolSlug === "rtf-to-pdf";
+    const isXmlTool = toolSlug === "xml-to-pdf";
     
     for (const file of files) {
       const fileName = file.name.toLowerCase();
@@ -465,36 +482,72 @@ export function ToolProcessor({
           error: `Invalid file type. This tool only accepts HEIC images (.heic, .heif). "${file.name}" is not a HEIC file.`
         };
       }
-      
+
+      // CSV validation
+      if (isCsvTool && !fileName.endsWith('.csv') && fileType !== 'text/csv') {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts CSV files (.csv). "${file.name}" is not a CSV file.`
+        };
+      }
+
+      // TXT validation
+      if (isTxtTool && !fileName.endsWith('.txt') && fileType !== 'text/plain') {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts text files (.txt). "${file.name}" is not a text file.`
+        };
+      }
+
+      // TIFF validation
+      if (isTiffTool && !fileName.match(/\.(tiff|tif)$/i) && fileType !== 'image/tiff') {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts TIFF images (.tiff, .tif). "${file.name}" is not a TIFF file.`
+        };
+      }
+
+      // RTF validation
+      if (isRtfTool && !fileName.endsWith('.rtf') && fileType !== 'application/rtf' && fileType !== 'text/rtf') {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts RTF files (.rtf). "${file.name}" is not an RTF file.`
+        };
+      }
+
+      // XML validation
+      if (isXmlTool && !fileName.endsWith('.xml') && fileType !== 'application/xml' && fileType !== 'text/xml') {
+        return {
+          valid: false,
+          error: `Invalid file type. This tool only accepts XML files (.xml). "${file.name}" is not an XML file.`
+        };
+      }
+
       // File size validation (web only)
       if (isWeb) {
-        const maxImageSize = 3 * 1024 * 1024; // 3MB
-        const maxPdfSize = 5 * 1024 * 1024; // 5MB
-        const maxOfficeSize = 5 * 1024 * 1024; // 5MB for Office files
-        
-        if (isImageTool && file.size > maxImageSize) {
+        const maxFileSize = 20 * 1024 * 1024; // 20MB for all file types
+
+        if (file.size > maxFileSize) {
           return {
             valid: false,
-            error: `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size for web version is 3MB. Please use the desktop app for larger files.`
+            error: `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size for web version is 20MB. Please use the desktop app for larger files.`
           };
         }
-        
-        if (isPdfTool && file.size > maxPdfSize) {
-          return {
-            valid: false,
-            error: `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size for web version is 5MB. Please use the desktop app for larger files.`
-          };
-        }
-        
-        if ((isWordTool || isPowerPointTool || isExcelTool) && file.size > maxOfficeSize) {
-          return {
-            valid: false,
-            error: `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size for web version is 5MB. Please use the desktop app for larger files.`
-          };
+
+        // Total file size validation (web only) - 50MB max for all files combined
+        if (files.length > 1) {
+          const maxTotalSize = 50 * 1024 * 1024; // 50MB total
+          const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+          if (totalSize > maxTotalSize) {
+            return {
+              valid: false,
+              error: `Total file size (${(totalSize / 1024 / 1024).toFixed(2)}MB) exceeds the 50MB limit for web version. Please use the desktop app for larger batches.`
+            };
+          }
         }
       }
     }
-    
+
     return { valid: true };
   };
   const [status, setStatus] = useState<
@@ -602,6 +655,7 @@ export function ToolProcessor({
   const [previewParams, setPreviewParams] = useState<any>({});
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [cropAspect, setCropAspect] = useState<number | undefined>(undefined);
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [passportCountry, setPassportCountry] = useState("US");
@@ -632,7 +686,33 @@ export function ToolProcessor({
   const [studioBackground, setStudioBackground] = useState<string | null>(null);
   const [studioDim, setStudioDim] = useState({ w: 800, h: 600 });
   const [extractFormat, setExtractFormat] = useState("csv");
-  const [mergeTables, setMergeTables] = useState(false);
+  const [mergeTables, setMergeTables] = useState(true); // Enable merge by default
+  const [detectionMode, setDetectionMode] = useState<"strict" | "balanced" | "aggressive">("balanced");
+  // Table preview state
+  const [tablePreview, setTablePreview] = useState<{
+    tables: Array<{
+      id: string;
+      file: string;
+      page: number;
+      table_index: number;
+      rows: number;
+      columns: number;
+      has_header: boolean;
+      header: string[] | null;
+      sample_data: string[][];
+      column_types: string[];
+    }>;
+    merge_suggestions: Array<{
+      tables: string[];
+      reason: string;
+      total_rows: number;
+    }>;
+    total_tables: number;
+    total_pages: number;
+    errors: Array<{ file: string; error: string }>;
+  } | null>(null);
+  const [isLoadingTablePreview, setIsLoadingTablePreview] = useState(false);
+  const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
   // Advanced Tools State
   const [redactText, setRedactText] = useState("");
   const [redactTexts, setRedactTexts] = useState<string[]>([""]);
@@ -669,11 +749,21 @@ export function ToolProcessor({
   const [pdfPageWidth, setPdfPageWidth] = useState<number | null>(null);
   const [pdfPageHeight, setPdfPageHeight] = useState<number | null>(null);
 
+  // Image Crop State (Custom)
+  const [imgCropX, setImgCropX] = useState<number>(0);
+  const [imgCropY, setImgCropY] = useState<number>(0);
+  const [imgCropWidth, setImgCropWidth] = useState<number>(0);
+  const [imgCropHeight, setImgCropHeight] = useState<number>(0);
+  const imgCropPreviewRef = useRef<HTMLImageElement>(null);
+
   // PDF Organize State
   const [pageOrder, setPageOrder] = useState<string>("");
 
   // PDF Rotate State
   const [rotationAngle, setRotationAngle] = useState<number>(0);
+
+  // Page Numbers State
+  const [pageNumPos, setPageNumPos] = useState<string>("bottom-right");
 
   const onCropComplete = (croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -688,7 +778,7 @@ export function ToolProcessor({
   // Cache for preview images
   const previewCacheRef = useRef<Map<string, string>>(new Map());
 
-  // Initialize crop box when preview loads for crop-pdf
+  // Initialize crop box when preview loads for crop-pdf or crop-image
   useEffect(() => {
     if (toolSlug === "crop-pdf" && previewUrl && cropPreviewRef.current && pdfPageWidth && pdfPageHeight) {
       const img = cropPreviewRef.current;
@@ -720,6 +810,26 @@ export function ToolProcessor({
         img.addEventListener('load', onLoad);
         return () => img.removeEventListener('load', onLoad);
       }
+    } else if (toolSlug === "crop-image" && previewUrl && imgCropPreviewRef.current) {
+        const img = imgCropPreviewRef.current;
+        const initCrop = () => {
+            const imgRect = img.getBoundingClientRect();
+            const cropW = imgRect.width * 0.8;
+            const cropH = imgRect.height * 0.8;
+            const cropX = (imgRect.width - cropW) / 2;
+            const cropY = (imgRect.height - cropH) / 2;
+            setImgCropX(cropX);
+            setImgCropY(cropY);
+            setImgCropWidth(cropW);
+            setImgCropHeight(cropH);
+        };
+
+        if (img.complete && img.naturalWidth > 0) {
+            initCrop();
+        } else {
+            img.addEventListener('load', initCrop);
+            return () => img.removeEventListener('load', initCrop);
+        }
     }
   }, [toolSlug, previewUrl, pdfPageWidth, pdfPageHeight]);
 
@@ -818,9 +928,14 @@ export function ToolProcessor({
   };
 
   const handleFileSelect = (files: File[]) => {
+    // Ignore empty file arrays (can happen when all files are rejected)
+    if (!files || files.length === 0) {
+      return;
+    }
+
     // Clear previous errors
     setErrorMessage(null);
-    
+
     // Validate files before processing
     const validation = validateFiles(files);
     if (!validation.valid) {
@@ -856,6 +971,19 @@ export function ToolProcessor({
       reader.onload = () => {
         setPreviewUrl(reader.result as string);
         setPreviewFile(file);
+
+        // Initialize custom crop box for crop-image
+        if (toolSlug === "crop-image") {
+          const img = new Image();
+          img.onload = () => {
+             // We can't know display size yet, but we can init roughly.
+             // Better to init in the render phase or Effect when ref is available.
+             // But let's set some defaults so it's not 0.
+             // Actually, the useEffect below handling 'toolSlug === "crop-pdf"' logic
+             // is a good place to mirror for "crop-image".
+          };
+          img.src = reader.result as string;
+        }
       };
       reader.readAsDataURL(file);
       return;
@@ -931,6 +1059,7 @@ export function ToolProcessor({
         toolSlug === "rotate-pdf" ||
         toolSlug === "crop-pdf" ||
         toolSlug === "grayscale-pdf" ||
+        toolSlug === "page-numbers" ||
         toolSlug === "reorder-pages" ||
         toolSlug === "organize-pdf") &&
       files.length > 0
@@ -983,6 +1112,11 @@ export function ToolProcessor({
           fetchPreview({}, 0, file);
           // DO NOT auto-process - wait for user to configure watermark and click Process button
           return;
+        } else if (toolSlug === "page-numbers") {
+          // Page Numbers - show preview with number overlay positioning
+          fetchPreview({}, 0, file);
+          // DO NOT auto-process - wait for user to configure position and click Apply button
+          return;
         } else {
           // Default preview for other PDF tools
           const fd = new FormData();
@@ -1001,6 +1135,39 @@ export function ToolProcessor({
         }
       }
     }
+
+    // Extract Tables: Load preview before processing
+    if (toolSlug === "extract-tables" && files.length > 0) {
+      setPreviewFile(files[0]);
+      setIsLoadingTablePreview(true);
+      setTablePreview(null);
+      setSelectedTables(new Set());
+
+      const fd = new FormData();
+      files.forEach((f) => fd.append("files", f));
+
+      fetch(`${API_BASE_URL}/api/pdf/preview_tables`, {
+        method: "POST",
+        body: fd,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setTablePreview(data);
+          // Auto-select all tables by default
+          if (data.tables) {
+            setSelectedTables(new Set(data.tables.map((t: { id: string }) => t.id)));
+          }
+        })
+        .catch((e) => {
+          console.error("Table preview failed", e);
+          setErrorMessage("Failed to preview tables: " + e.message);
+        })
+        .finally(() => {
+          setIsLoadingTablePreview(false);
+        });
+      return; // Don't auto-process, wait for user to review and extract
+    }
+
     handleFiles(files);
   };
 
@@ -1060,7 +1227,21 @@ export function ToolProcessor({
     }
 
     // Append Crop Params
-    if (toolSlug === "crop-image" || toolSlug === "passport-photo") {
+    if (toolSlug === "crop-image") {
+      if (imgCropPreviewRef.current) {
+        const img = imgCropPreviewRef.current;
+        const scaleX = img.naturalWidth / img.getBoundingClientRect().width;
+        const scaleY = img.naturalHeight / img.getBoundingClientRect().height;
+
+        const cropBox = {
+          x: Math.round(imgCropX * scaleX),
+          y: Math.round(imgCropY * scaleY),
+          width: Math.round(imgCropWidth * scaleX),
+          height: Math.round(imgCropHeight * scaleY),
+        };
+        formData.append("crop_box", JSON.stringify(cropBox));
+      }
+    } else if (toolSlug === "passport-photo") {
       const cropBox = {
         x: cropX || 0,
         y: cropY || 0,
@@ -1070,9 +1251,20 @@ export function ToolProcessor({
       formData.append("crop_box", JSON.stringify(cropBox));
     }
 
-    if (toolSlug === "extract-tables") {
-      formData.append("output_format", extractFormat);
+    if (toolSlug === "extract-tables" || toolSlug === "pdf-to-csv" || toolSlug === "pdf-to-excel") {
+      // pdf-to-csv forces csv format, pdf-to-excel forces xlsx format
+      let fmt = extractFormat;
+      if (toolSlug === "pdf-to-csv") fmt = "csv";
+      if (toolSlug === "pdf-to-excel") fmt = "xlsx";
+      formData.append("output_format", fmt);
       formData.append("merge_tables", mergeTables ? "true" : "false");
+      formData.append("detection_mode", detectionMode);
+    }
+
+    // PDF to image tools (pdf-to-jpg, pdf-to-png)
+    if (toolSlug === "pdf-to-jpg" || toolSlug === "pdf-to-png") {
+      const fmt = toolSlug === "pdf-to-jpg" ? "jpg" : "png";
+      formData.append("output_format", fmt);
     }
 
     if (toolSlug === "convert-image" || toolSlug === "heic-to-jpg") {
@@ -1149,6 +1341,11 @@ export function ToolProcessor({
       formData.append("angle", rotationAngle.toString());
     }
 
+    // PDF Page Numbers Params
+    if (toolSlug === "page-numbers") {
+      formData.append("position", pageNumPos);
+    }
+
     // PDF Crop Params
     if (toolSlug === "crop-pdf") {
       // Convert pixel coordinates from preview to PDF points
@@ -1205,11 +1402,18 @@ export function ToolProcessor({
         outputName = `${nameWithoutExt}.docx`;
       } else if (
         toolSlug === "pdf-to-images" ||
-        toolSlug === "extract-images-from-pdf"
+        toolSlug === "extract-images-from-pdf" ||
+        toolSlug === "pdf-to-png"
       ) {
         // Usually returns zip or first image, server handles naming usually, but for output logic:
         // Server currently returns first file. If image:
         outputName = `${nameWithoutExt}_converted.png`; // Fallback, usually server sets this
+      } else if (toolSlug === "pdf-to-jpg") {
+        outputName = `${nameWithoutExt}_converted.jpg`;
+      } else if (toolSlug === "pdf-to-csv") {
+        outputName = `${nameWithoutExt}_tables.csv`;
+      } else if (toolSlug === "pdf-to-excel") {
+        outputName = `${nameWithoutExt}_tables.xlsx`;
       } else if (toolSlug === "watermark-pdf") {
         outputName = `${nameWithoutExt}_watermarked.pdf`;
       }
@@ -1231,12 +1435,14 @@ export function ToolProcessor({
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      // Set timeout for 120 seconds (2 minutes)
+      // Set timeout - longer for table extraction (can take time for large PDFs)
+      const isTableExtraction = toolSlug === "extract-tables" || toolSlug === "pdf-to-csv" || toolSlug === "pdf-to-excel";
+      const timeoutDuration = isTableExtraction ? 300000 : 120000; // 5 minutes for table extraction, 2 minutes for others
       const timeoutId = setTimeout(() => {
         if (abortControllerRef.current) {
           abortControllerRef.current.abort();
         }
-      }, 120000);
+      }, timeoutDuration);
 
       let res;
       try {
@@ -1249,8 +1455,9 @@ export function ToolProcessor({
         clearTimeout(timeoutId);
         const isAbort = (networkError as Error).name === "AbortError";
         if (isAbort) {
+          const timeoutMinutes = isTableExtraction ? "5 mins" : "2 mins";
           throw new Error(
-            "Request timed out (took longer than 2 mins) or was cancelled."
+            `Request timed out (took longer than ${timeoutMinutes}) or was cancelled.`
           );
         }
         console.error("Network Error:", networkError);
@@ -1378,13 +1585,18 @@ export function ToolProcessor({
           files[0].name.substring(0, files[0].name.lastIndexOf(".")) ||
           files[0].name;
 
-        // Check for ZIP files by content type or tool type
+        // Check for ZIP files by content type (not tool type - server decides)
         if (contentType === "application/zip" ||
-            contentType === "application/x-zip-compressed" ||
-            toolSlug === "split-pdf" ||
+            contentType === "application/x-zip-compressed") {
+          filename = `processed_${nameWithoutExt}.zip`;
+        } else if (contentType === "text/csv" || contentType === "application/csv") {
+          filename = `processed_${nameWithoutExt}.csv`;
+        } else if (contentType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+          filename = `processed_${nameWithoutExt}.xlsx`;
+        } else if (toolSlug === "split-pdf" ||
             toolSlug === "extract-images-from-pdf" ||
-            toolSlug === "extract-tables" ||
             toolSlug === "pdf-to-images") {
+          // These tools typically produce multiple files = ZIP
           filename = `processed_${nameWithoutExt}.zip`;
         } else if (toolSlug === "images-to-pdf" || toolSlug === "merge-pdf") {
           filename = `processed_${nameWithoutExt}.pdf`;
@@ -1393,12 +1605,13 @@ export function ToolProcessor({
         }
       }
 
-      // Final check: if filename doesn't have extension but we know it should be ZIP
+      // Final check: only force ZIP for tools that ALWAYS produce multiple files
+      // extract-tables can produce single file (CSV/XLSX) or ZIP depending on table count
       if ((toolSlug === "split-pdf" ||
            toolSlug === "extract-images-from-pdf" ||
-           toolSlug === "extract-tables" ||
            toolSlug === "pdf-to-images") &&
-          !filename.toLowerCase().endsWith(".zip")) {
+          !filename.toLowerCase().endsWith(".zip") &&
+          (contentType === "application/zip" || contentType === "application/x-zip-compressed")) {
         const nameWithoutExt = filename.substring(0, filename.lastIndexOf(".")) || filename;
         filename = `${nameWithoutExt}.zip`;
       }
@@ -1468,6 +1681,7 @@ export function ToolProcessor({
             <div className="w-1/2">
               <FileUploader
                 onFilesSelected={(files) => handleFileSelect(files)}
+                onError={setErrorMessage}
                 accept={acceptedFileTypes}
                 maxFiles={maxFiles}
                 compact
@@ -1514,14 +1728,34 @@ export function ToolProcessor({
           toolSlug === "upscale-image" ||
           toolSlug === "crop-image" ||
           toolSlug === "passport-photo" ||
-          toolSlug === "extract-palette"
+          toolSlug === "extract-palette" ||
+          toolSlug === "extract-tables" ||
+          toolSlug === "page-numbers"
         )) && (
           <div>
               <FileUploader
               onFilesSelected={handleFileSelect}
+              onError={setErrorMessage}
               accept={acceptedFileTypes}
               maxFiles={maxFiles}
             />
+            {/* Inline Error Message */}
+            {errorMessage && status === "idle" && (
+              <div className="mt-4 p-4 bg-red-950/30 rounded-lg border border-red-500/20 text-sm">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-red-200/90 whitespace-pre-wrap">{errorMessage}</p>
+                    <button
+                      onClick={() => setErrorMessage(null)}
+                      className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* File Size Limit Info (Web Version Only) */}
             {typeof window !== 'undefined' && !('__TAURI__' in window) && (
               <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 text-sm text-muted-foreground">
@@ -1535,6 +1769,58 @@ export function ToolProcessor({
                   ) : null}
                   <li className="text-primary/80">For larger files, use our desktop app (unlimited file sizes)</li>
                 </ul>
+              </div>
+            )}
+
+            {/* Merge Tables Option for pdf-to-csv and pdf-to-excel */}
+            {(toolSlug === "pdf-to-csv" || toolSlug === "pdf-to-excel") && status === "idle" && (
+              <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={mergeTables}
+                    onChange={(e) => setMergeTables(e.target.checked)}
+                    className="w-4 h-4 rounded border-white/20 bg-black/20 text-primary focus:ring-primary focus:ring-offset-0"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium group-hover:text-primary transition-colors">
+                      Merge similar tables across pages
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Uses smart fingerprinting to combine tables with matching structure that span multiple pages
+                    </div>
+                  </div>
+                </label>
+
+                {/* Detection Mode */}
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="text-sm font-medium mb-2">Detection Mode</div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setDetectionMode("strict")}
+                      className={`px-3 py-1.5 rounded text-xs transition-colors ${detectionMode === "strict" ? "bg-primary text-black" : "border border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                    >
+                      Strict
+                    </button>
+                    <button
+                      onClick={() => setDetectionMode("balanced")}
+                      className={`px-3 py-1.5 rounded text-xs transition-colors ${detectionMode === "balanced" ? "bg-primary text-black" : "border border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                    >
+                      Balanced
+                    </button>
+                    <button
+                      onClick={() => setDetectionMode("aggressive")}
+                      className={`px-3 py-1.5 rounded text-xs transition-colors ${detectionMode === "aggressive" ? "bg-primary text-black" : "border border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                    >
+                      Aggressive
+                    </button>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    {detectionMode === "strict" && "Best for clean tables with clear borders. Fewer false positives."}
+                    {detectionMode === "balanced" && "Good for most documents. Balances accuracy with coverage."}
+                    {detectionMode === "aggressive" && "Best for forms and complex layouts. May include more noise."}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -2258,43 +2544,290 @@ export function ToolProcessor({
             )}
 
             {/* Extract Tables Options */}
-            {toolSlug === "extract-tables" && (
-              <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10">
-                <h3 className="text-lg font-bold mb-4">Output Format</h3>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setExtractFormat("csv")}
-                    className={`px-4 py-2 rounded border transition-colors flex items-center gap-2 ${extractFormat === "csv" ? "bg-primary text-black border-primary" : "border-white/20 text-muted-foreground hover:bg-white/5"}`}
-                  >
-                    <FileSpreadsheet size={16} /> CSV (Separate Files)
-                  </button>
-                  <button
-                    onClick={() => setExtractFormat("xlsx")}
-                    className={`px-4 py-2 rounded border transition-colors flex items-center gap-2 ${extractFormat === "xlsx" ? "bg-primary text-black border-primary" : "border-white/20 text-muted-foreground hover:bg-white/5"}`}
-                  >
-                    <FileSpreadsheet size={16} /> Excel (Separate Files)
-                  </button>
-                </div>
-
-                {/* Merge Tables Option */}
-                <div className="mt-4 pt-4 border-t border-white/10">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={mergeTables}
-                      onChange={(e) => setMergeTables(e.target.checked)}
-                      className="w-4 h-4 rounded border-white/20 bg-black/20 text-primary focus:ring-primary focus:ring-offset-0"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium group-hover:text-primary transition-colors">
-                        Merge tables across pages
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        Automatically combine tables that continue on multiple pages (e.g., long reports, invoices)
+            {toolSlug === "extract-tables" && previewFile && (
+              <div className="mb-8 space-y-6">
+                {/* Selected File Info */}
+                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileSpreadsheet className="w-5 h-5 text-primary" />
+                      <div>
+                        <div className="font-medium">{previewFile.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {(previewFile.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
                       </div>
                     </div>
-                  </label>
+                    <button
+                      onClick={() => {
+                        setPreviewFile(null);
+                        setTablePreview(null);
+                        setSelectedTables(new Set());
+                      }}
+                      className="text-sm text-muted-foreground hover:text-white transition-colors"
+                    >
+                      Change File
+                    </button>
+                  </div>
                 </div>
+
+                {/* Loading State */}
+                {isLoadingTablePreview && (
+                  <div className="p-8 bg-white/5 rounded-xl border border-white/10 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
+                    <p className="text-muted-foreground">Scanning PDF for tables...</p>
+                  </div>
+                )}
+
+                {/* Table Preview Results */}
+                {tablePreview && !isLoadingTablePreview && (
+                  <div className="space-y-4">
+                    {/* Summary */}
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-bold">Tables Detected</h3>
+                        <span className="text-sm text-muted-foreground">
+                          {tablePreview.total_tables ?? 0} table{(tablePreview.total_tables ?? 0) !== 1 ? 's' : ''} in {tablePreview.total_pages ?? 0} page{(tablePreview.total_pages ?? 0) !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      {/* Merge Suggestions */}
+                      {tablePreview.merge_suggestions && tablePreview.merge_suggestions.length > 0 && (
+                        <div className="mt-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                          <div className="text-sm font-medium text-primary mb-1">
+                            Smart Merge Suggestion
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {tablePreview.merge_suggestions.length} group{tablePreview.merge_suggestions.length !== 1 ? 's' : ''} of similar tables detected that can be merged:
+                            {tablePreview.merge_suggestions.map((suggestion, idx) => (
+                              <span key={idx} className="ml-2 text-primary">
+                                {suggestion.tables.join(' + ')} ({suggestion.total_rows} rows)
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Errors */}
+                      {tablePreview.errors && tablePreview.errors.length > 0 && (
+                        <div className="mt-3 p-3 bg-red-950/30 rounded-lg border border-red-500/20">
+                          <div className="text-sm text-red-400">
+                            {tablePreview.errors.map((err, idx) => (
+                              <div key={idx}>{err.error}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Table List */}
+                    {tablePreview.tables && tablePreview.tables.length > 0 && (
+                      <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium">Select Tables to Extract</h4>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setSelectedTables(new Set(tablePreview.tables.map(t => t.id)))}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              Select All
+                            </button>
+                            <span className="text-muted-foreground">|</span>
+                            <button
+                              onClick={() => setSelectedTables(new Set())}
+                              className="text-xs text-muted-foreground hover:text-white"
+                            >
+                              Deselect All
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {tablePreview.tables.map((table) => (
+                            <div
+                              key={table.id}
+                              className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                                selectedTables.has(table.id)
+                                  ? 'bg-primary/10 border-primary/50'
+                                  : 'bg-black/20 border-white/10 hover:border-white/20'
+                              }`}
+                              onClick={() => {
+                                const newSelected = new Set(selectedTables);
+                                if (newSelected.has(table.id)) {
+                                  newSelected.delete(table.id);
+                                } else {
+                                  newSelected.add(table.id);
+                                }
+                                setSelectedTables(newSelected);
+                              }}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedTables.has(table.id)}
+                                    onChange={() => {}}
+                                    className="w-4 h-4 rounded border-white/20 bg-black/20 text-primary"
+                                  />
+                                  <div>
+                                    <span className="font-medium">Page {table.page}, Table {table.table_index}</span>
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      {table.rows} rows × {table.columns} cols
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  {table.column_types.slice(0, 4).map((type, idx) => (
+                                    <span
+                                      key={idx}
+                                      className={`text-xs px-1.5 py-0.5 rounded ${
+                                        type === 'numeric' ? 'bg-blue-500/20 text-blue-400' :
+                                        type === 'date' ? 'bg-purple-500/20 text-purple-400' :
+                                        type === 'text' ? 'bg-green-500/20 text-green-400' :
+                                        'bg-gray-500/20 text-gray-400'
+                                      }`}
+                                    >
+                                      {type}
+                                    </span>
+                                  ))}
+                                  {table.column_types.length > 4 && (
+                                    <span className="text-xs text-muted-foreground">+{table.column_types.length - 4}</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Header Preview */}
+                              {table.has_header && table.header && (
+                                <div className="text-xs text-muted-foreground mb-2">
+                                  <span className="text-primary/70">Headers:</span>{' '}
+                                  {table.header.slice(0, 5).join(' | ')}
+                                  {table.header.length > 5 && ' ...'}
+                                </div>
+                              )}
+
+                              {/* Sample Data Preview */}
+                              {table.sample_data && table.sample_data.length > 0 && (
+                                <div className="mt-2 overflow-x-auto">
+                                  <table className="w-full text-xs border-collapse">
+                                    <tbody>
+                                      {table.sample_data.slice(0, 3).map((row, rowIdx) => (
+                                        <tr key={rowIdx} className={rowIdx === 0 && table.has_header ? 'font-medium text-primary/80' : ''}>
+                                          {row.slice(0, 5).map((cell, cellIdx) => (
+                                            <td key={cellIdx} className="px-2 py-1 border border-white/10 truncate max-w-[100px]">
+                                              {cell || '-'}
+                                            </td>
+                                          ))}
+                                          {row.length > 5 && (
+                                            <td className="px-2 py-1 border border-white/10 text-muted-foreground">...</td>
+                                          )}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                  {table.sample_data.length > 3 && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      +{table.rows - 3} more rows
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No Tables Found */}
+                    {tablePreview.tables && tablePreview.tables.length === 0 && !tablePreview.errors?.length && (
+                      <div className="p-8 bg-white/5 rounded-xl border border-white/10 text-center">
+                        <FileSpreadsheet className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-muted-foreground">No tables detected in this PDF.</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          The PDF may not contain structured tables with borders/gridlines.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Output Format & Options */}
+                    {tablePreview.tables && tablePreview.tables.length > 0 && (
+                      <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                        <h4 className="font-medium mb-3">Output Options</h4>
+                        <div className="flex gap-4 mb-4">
+                          <button
+                            onClick={() => setExtractFormat("csv")}
+                            className={`px-4 py-2 rounded border transition-colors flex items-center gap-2 ${extractFormat === "csv" ? "bg-primary text-black border-primary" : "border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                          >
+                            <FileSpreadsheet size={16} /> CSV
+                          </button>
+                          <button
+                            onClick={() => setExtractFormat("xlsx")}
+                            className={`px-4 py-2 rounded border transition-colors flex items-center gap-2 ${extractFormat === "xlsx" ? "bg-primary text-black border-primary" : "border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                          >
+                            <FileSpreadsheet size={16} /> Excel
+                          </button>
+                        </div>
+
+                        {/* Merge Tables Option */}
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={mergeTables}
+                            onChange={(e) => setMergeTables(e.target.checked)}
+                            className="w-4 h-4 rounded border-white/20 bg-black/20 text-primary focus:ring-primary focus:ring-offset-0"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium group-hover:text-primary transition-colors">
+                              Merge similar tables across pages
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              Uses smart fingerprinting to combine tables with matching structure
+                            </div>
+                          </div>
+                        </label>
+
+                        {/* Detection Mode */}
+                        <div className="mt-4 pt-4 border-t border-white/10">
+                          <div className="text-sm font-medium mb-2">Detection Mode</div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setDetectionMode("strict")}
+                              className={`px-3 py-1.5 rounded text-xs transition-colors ${detectionMode === "strict" ? "bg-primary text-black" : "border border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                            >
+                              Strict
+                            </button>
+                            <button
+                              onClick={() => setDetectionMode("balanced")}
+                              className={`px-3 py-1.5 rounded text-xs transition-colors ${detectionMode === "balanced" ? "bg-primary text-black" : "border border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                            >
+                              Balanced
+                            </button>
+                            <button
+                              onClick={() => setDetectionMode("aggressive")}
+                              className={`px-3 py-1.5 rounded text-xs transition-colors ${detectionMode === "aggressive" ? "bg-primary text-black" : "border border-white/20 text-muted-foreground hover:bg-white/5"}`}
+                            >
+                              Aggressive
+                            </button>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-2">
+                            {detectionMode === "strict" && "Best for clean tables with clear borders. Fewer false positives."}
+                            {detectionMode === "balanced" && "Good for most documents. Balances accuracy with coverage."}
+                            {detectionMode === "aggressive" && "Best for forms and complex layouts. May include more noise."}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Extract Button */}
+                    {tablePreview.tables && tablePreview.tables.length > 0 && selectedTables.size > 0 && (
+                      <button
+                        onClick={() => previewFile && handleFiles([previewFile])}
+                        className="w-full py-4 bg-primary text-black font-bold rounded-xl hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(0,243,255,0.3)]"
+                      >
+                        Extract {selectedTables.size} Table{selectedTables.size !== 1 ? 's' : ''} as {extractFormat.toUpperCase()}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -2811,6 +3344,99 @@ export function ToolProcessor({
                 </div>
             )}
 
+            {/* Page Numbers PDF Options with Preview */}
+            {toolSlug === "page-numbers" && previewFile && (
+              <div className="mb-8">
+                <div className="p-6 bg-white/5 rounded-xl border border-white/10">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Hash size={20} /> Add Page Numbers
+                  </h3>
+                  
+                  {/* Preview Display with Overlay */}
+                  <div className="mb-6 relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[400px]">
+                    {isLoadingPreview ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Loading preview...</span>
+                      </div>
+                    ) : previewUrl ? (
+                      <div className="relative inline-block border border-white/10 shadow-2xl">
+                        <img
+                          src={previewUrl}
+                          alt="PDF Preview"
+                          className="max-w-full max-h-[400px] object-contain"
+                        />
+                        
+                        {/* Page Number Visual Overlay */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          <span
+                            className={cn(
+                              "absolute text-xs font-mono text-black bg-white/80 px-1.5 py-0.5 rounded border border-black/10 shadow-sm",
+                              pageNumPos === "bottom-right" && "bottom-[5%] right-[5%]",
+                              pageNumPos === "bottom-center" && "bottom-[5%] left-1/2 -translate-x-1/2",
+                              pageNumPos === "bottom-left" && "bottom-[5%] left-[5%]",
+                              pageNumPos === "top-right" && "top-[5%] right-[5%]",
+                              pageNumPos === "top-center" && "top-[5%] left-1/2 -translate-x-1/2",
+                              pageNumPos === "top-left" && "top-[5%] left-[5%]"
+                            )}
+                          >
+                            1
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm">Preparing preview...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Position Selector */}
+                  <div className="space-y-4">
+                    <label className="text-sm font-medium text-foreground block">
+                      Number Position
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "top-left", label: "Top Left" },
+                        { id: "top-center", label: "Top Center" },
+                        { id: "top-right", label: "Top Right" },
+                        { id: "bottom-left", label: "Bottom Left" },
+                        { id: "bottom-center", label: "Bottom Center" },
+                        { id: "bottom-right", label: "Bottom Right" },
+                      ].map((pos) => (
+                        <button
+                          key={pos.id}
+                          onClick={() => setPageNumPos(pos.id)}
+                          className={cn(
+                            "px-3 py-2 text-xs rounded-lg transition-all border",
+                            pageNumPos === pos.id
+                              ? "bg-primary/20 border-primary text-primary font-medium"
+                              : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white"
+                          )}
+                        >
+                          {pos.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="text-xs text-muted-foreground mb-4">
+                      {t("selected")}: <span className="text-white">{previewFile.name}</span>
+                    </div>
+                    <button
+                      onClick={() => previewFile && handleFiles([previewFile])}
+                      className="w-full py-3 rounded-lg bg-primary text-black font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,243,255,0.2)]"
+                    >
+                      <Hash size={16} /> Add Page Numbers
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Organize PDF / Reorder Pages Options */}
             {(toolSlug === "organize-pdf" || toolSlug === "reorder-pages") && (
               <div className="mb-8 p-6 bg-white/5 rounded-xl border border-white/10">
@@ -2918,21 +3544,172 @@ export function ToolProcessor({
                     </div>
                   )}
 
-                  <div className="relative h-96 w-full bg-black/50 rounded-xl overflow-hidden mb-6 border border-white/10">
-                    <Cropper
-                      image={previewUrl}
-                      crop={crop}
-                      zoom={zoom}
-                      aspect={
-                        toolSlug === "passport-photo"
-                          ? COUNTRIES.find((c) => c.code === passportCountry)
-                              ?.aspect || 1
-                          : undefined
-                      }
-                      onCropChange={setCrop}
-                      onCropComplete={onCropComplete}
-                      onZoomChange={setZoom}
-                    />
+                  {toolSlug === "crop-image" && (
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[1, 4 / 3, 16 / 9].map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => {
+                                setCropAspect(r);
+                                // Resize crop box to match aspect ratio, centered
+                                if (imgCropPreviewRef.current) {
+                                    const imgRect = imgCropPreviewRef.current.getBoundingClientRect();
+                                    let newW = imgRect.width * 0.8;
+                                    let newH = newW / r;
+                                    
+                                    if (newH > imgRect.height * 0.9) {
+                                        newH = imgRect.height * 0.8;
+                                        newW = newH * r;
+                                    }
+                                    
+                                    const newX = (imgRect.width - newW) / 2;
+                                    const newY = (imgRect.height - newH) / 2;
+                                    
+                                    setImgCropWidth(newW);
+                                    setImgCropHeight(newH);
+                                    setImgCropX(newX);
+                                    setImgCropY(newY);
+                                }
+                            }}
+                            className={`px-3 py-2 text-xs rounded-lg transition-all border ${
+                              cropAspect === r
+                                ? "bg-primary/20 border-primary text-primary font-medium"
+                                : "bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
+                            }`}
+                          >
+                            {r === 1 ? "1:1" : r === 4 / 3 ? "4:3" : "16:9"}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setCropAspect(undefined)}
+                          className={`px-3 py-2 text-xs rounded-lg transition-all border ${
+                            cropAspect === undefined
+                              ? "bg-primary/20 border-primary text-primary font-medium"
+                              : "bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          Free
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="relative h-96 w-full bg-black/50 rounded-xl overflow-hidden mb-6 border border-white/10 flex items-center justify-center">
+                    {toolSlug === "passport-photo" ? (
+                        <Cropper
+                        image={previewUrl}
+                        crop={crop}
+                        zoom={zoom}
+                        aspect={COUNTRIES.find((c) => c.code === passportCountry)?.aspect || 1}
+                        onCropChange={setCrop}
+                        onCropComplete={onCropComplete}
+                        onZoomChange={setZoom}
+                        />
+                    ) : (
+                        <div className="relative inline-block">
+                             <img
+                                ref={imgCropPreviewRef}
+                                src={previewUrl}
+                                alt="Image Preview"
+                                className="max-w-full max-h-[380px] object-contain select-none"
+                                draggable={false}
+                            />
+                            {/* Custom Crop Box */}
+                            {imgCropWidth > 0 && imgCropHeight > 0 && (
+                                <div
+                                    className="absolute border-2 border-primary bg-primary/20 cursor-move group"
+                                    style={{
+                                        left: `${imgCropX}px`,
+                                        top: `${imgCropY}px`,
+                                        width: `${imgCropWidth}px`,
+                                        height: `${imgCropHeight}px`,
+                                    }}
+                                    onMouseDown={(e) => {
+                                        if ((e.target as HTMLElement).classList.contains('resize-handle')) return;
+                                        e.preventDefault();
+                                        
+                                        const imgRect = imgCropPreviewRef.current!.getBoundingClientRect();
+                                        const startX = e.clientX;
+                                        const startY = e.clientY;
+                                        const startCropX = imgCropX;
+                                        const startCropY = imgCropY;
+
+                                        const onMove = (moveEvent: MouseEvent) => {
+                                            const dx = moveEvent.clientX - startX;
+                                            const dy = moveEvent.clientY - startY;
+                                            const newX = Math.max(0, Math.min(imgRect.width - imgCropWidth, startCropX + dx));
+                                            const newY = Math.max(0, Math.min(imgRect.height - imgCropHeight, startCropY + dy));
+                                            setImgCropX(newX);
+                                            setImgCropY(newY);
+                                        };
+
+                                        const onUp = () => {
+                                            window.removeEventListener("mousemove", onMove);
+                                            window.removeEventListener("mouseup", onUp);
+                                        };
+
+                                        window.addEventListener("mousemove", onMove);
+                                        window.addEventListener("mouseup", onUp);
+                                    }}
+                                >
+                                    {/* Resize Handles */}
+                                    {/* Bottom-right */}
+                                    <div
+                                        className="resize-handle absolute bottom-0 right-0 w-4 h-4 bg-primary border border-white cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                                        style={{ transform: "translate(50%, 50%)" }}
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            
+                                            const imgRect = imgCropPreviewRef.current!.getBoundingClientRect();
+                                            const startX = e.clientX;
+                                            const startY = e.clientY;
+                                            const startWidth = imgCropWidth;
+                                            const startHeight = imgCropHeight;
+                                            const aspect = cropAspect;
+
+                                            const onMove = (moveEvent: MouseEvent) => {
+                                                const dx = moveEvent.clientX - startX;
+                                                const dy = moveEvent.clientY - startY;
+                                                
+                                                let newWidth = Math.max(50, Math.min(imgRect.width - imgCropX, startWidth + dx));
+                                                let newHeight = Math.max(50, Math.min(imgRect.height - imgCropY, startHeight + dy));
+
+                                                if (aspect) {
+                                                    // Constrain to aspect ratio
+                                                    if (newWidth / newHeight > aspect) {
+                                                        // Width is too big, adjust width based on height
+                                                        newWidth = newHeight * aspect;
+                                                    } else {
+                                                        // Height is too big, adjust height based on width
+                                                        newHeight = newWidth / aspect;
+                                                    }
+                                                }
+
+                                                setImgCropWidth(newWidth);
+                                                setImgCropHeight(newHeight);
+                                            };
+
+                                            const onUp = () => {
+                                                window.removeEventListener("mousemove", onMove);
+                                                window.removeEventListener("mouseup", onUp);
+                                            };
+
+                                            window.addEventListener("mousemove", onMove);
+                                            window.addEventListener("mouseup", onUp);
+                                        }}
+                                    />
+
+                                    {/* Info overlay */}
+                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded pointer-events-none whitespace-nowrap">
+                                        {Math.round(imgCropWidth)} × {Math.round(imgCropHeight)}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                   </div>
 
                   <div className="mb-6">
