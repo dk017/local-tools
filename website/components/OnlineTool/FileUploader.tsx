@@ -8,17 +8,21 @@ import { cn } from '@/lib/utils';
 
 interface FileUploaderProps {
     onFilesSelected: (files: File[]) => void;
+    onError?: (error: string) => void;
     accept?: Record<string, string[]>;
     maxFiles?: number;
     className?: string;
     compact?: boolean;
 }
 
-export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className, compact = false }: FileUploaderProps) {
+export function FileUploader({ onFilesSelected, onError, accept, maxFiles = 1, className, compact = false }: FileUploaderProps) {
     const t = useTranslations('FileUploader');
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
-        onFilesSelected(acceptedFiles);
+        // Only call onFilesSelected if there are actually files accepted
+        if (acceptedFiles.length > 0) {
+            onFilesSelected(acceptedFiles);
+        }
     }, [onFilesSelected]);
 
     // Environment Check
@@ -84,9 +88,13 @@ export function FileUploader({ onFilesSelected, accept, maxFiles = 1, className,
         }
         
         if (errorMessage) {
-            alert(errorMessage);
+            if (onError) {
+                onError(errorMessage);
+            } else {
+                alert(errorMessage);
+            }
         }
-    }, [t, sizeLimitText, isPdfTool, isImageTool, maxFiles]);
+    }, [t, sizeLimitText, isPdfTool, isImageTool, maxFiles, onError]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
