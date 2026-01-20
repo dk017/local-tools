@@ -232,14 +232,14 @@ export function ToolProcessor({
   acceptedFileTypes,
 }: ToolProcessorProps) {
   const t = useTranslations("ToolProcessor");
-  
+
   // Determine max files based on tool type
   const getMaxFiles = (): number => {
     // Special case: pdf-diff requires exactly 2 files
     if (toolSlug === "pdf-diff") {
       return 2;
     }
-    
+
     // Single-file tools (require interactive UI)
     // Note: Batch-capable image tools (convert, resize, compress, etc.) are NOT in this list
     const singleFileTools = [
@@ -284,12 +284,12 @@ export function ToolProcessor({
       "photo-studio",       // Interactive editor
       "grid-split",         // Single image split
     ];
-    
+
     return singleFileTools.includes(toolSlug) ? 1 : 10;
   };
-  
+
   const maxFiles = getMaxFiles();
-  
+
   // Get file type name for error messages
   const getFileTypeName = (): string => {
     if (toolSlug === "images-to-pdf") {
@@ -310,20 +310,20 @@ export function ToolProcessor({
       return "image";
     }
   };
-  
+
   // Check if running in web (not desktop)
   const isWeb = typeof window !== 'undefined' && !('__TAURI__' in window);
-  
+
   // Comprehensive file validation function
   interface ValidationResult {
     valid: boolean;
     error?: string;
   }
-  
+
   const validateFiles = (files: File[]): ValidationResult => {
     // Clear previous errors
     setErrorMessage(null);
-    
+
     // File count validation
     if (maxFiles === 1 && files.length > 1) {
       return {
@@ -331,7 +331,7 @@ export function ToolProcessor({
         error: `This tool only accepts one file. Please select a single ${getFileTypeName()} file.`
       };
     }
-    
+
     if (maxFiles === 2 && files.length !== 2) {
       if (files.length === 1) {
         return {
@@ -350,52 +350,52 @@ export function ToolProcessor({
         };
       }
     }
-    
+
     if (maxFiles === 10 && files.length > 10) {
       return {
         valid: false,
         error: `This tool accepts up to 10 files. You selected ${files.length} files. Please select fewer files.`
       };
     }
-    
+
     // File type validation
     const isPdfTool = (toolSlug.includes("pdf") &&
-                      toolSlug !== "images-to-pdf" &&     // Exclude - accepts images
-                      toolSlug !== "csv-to-pdf" &&        // Exclude - accepts CSV
-                      toolSlug !== "txt-to-pdf" &&        // Exclude - accepts TXT
-                      toolSlug !== "tiff-to-pdf" &&       // Exclude - accepts TIFF
-                      toolSlug !== "rtf-to-pdf" &&        // Exclude - accepts RTF
-                      toolSlug !== "xml-to-pdf" &&        // Exclude - accepts XML
-                      toolSlug !== "word-to-pdf" &&       // Exclude - accepts Word
-                      toolSlug !== "excel-to-pdf" &&      // Exclude - accepts Excel
-                      toolSlug !== "powerpoint-to-pdf" && // Exclude - accepts PPT
-                      toolSlug !== "ppt-to-pdf" &&        // Exclude - accepts PPT
-                      toolSlug !== "html-to-pdf") ||      // Exclude - accepts HTML
-                      toolSlug === "pdf-diff" ||
-                      toolSlug === "extract-tables" ||
-                      toolSlug === "extract-text" ||
-                      toolSlug === "extract-metadata" ||
-                      toolSlug === "extract-form-data" ||
-                      toolSlug === "extract-images-from-pdf";
-    
+      toolSlug !== "images-to-pdf" &&     // Exclude - accepts images
+      toolSlug !== "csv-to-pdf" &&        // Exclude - accepts CSV
+      toolSlug !== "txt-to-pdf" &&        // Exclude - accepts TXT
+      toolSlug !== "tiff-to-pdf" &&       // Exclude - accepts TIFF
+      toolSlug !== "rtf-to-pdf" &&        // Exclude - accepts RTF
+      toolSlug !== "xml-to-pdf" &&        // Exclude - accepts XML
+      toolSlug !== "word-to-pdf" &&       // Exclude - accepts Word
+      toolSlug !== "excel-to-pdf" &&      // Exclude - accepts Excel
+      toolSlug !== "powerpoint-to-pdf" && // Exclude - accepts PPT
+      toolSlug !== "ppt-to-pdf" &&        // Exclude - accepts PPT
+      toolSlug !== "html-to-pdf") ||      // Exclude - accepts HTML
+      toolSlug === "pdf-diff" ||
+      toolSlug === "extract-tables" ||
+      toolSlug === "extract-text" ||
+      toolSlug === "extract-metadata" ||
+      toolSlug === "extract-form-data" ||
+      toolSlug === "extract-images-from-pdf";
+
     const isImageTool = (toolSlug.includes("image") &&
-                        toolSlug !== "extract-images-from-pdf" &&
-                        toolSlug !== "pdf-to-images") ||
-                       toolSlug === "images-to-pdf" ||  // Accepts images as input
-                       toolSlug === "remove-image-background" ||
-                       toolSlug === "convert-image" ||
-                       toolSlug === "resize-image" ||
-                       toolSlug === "upscale-image" ||
-                       toolSlug === "compress-image" ||
-                       toolSlug === "passport-photo" ||
-                       toolSlug === "generate-icons" ||
-                       toolSlug === "extract-palette" ||
-                       toolSlug === "crop-image" ||
-                       toolSlug === "watermark-image" ||
-                       toolSlug === "photo-studio" ||
-                       toolSlug === "grid-split" ||
-                       toolSlug === "remove-image-metadata";
-    
+      toolSlug !== "extract-images-from-pdf" &&
+      toolSlug !== "pdf-to-images") ||
+      toolSlug === "images-to-pdf" ||  // Accepts images as input
+      toolSlug === "remove-image-background" ||
+      toolSlug === "convert-image" ||
+      toolSlug === "resize-image" ||
+      toolSlug === "upscale-image" ||
+      toolSlug === "compress-image" ||
+      toolSlug === "passport-photo" ||
+      toolSlug === "generate-icons" ||
+      toolSlug === "extract-palette" ||
+      toolSlug === "crop-image" ||
+      toolSlug === "watermark-image" ||
+      toolSlug === "photo-studio" ||
+      toolSlug === "grid-split" ||
+      toolSlug === "remove-image-metadata";
+
     const isWordTool = toolSlug === "word-to-pdf";
     const isPowerPointTool = toolSlug === "powerpoint-to-pdf" || toolSlug === "ppt-to-pdf";
     const isExcelTool = toolSlug === "excel-to-pdf";
@@ -406,7 +406,7 @@ export function ToolProcessor({
     const isTiffTool = toolSlug === "tiff-to-pdf";
     const isRtfTool = toolSlug === "rtf-to-pdf";
     const isXmlTool = toolSlug === "xml-to-pdf";
-    
+
     for (const file of files) {
       const fileName = file.name.toLowerCase();
       const fileType = file.type;
@@ -434,7 +434,7 @@ export function ToolProcessor({
           error: `Invalid file type. This tool only accepts PDF files. "${file.name}" is not a PDF file.`
         };
       }
-      
+
       // Image validation
       if (isImageTool && !fileName.match(/\.(jpg|jpeg|png|webp|gif|bmp|heic|heif)$/i) && !fileType.startsWith('image/')) {
         return {
@@ -442,7 +442,7 @@ export function ToolProcessor({
           error: `Invalid file type. This tool only accepts image files (PNG, JPG, JPEG, WebP). "${file.name}" is not an image file.`
         };
       }
-      
+
       // Word validation
       if (isWordTool && !fileName.match(/\.(docx|doc)$/i) && !fileType.includes('wordprocessingml')) {
         return {
@@ -450,7 +450,7 @@ export function ToolProcessor({
           error: `Invalid file type. This tool only accepts Word documents (.docx, .doc). "${file.name}" is not a Word document.`
         };
       }
-      
+
       // PowerPoint validation
       if (isPowerPointTool && !fileName.match(/\.(pptx|ppt)$/i) && !fileType.includes('presentationml')) {
         return {
@@ -458,7 +458,7 @@ export function ToolProcessor({
           error: `Invalid file type. This tool only accepts PowerPoint presentations (.pptx, .ppt). "${file.name}" is not a PowerPoint file.`
         };
       }
-      
+
       // Excel validation
       if (isExcelTool && !fileName.match(/\.(xlsx|xls)$/i) && !fileType.includes('spreadsheetml')) {
         return {
@@ -466,7 +466,7 @@ export function ToolProcessor({
           error: `Invalid file type. This tool only accepts Excel spreadsheets (.xlsx, .xls). "${file.name}" is not an Excel file.`
         };
       }
-      
+
       // HTML validation
       if (isHtmlTool && !fileName.match(/\.(html|htm)$/i) && fileType !== 'text/html') {
         return {
@@ -474,7 +474,7 @@ export function ToolProcessor({
           error: `Invalid file type. This tool only accepts HTML files (.html, .htm). "${file.name}" is not an HTML file.`
         };
       }
-      
+
       // HEIC validation
       if (isHeicTool && !fileName.match(/\.(heic|heif)$/i) && fileType !== 'image/heic' && fileType !== 'image/heif') {
         return {
@@ -777,6 +777,18 @@ export function ToolProcessor({
   const previewDebounceRef = useRef<NodeJS.Timeout | null>(null);
   // Cache for preview images
   const previewCacheRef = useRef<Map<string, string>>(new Map());
+  // Watermark preview ref for contentEditable sync
+  const watermarkPreviewRef = useRef<HTMLDivElement>(null);
+
+  // Sync contentEditable watermark preview when text changes from input
+  useEffect(() => {
+    if (watermarkPreviewRef.current && watermarkType === "text") {
+      // Only update if the content differs to avoid cursor position issues
+      if (watermarkPreviewRef.current.textContent !== watermarkText) {
+        watermarkPreviewRef.current.textContent = watermarkText;
+      }
+    }
+  }, [watermarkText, watermarkType]);
 
   // Initialize crop box when preview loads for crop-pdf or crop-image
   useEffect(() => {
@@ -811,29 +823,29 @@ export function ToolProcessor({
         return () => img.removeEventListener('load', onLoad);
       }
     } else if (toolSlug === "crop-image" && previewUrl && imgCropPreviewRef.current) {
-        const img = imgCropPreviewRef.current;
-        const initCrop = () => {
-            const imgRect = img.getBoundingClientRect();
-            const cropW = imgRect.width * 0.8;
-            const cropH = imgRect.height * 0.8;
-            const cropX = (imgRect.width - cropW) / 2;
-            const cropY = (imgRect.height - cropH) / 2;
-            setImgCropX(cropX);
-            setImgCropY(cropY);
-            setImgCropWidth(cropW);
-            setImgCropHeight(cropH);
-        };
+      const img = imgCropPreviewRef.current;
+      const initCrop = () => {
+        const imgRect = img.getBoundingClientRect();
+        const cropW = imgRect.width * 0.8;
+        const cropH = imgRect.height * 0.8;
+        const cropX = (imgRect.width - cropW) / 2;
+        const cropY = (imgRect.height - cropH) / 2;
+        setImgCropX(cropX);
+        setImgCropY(cropY);
+        setImgCropWidth(cropW);
+        setImgCropHeight(cropH);
+      };
 
-        if (img.complete && img.naturalWidth > 0) {
-            initCrop();
-        } else {
-            img.addEventListener('load', initCrop);
-            return () => img.removeEventListener('load', initCrop);
-        }
+      if (img.complete && img.naturalWidth > 0) {
+        initCrop();
+      } else {
+        img.addEventListener('load', initCrop);
+        return () => img.removeEventListener('load', initCrop);
+      }
     }
   }, [toolSlug, previewUrl, pdfPageWidth, pdfPageHeight]);
 
-    // Generate cache key from params
+  // Generate cache key from params
   const getCacheKey = (params: any, fileName?: string): string => {
     const sortedParams = Object.keys(params)
       .sort()
@@ -846,12 +858,12 @@ export function ToolProcessor({
   const fetchPreview = async (params: any = {}, debounceMs: number = 300, fileOverride?: File) => {
     const fileToUse = fileOverride || previewFile;
     if (!fileToUse) return;
-    
+
     // For rotate-pdf, ensure angle is included from params or current state
     if (toolSlug === "rotate-pdf" && params.angle === undefined) {
       params.angle = rotationAngle;
     }
-    
+
     // Check cache first
     const cacheKey = getCacheKey(params, fileToUse.name);
     const cachedPreview = previewCacheRef.current.get(cacheKey);
@@ -860,12 +872,12 @@ export function ToolProcessor({
       setPreviewParams(params);
       return;
     }
-    
+
     // Clear previous debounce timer
     if (previewDebounceRef.current) {
       clearTimeout(previewDebounceRef.current);
     }
-    
+
     // Set new debounce timer
     previewDebounceRef.current = setTimeout(async () => {
       setIsLoadingPreview(true);
@@ -874,27 +886,27 @@ export function ToolProcessor({
       const actionType = toolSlug.replace("-pdf", "").replace("-image", "");
       formData.append("mode", actionType);
       formData.append("page", "0");
-      
+
       // Add params to formData (excluding action as it comes from mode)
       Object.keys(params).forEach((key) => {
         if (key !== "action" && params[key] !== null && params[key] !== undefined) {
           formData.append(key, params[key].toString());
         }
       });
-      
+
       try {
         const res = await fetch(`${API_BASE_URL}/api/pdf/preview`, {
           method: "POST",
           body: formData,
         });
-        
+
         if (!res.ok) {
           const errorText = await res.text();
           console.error("Preview API error:", res.status, errorText);
           setIsLoadingPreview(false);
           return;
         }
-        
+
         const data = await res.json();
         if (data.image) {
           // Cache the result
@@ -943,12 +955,12 @@ export function ToolProcessor({
       setStatus("error");
       return;
     }
-    
+
     // Validation passed - clear any previous error state
     if (status === "error") {
       setStatus("idle");
     }
-    
+
     if (toolSlug === "design-studio" && files.length > 0) {
       const file = files[0];
       const url = URL.createObjectURL(file);
@@ -976,11 +988,11 @@ export function ToolProcessor({
         if (toolSlug === "crop-image") {
           const img = new Image();
           img.onload = () => {
-             // We can't know display size yet, but we can init roughly.
-             // Better to init in the render phase or Effect when ref is available.
-             // But let's set some defaults so it's not 0.
-             // Actually, the useEffect below handling 'toolSlug === "crop-pdf"' logic
-             // is a good place to mirror for "crop-image".
+            // We can't know display size yet, but we can init roughly.
+            // Better to init in the render phase or Effect when ref is available.
+            // But let's set some defaults so it's not 0.
+            // Actually, the useEffect below handling 'toolSlug === "crop-pdf"' logic
+            // is a good place to mirror for "crop-image".
           };
           img.src = reader.result as string;
         }
@@ -1227,21 +1239,7 @@ export function ToolProcessor({
     }
 
     // Append Crop Params
-    if (toolSlug === "crop-image") {
-      if (imgCropPreviewRef.current) {
-        const img = imgCropPreviewRef.current;
-        const scaleX = img.naturalWidth / img.getBoundingClientRect().width;
-        const scaleY = img.naturalHeight / img.getBoundingClientRect().height;
-
-        const cropBox = {
-          x: Math.round(imgCropX * scaleX),
-          y: Math.round(imgCropY * scaleY),
-          width: Math.round(imgCropWidth * scaleX),
-          height: Math.round(imgCropHeight * scaleY),
-        };
-        formData.append("crop_box", JSON.stringify(cropBox));
-      }
-    } else if (toolSlug === "passport-photo") {
+    if (toolSlug === "crop-image" || toolSlug === "passport-photo") {
       const cropBox = {
         x: cropX || 0,
         y: cropY || 0,
@@ -1587,15 +1585,15 @@ export function ToolProcessor({
 
         // Check for ZIP files by content type (not tool type - server decides)
         if (contentType === "application/zip" ||
-            contentType === "application/x-zip-compressed") {
+          contentType === "application/x-zip-compressed") {
           filename = `processed_${nameWithoutExt}.zip`;
         } else if (contentType === "text/csv" || contentType === "application/csv") {
           filename = `processed_${nameWithoutExt}.csv`;
         } else if (contentType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
           filename = `processed_${nameWithoutExt}.xlsx`;
         } else if (toolSlug === "split-pdf" ||
-            toolSlug === "extract-images-from-pdf" ||
-            toolSlug === "pdf-to-images") {
+          toolSlug === "extract-images-from-pdf" ||
+          toolSlug === "pdf-to-images") {
           // These tools typically produce multiple files = ZIP
           filename = `processed_${nameWithoutExt}.zip`;
         } else if (toolSlug === "images-to-pdf" || toolSlug === "merge-pdf") {
@@ -1608,10 +1606,10 @@ export function ToolProcessor({
       // Final check: only force ZIP for tools that ALWAYS produce multiple files
       // extract-tables can produce single file (CSV/XLSX) or ZIP depending on table count
       if ((toolSlug === "split-pdf" ||
-           toolSlug === "extract-images-from-pdf" ||
-           toolSlug === "pdf-to-images") &&
-          !filename.toLowerCase().endsWith(".zip") &&
-          (contentType === "application/zip" || contentType === "application/x-zip-compressed")) {
+        toolSlug === "extract-images-from-pdf" ||
+        toolSlug === "pdf-to-images") &&
+        !filename.toLowerCase().endsWith(".zip") &&
+        (contentType === "application/zip" || contentType === "application/x-zip-compressed")) {
         const nameWithoutExt = filename.substring(0, filename.lastIndexOf(".")) || filename;
         filename = `${nameWithoutExt}.zip`;
       }
@@ -1692,16 +1690,16 @@ export function ToolProcessor({
               className="w-1/2 bg-primary text-black font-bold rounded-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(0,243,255,0.2)]"
             >
               {toolSlug === "merge-pdf" ? "Merge PDFs" :
-               toolSlug === "images-to-pdf" ? "Convert to PDF" :
-               toolSlug === "convert-image" ? "Convert Images" :
-               toolSlug === "resize-image" ? "Resize Images" :
-               toolSlug === "compress-image" ? "Compress Images" :
-               toolSlug === "watermark-image" ? "Apply Watermark" :
-               toolSlug === "heic-to-jpg" ? "Convert HEIC" :
-               toolSlug === "remove-image-background" ? "Remove Background" :
-               toolSlug === "remove-image-metadata" ? "Remove Metadata" :
-               toolSlug === "upscale-image" ? "Upscale Images" :
-               `Process ${stagedFiles.length} File${stagedFiles.length > 1 ? 's' : ''}`}
+                toolSlug === "images-to-pdf" ? "Convert to PDF" :
+                  toolSlug === "convert-image" ? "Convert Images" :
+                    toolSlug === "resize-image" ? "Resize Images" :
+                      toolSlug === "compress-image" ? "Compress Images" :
+                        toolSlug === "watermark-image" ? "Apply Watermark" :
+                          toolSlug === "heic-to-jpg" ? "Convert HEIC" :
+                            toolSlug === "remove-image-background" ? "Remove Background" :
+                              toolSlug === "remove-image-metadata" ? "Remove Metadata" :
+                                toolSlug === "upscale-image" ? "Upscale Images" :
+                                  `Process ${stagedFiles.length} File${stagedFiles.length > 1 ? 's' : ''}`}
             </button>
           </div>
         </div>
@@ -1733,7 +1731,7 @@ export function ToolProcessor({
           toolSlug === "page-numbers"
         )) && (
           <div>
-              <FileUploader
+            <FileUploader
               onFilesSelected={handleFileSelect}
               onError={setErrorMessage}
               accept={acceptedFileTypes}
@@ -1865,7 +1863,7 @@ export function ToolProcessor({
                   onMouseDown={(e) => {
                     // Only drag if not clicking on the text or resize handle
                     if ((e.target as HTMLElement).tagName === 'SPAN' ||
-                        (e.target as HTMLElement).classList.contains('resize-handle')) {
+                      (e.target as HTMLElement).classList.contains('resize-handle')) {
                       return;
                     }
 
@@ -1900,9 +1898,9 @@ export function ToolProcessor({
                 >
                   {watermarkType === "text" ? (
                     <div
+                      ref={watermarkPreviewRef}
                       contentEditable
                       suppressContentEditableWarning
-                      dangerouslySetInnerHTML={{ __html: watermarkText }}
                       onBlur={(e) => setWatermarkText(e.currentTarget.textContent || "")}
                       onClick={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
@@ -1985,22 +1983,20 @@ export function ToolProcessor({
               <div className="flex gap-2 p-1 bg-black/20 rounded-lg mb-6">
                 <button
                   onClick={() => setWatermarkType("text")}
-                  className={`flex-1 py-2 rounded-md font-medium transition-all ${
-                    watermarkType === "text"
+                  className={`flex-1 py-2 rounded-md font-medium transition-all ${watermarkType === "text"
                       ? "bg-primary text-black"
                       : "text-white/60 hover:text-white"
-                  }`}
+                    }`}
                 >
                   <Type className="inline w-4 h-4 mr-2" />
                   Text
                 </button>
                 <button
                   onClick={() => setWatermarkType("image")}
-                  className={`flex-1 py-2 rounded-md font-medium transition-all ${
-                    watermarkType === "image"
+                  className={`flex-1 py-2 rounded-md font-medium transition-all ${watermarkType === "image"
                       ? "bg-primary text-black"
                       : "text-white/60 hover:text-white"
-                  }`}
+                    }`}
                 >
                   <LucideImage className="inline w-4 h-4 mr-2" />
                   Image
@@ -2646,11 +2642,10 @@ export function ToolProcessor({
                           {tablePreview.tables.map((table) => (
                             <div
                               key={table.id}
-                              className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                                selectedTables.has(table.id)
+                              className={`p-3 rounded-lg border transition-all cursor-pointer ${selectedTables.has(table.id)
                                   ? 'bg-primary/10 border-primary/50'
                                   : 'bg-black/20 border-white/10 hover:border-white/20'
-                              }`}
+                                }`}
                               onClick={() => {
                                 const newSelected = new Set(selectedTables);
                                 if (newSelected.has(table.id)) {
@@ -2666,7 +2661,7 @@ export function ToolProcessor({
                                   <input
                                     type="checkbox"
                                     checked={selectedTables.has(table.id)}
-                                    onChange={() => {}}
+                                    onChange={() => { }}
                                     className="w-4 h-4 rounded border-white/20 bg-black/20 text-primary"
                                   />
                                   <div>
@@ -2680,12 +2675,11 @@ export function ToolProcessor({
                                   {table.column_types.slice(0, 4).map((type, idx) => (
                                     <span
                                       key={idx}
-                                      className={`text-xs px-1.5 py-0.5 rounded ${
-                                        type === 'numeric' ? 'bg-blue-500/20 text-blue-400' :
-                                        type === 'date' ? 'bg-purple-500/20 text-purple-400' :
-                                        type === 'text' ? 'bg-green-500/20 text-green-400' :
-                                        'bg-gray-500/20 text-gray-400'
-                                      }`}
+                                      className={`text-xs px-1.5 py-0.5 rounded ${type === 'numeric' ? 'bg-blue-500/20 text-blue-400' :
+                                          type === 'date' ? 'bg-purple-500/20 text-purple-400' :
+                                            type === 'text' ? 'bg-green-500/20 text-green-400' :
+                                              'bg-gray-500/20 text-gray-400'
+                                        }`}
                                     >
                                       {type}
                                     </span>
@@ -3276,7 +3270,7 @@ export function ToolProcessor({
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <RotateCw size={20} /> Rotate PDF
                   </h3>
-                  
+
                   {/* Preview Display */}
                   <div className="mb-6 relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[400px]">
                     {isLoadingPreview ? (
@@ -3298,50 +3292,50 @@ export function ToolProcessor({
                     )}
                   </div>
 
-                    {/* Rotate Controls */}
-                    <div className="flex items-center gap-4 justify-center">
-                      <button
-                        onClick={() => {
-                          const newAngle = (rotationAngle - 90) % 360;
-                          setRotationAngle(newAngle);
-                          fetchPreview({ angle: newAngle });
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl transition-all hover:scale-105"
-                      >
-                        <RotateCcw size={20} />
-                        <span>Rotate Left</span>
-                      </button>
-                      
-                      <div className="px-6 py-3 bg-primary/20 border border-primary/30 rounded-xl font-bold text-primary min-w-[100px] text-center">
-                        {rotationAngle}°
-                      </div>
-                      
-                      <button
-                        onClick={() => {
-                          const newAngle = (rotationAngle + 90) % 360;
-                          setRotationAngle(newAngle);
-                          fetchPreview({ angle: newAngle });
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl transition-all hover:scale-105"
-                      >
-                        <RotateCw size={20} />
-                        <span>Rotate Right</span>
-                      </button>
+                  {/* Rotate Controls */}
+                  <div className="flex items-center gap-4 justify-center">
+                    <button
+                      onClick={() => {
+                        const newAngle = (rotationAngle - 90) % 360;
+                        setRotationAngle(newAngle);
+                        fetchPreview({ angle: newAngle });
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl transition-all hover:scale-105"
+                    >
+                      <RotateCcw size={20} />
+                      <span>Rotate Left</span>
+                    </button>
+
+                    <div className="px-6 py-3 bg-primary/20 border border-primary/30 rounded-xl font-bold text-primary min-w-[100px] text-center">
+                      {rotationAngle}°
                     </div>
 
-                    <div className="mt-6 pt-6 border-t border-white/10">
-                      <div className="text-xs text-muted-foreground mb-4">
-                        {t("selected")}: <span className="text-white">{previewFile.name}</span>
-                      </div>
-                      <button
-                        onClick={() => previewFile && handleFiles([previewFile])}
-                        className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
-                      >
-                        <RotateCw size={16} /> Apply Rotation
-                      </button>
+                    <button
+                      onClick={() => {
+                        const newAngle = (rotationAngle + 90) % 360;
+                        setRotationAngle(newAngle);
+                        fetchPreview({ angle: newAngle });
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/20 rounded-xl transition-all hover:scale-105"
+                    >
+                      <RotateCw size={20} />
+                      <span>Rotate Right</span>
+                    </button>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="text-xs text-muted-foreground mb-4">
+                      {t("selected")}: <span className="text-white">{previewFile.name}</span>
                     </div>
+                    <button
+                      onClick={() => previewFile && handleFiles([previewFile])}
+                      className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                    >
+                      <RotateCw size={16} /> Apply Rotation
+                    </button>
                   </div>
                 </div>
+              </div>
             )}
 
             {/* Page Numbers PDF Options with Preview */}
@@ -3351,7 +3345,7 @@ export function ToolProcessor({
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <Hash size={20} /> Add Page Numbers
                   </h3>
-                  
+
                   {/* Preview Display with Overlay */}
                   <div className="mb-6 relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[400px]">
                     {isLoadingPreview ? (
@@ -3366,7 +3360,7 @@ export function ToolProcessor({
                           alt="PDF Preview"
                           className="max-w-full max-h-[400px] object-contain"
                         />
-                        
+
                         {/* Page Number Visual Overlay */}
                         <div className="absolute inset-0 pointer-events-none">
                           <span
@@ -3552,43 +3546,41 @@ export function ToolProcessor({
                           <button
                             key={r}
                             onClick={() => {
-                                setCropAspect(r);
-                                // Resize crop box to match aspect ratio, centered
-                                if (imgCropPreviewRef.current) {
-                                    const imgRect = imgCropPreviewRef.current.getBoundingClientRect();
-                                    let newW = imgRect.width * 0.8;
-                                    let newH = newW / r;
-                                    
-                                    if (newH > imgRect.height * 0.9) {
-                                        newH = imgRect.height * 0.8;
-                                        newW = newH * r;
-                                    }
-                                    
-                                    const newX = (imgRect.width - newW) / 2;
-                                    const newY = (imgRect.height - newH) / 2;
-                                    
-                                    setImgCropWidth(newW);
-                                    setImgCropHeight(newH);
-                                    setImgCropX(newX);
-                                    setImgCropY(newY);
+                              setCropAspect(r);
+                              // Resize crop box to match aspect ratio, centered
+                              if (imgCropPreviewRef.current) {
+                                const imgRect = imgCropPreviewRef.current.getBoundingClientRect();
+                                let newW = imgRect.width * 0.8;
+                                let newH = newW / r;
+
+                                if (newH > imgRect.height * 0.9) {
+                                  newH = imgRect.height * 0.8;
+                                  newW = newH * r;
                                 }
+
+                                const newX = (imgRect.width - newW) / 2;
+                                const newY = (imgRect.height - newH) / 2;
+
+                                setImgCropWidth(newW);
+                                setImgCropHeight(newH);
+                                setImgCropX(newX);
+                                setImgCropY(newY);
+                              }
                             }}
-                            className={`px-3 py-2 text-xs rounded-lg transition-all border ${
-                              cropAspect === r
+                            className={`px-3 py-2 text-xs rounded-lg transition-all border ${cropAspect === r
                                 ? "bg-primary/20 border-primary text-primary font-medium"
                                 : "bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
-                            }`}
+                              }`}
                           >
                             {r === 1 ? "1:1" : r === 4 / 3 ? "4:3" : "16:9"}
                           </button>
                         ))}
                         <button
                           onClick={() => setCropAspect(undefined)}
-                          className={`px-3 py-2 text-xs rounded-lg transition-all border ${
-                            cropAspect === undefined
+                          className={`px-3 py-2 text-xs rounded-lg transition-all border ${cropAspect === undefined
                               ? "bg-primary/20 border-primary text-primary font-medium"
                               : "bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
-                          }`}
+                            }`}
                         >
                           Free
                         </button>
@@ -3597,119 +3589,19 @@ export function ToolProcessor({
                   )}
 
                   <div className="relative h-96 w-full bg-black/50 rounded-xl overflow-hidden mb-6 border border-white/10 flex items-center justify-center">
-                    {toolSlug === "passport-photo" ? (
-                        <Cropper
-                        image={previewUrl}
-                        crop={crop}
-                        zoom={zoom}
-                        aspect={COUNTRIES.find((c) => c.code === passportCountry)?.aspect || 1}
-                        onCropChange={setCrop}
-                        onCropComplete={onCropComplete}
-                        onZoomChange={setZoom}
-                        />
-                    ) : (
-                        <div className="relative inline-block">
-                             <img
-                                ref={imgCropPreviewRef}
-                                src={previewUrl}
-                                alt="Image Preview"
-                                className="max-w-full max-h-[380px] object-contain select-none"
-                                draggable={false}
-                            />
-                            {/* Custom Crop Box */}
-                            {imgCropWidth > 0 && imgCropHeight > 0 && (
-                                <div
-                                    className="absolute border-2 border-primary bg-primary/20 cursor-move group"
-                                    style={{
-                                        left: `${imgCropX}px`,
-                                        top: `${imgCropY}px`,
-                                        width: `${imgCropWidth}px`,
-                                        height: `${imgCropHeight}px`,
-                                    }}
-                                    onMouseDown={(e) => {
-                                        if ((e.target as HTMLElement).classList.contains('resize-handle')) return;
-                                        e.preventDefault();
-                                        
-                                        const imgRect = imgCropPreviewRef.current!.getBoundingClientRect();
-                                        const startX = e.clientX;
-                                        const startY = e.clientY;
-                                        const startCropX = imgCropX;
-                                        const startCropY = imgCropY;
-
-                                        const onMove = (moveEvent: MouseEvent) => {
-                                            const dx = moveEvent.clientX - startX;
-                                            const dy = moveEvent.clientY - startY;
-                                            const newX = Math.max(0, Math.min(imgRect.width - imgCropWidth, startCropX + dx));
-                                            const newY = Math.max(0, Math.min(imgRect.height - imgCropHeight, startCropY + dy));
-                                            setImgCropX(newX);
-                                            setImgCropY(newY);
-                                        };
-
-                                        const onUp = () => {
-                                            window.removeEventListener("mousemove", onMove);
-                                            window.removeEventListener("mouseup", onUp);
-                                        };
-
-                                        window.addEventListener("mousemove", onMove);
-                                        window.addEventListener("mouseup", onUp);
-                                    }}
-                                >
-                                    {/* Resize Handles */}
-                                    {/* Bottom-right */}
-                                    <div
-                                        className="resize-handle absolute bottom-0 right-0 w-4 h-4 bg-primary border border-white cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                                        style={{ transform: "translate(50%, 50%)" }}
-                                        onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            
-                                            const imgRect = imgCropPreviewRef.current!.getBoundingClientRect();
-                                            const startX = e.clientX;
-                                            const startY = e.clientY;
-                                            const startWidth = imgCropWidth;
-                                            const startHeight = imgCropHeight;
-                                            const aspect = cropAspect;
-
-                                            const onMove = (moveEvent: MouseEvent) => {
-                                                const dx = moveEvent.clientX - startX;
-                                                const dy = moveEvent.clientY - startY;
-                                                
-                                                let newWidth = Math.max(50, Math.min(imgRect.width - imgCropX, startWidth + dx));
-                                                let newHeight = Math.max(50, Math.min(imgRect.height - imgCropY, startHeight + dy));
-
-                                                if (aspect) {
-                                                    // Constrain to aspect ratio
-                                                    if (newWidth / newHeight > aspect) {
-                                                        // Width is too big, adjust width based on height
-                                                        newWidth = newHeight * aspect;
-                                                    } else {
-                                                        // Height is too big, adjust height based on width
-                                                        newHeight = newWidth / aspect;
-                                                    }
-                                                }
-
-                                                setImgCropWidth(newWidth);
-                                                setImgCropHeight(newHeight);
-                                            };
-
-                                            const onUp = () => {
-                                                window.removeEventListener("mousemove", onMove);
-                                                window.removeEventListener("mouseup", onUp);
-                                            };
-
-                                            window.addEventListener("mousemove", onMove);
-                                            window.addEventListener("mouseup", onUp);
-                                        }}
-                                    />
-
-                                    {/* Info overlay */}
-                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded pointer-events-none whitespace-nowrap">
-                                        {Math.round(imgCropWidth)} × {Math.round(imgCropHeight)}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    <Cropper
+                      image={previewUrl}
+                      crop={crop}
+                      zoom={zoom}
+                      minZoom={0.5}
+                      maxZoom={3}
+                      restrictPosition={false}
+                      aspect={toolSlug === "passport-photo" ? (COUNTRIES.find((c) => c.code === passportCountry)?.aspect || 1) : cropAspect}
+                      onCropChange={setCrop}
+                      onCropComplete={onCropComplete}
+                      onZoomChange={setZoom}
+                      objectFit="contain"
+                    />
                   </div>
 
                   <div className="mb-6">
@@ -3957,21 +3849,19 @@ export function ToolProcessor({
                       <div className="flex gap-4">
                         <button
                           onClick={() => setUpscaleFactor(2)}
-                          className={`flex-1 py-3 rounded-lg border transition-all font-medium ${
-                            upscaleFactor === 2
+                          className={`flex-1 py-3 rounded-lg border transition-all font-medium ${upscaleFactor === 2
                               ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,243,255,0.2)]"
                               : "border-white/20 text-muted-foreground hover:bg-white/5 hover:border-white/40"
-                          }`}
+                            }`}
                         >
                           2x
                         </button>
                         <button
                           onClick={() => setUpscaleFactor(4)}
-                          className={`flex-1 py-3 rounded-lg border transition-all font-medium ${
-                            upscaleFactor === 4
+                          className={`flex-1 py-3 rounded-lg border transition-all font-medium ${upscaleFactor === 4
                               ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,243,255,0.2)]"
                               : "border-white/20 text-muted-foreground hover:bg-white/5 hover:border-white/40"
-                          }`}
+                            }`}
                         >
                           4x
                         </button>
@@ -4032,8 +3922,8 @@ export function ToolProcessor({
                       {stagedFiles.length > 1
                         ? `Process ${stagedFiles.length} Images`
                         : toolSlug === "convert-image"
-                        ? t("convert_now")
-                        : t("process_image")}
+                          ? t("convert_now")
+                          : t("process_image")}
                     </button>
                   </div>
                 </div>
@@ -4185,14 +4075,14 @@ export function ToolProcessor({
                     className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black px-8 py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(74,222,128,0.2)] transition-all hover:scale-105"
                   >
                     {toolSlug === "extract-images-from-pdf" ||
-                    toolSlug === "split-pdf" ? (
+                      toolSlug === "split-pdf" ? (
                       <Archive size={20} />
                     ) : (
                       <Download size={20} />
                     )}
                     {(toolSlug === "extract-images-from-pdf" ||
                       toolSlug === "split-pdf") &&
-                    !fileName?.endsWith(".PDF")
+                      !fileName?.endsWith(".PDF")
                       ? t("download_zip")
                       : t("download")}
                   </a>

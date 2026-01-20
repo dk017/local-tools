@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance, ImageFilter
@@ -12,9 +13,9 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 try:
-    from modules.security import validate_input_file
+    from modules.security import validate_input_file, is_safe_path
 except ImportError:
-    from security import validate_input_file
+    from security import validate_input_file, is_safe_path
 
 # PREVENT DECOMPRESSION BOMBS
 # 20M pixels = approx 4.5k x 4.5k image. This is a more conservative limit
@@ -71,7 +72,7 @@ def convert_images(payload):
     target_format = payload.get("target_format", "png").lower()
     processed_files = []
     errors = []
-    
+
     # Map common format aliases
     format_map = {
         'jpg': 'JPEG',
@@ -82,9 +83,9 @@ def convert_images(payload):
         'ico': 'ICO',
         'pdf': 'PDF'
     }
-    
+
     pil_format = format_map.get(target_format, target_format.upper())
-    
+
     for file_path in files:
         try:
             if not os.path.exists(file_path):
@@ -102,20 +103,26 @@ def convert_images(payload):
                         img = img.convert('RGB')
                 elif pil_format == 'ICO':
                      if img.mode == 'P': img = img.convert('RGBA')
-                
+
+                # Strip all metadata by creating a clean image
+                # This removes EXIF, ICC profiles, and other embedded data
+                data = list(img.getdata())
+                clean_img = Image.new(img.mode, img.size)
+                clean_img.putdata(data)
+
                 base, _ = os.path.splitext(file_path)
                 output_path = f"{base}.{target_format}"
-                
+
                 if output_path == file_path:
                     output_path = f"{base}_converted.{target_format}"
-                
-                img.save(output_path, format=pil_format)
+
+                clean_img.save(output_path, format=pil_format)
                 processed_files.append(output_path)
-                
+
         except Exception as e:
             logger.error(f"Error converting {file_path}: {e}")
             errors.append({"file": file_path, "error": str(e)})
-            
+
     return {"processed_files": processed_files, "errors": errors}
 
 def resize_images(payload):
@@ -213,8 +220,8 @@ def compress_images(payload):
                 # Handle rotation if needed
                 try:
                     img = ImageOps.exif_transpose(img)
-                except:
-                    pass
+                except (AttributeError, KeyError, TypeError):
+                    pass  # Image has no EXIF data or invalid EXIF
                 
                 # Convert RGBA to RGB if saving as JPEG, otherwise keep
                 input_format = img.format
@@ -290,8 +297,8 @@ def compress_images(payload):
                             if level == 0: quality = 90 # Low compression
                             elif level == 1: quality = 75 # Medium
                             elif level == 2: quality = 30 # High compression (Aggressive)
-                        except:
-                            pass
+                        except (ValueError, TypeError):
+                            pass  # Invalid level, use default quality
                     
                     if save_format == 'PNG':
                         # PNG Quantization Strategy
@@ -358,8 +365,8 @@ def create_passport_photos(payload):
                 # Handle Orientation from Exif
                 try:
                     img = ImageOps.exif_transpose(img)
-                except:
-                    pass
+                except (AttributeError, KeyError, TypeError):
+                    pass  # Image has no EXIF data or invalid EXIF
 
                 # 1. Crop if coordinates provided
                 working_img = img.convert("RGB")
@@ -453,7 +460,7 @@ def remove_metadata(payload):
 
 def watermark_images(payload):
     files = payload.get("files", [])
-    
+
     # Text Settings
     text = payload.get("text", "Watermark")
     # Opacity from frontend is 0.0-1.0, PIL needs 0-255
@@ -461,22 +468,39 @@ def watermark_images(payload):
     if opacity_float is None: opacity_float = 0.5
     else: opacity_float = float(opacity_float)
     opacity = int(opacity_float * 255)
-    
+
     text_size_percent = payload.get("size", 10) # size of text/image relative to main image height
     # We can use font_size param if provided, otherwise fallback to percentage logic
     font_size_param = payload.get("font_size")
-    
+
     color_hex = payload.get("color")
     if not color_hex: color_hex = "#FFFFFF"
 
+    # Font family setting
+    font_family = payload.get("font", "arial").lower()
+
+    # Font mapping (font name -> Windows font filename)
+    FONT_MAP = {
+        "arial": "arial.ttf",
+        "times": "times.ttf",
+        "georgia": "georgia.ttf",
+        "verdana": "verdana.ttf",
+        "trebuchet": "trebuc.ttf",
+        "impact": "impact.ttf",
+        "courier": "cour.ttf",
+        "comic": "comic.ttf",
+        "calibri": "calibri.ttf",
+        "segoe": "seguisb.ttf",
+    }
+
     # Image Settings
-    watermark_file = payload.get("watermark_file") 
+    watermark_file = payload.get("watermark_file")
     if isinstance(watermark_file, list) and len(watermark_file) > 0:
         watermark_file = watermark_file[0]
-    
+
     # Position
     position = payload.get("position", "center")
-    
+
     processed_files = []
     errors = []
 
@@ -485,10 +509,40 @@ def watermark_images(payload):
         try:
             h = h.lstrip('#')
             return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-        except:
-            return (255, 255, 255) # Fallback to white
-    
+        except (ValueError, IndexError, TypeError):
+            return (255, 255, 255)  # Fallback to white
+
     text_color_rgb = hex_to_rgb(color_hex)
+
+    # Helper to load font with fallback
+    def load_font(font_name, size):
+        font_filename = FONT_MAP.get(font_name, "arial.ttf")
+        # Cross-platform font directories
+        if os.name == "nt":
+            system_font_dir = os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts")
+        else:
+            system_font_dir = "/usr/share/fonts/truetype"
+
+        # Try direct filename first
+        try:
+            return ImageFont.truetype(font_filename, size)
+        except (OSError, IOError):
+            pass  # Font file not found directly
+
+        # Try system fonts directory
+        try:
+            return ImageFont.truetype(os.path.join(system_font_dir, font_filename), size)
+        except (OSError, IOError):
+            pass  # Font not in system directory
+
+        # Try Arial as fallback
+        try:
+            return ImageFont.truetype(os.path.join(system_font_dir, "arial.ttf"), size)
+        except (OSError, IOError):
+            pass  # Arial not available
+
+        # Last resort: default font
+        return ImageFont.load_default()
 
     for file_path in files:
         try:
@@ -511,7 +565,8 @@ def watermark_images(payload):
                             try:
                                 val = float(font_size_param)
                                 if val > 0: scale_percent = val
-                            except: pass
+                            except (ValueError, TypeError) as e:
+                                logger.debug(f"Invalid font_size_param '{font_size_param}', using default: {e}")
                         
                         target_h = int(img.height * (scale_percent / 100))
                         # Min size constraint
@@ -535,22 +590,16 @@ def watermark_images(payload):
                 else:
                     # Text Watermark
                     draw_dummy = ImageDraw.Draw(watermark_layer)
-                    
+
                     if font_size_param:
                          fontsize = int(font_size_param)
                     else:
                          fontsize = int(img.height * (text_size_percent / 100))
-                         
+
                     if fontsize < 10: fontsize = 10
-                    
-                    try:
-                        font = ImageFont.truetype("arial.ttf", fontsize)
-                    except:
-                        try:
-                            # Try generic naming for linux/mac if needed, or fallback
-                            font = ImageFont.truetype("Arial", fontsize)
-                        except:
-                            font = ImageFont.load_default()
+
+                    # Load the selected font
+                    font = load_font(font_family, fontsize)
                         
                     # Calculate text size using textbbox (Fixes AttributeError)
                     try:
@@ -564,15 +613,20 @@ def watermark_images(payload):
                     
                 # --- Calculate Position ---
                 margin = 20
-                
+
                 if position == "custom":
-                    # Custom Logic (Percent 0-1)
+                    # Custom Logic (Percent 0-1) - center watermark at the given position
                     try:
                         percent_x = float(payload.get("x", 0.5))
                         percent_y = float(payload.get("y", 0.5))
-                        draw_x = int(img.width * percent_x)
-                        draw_y = int(img.height * percent_y)
-                    except:
+                        # Calculate position and center the watermark at that point
+                        draw_x = int(img.width * percent_x) - (wm_width // 2)
+                        draw_y = int(img.height * percent_y) - (wm_height // 2)
+                        # Clamp to image bounds
+                        draw_x = max(0, min(draw_x, img.width - wm_width))
+                        draw_y = max(0, min(draw_y, img.height - wm_height))
+                    except (ValueError, TypeError):
+                        # Invalid position values, fallback to center
                         draw_x = (img.width - wm_width) // 2
                         draw_y = (img.height - wm_height) // 2
                 elif position == "top-left":
@@ -741,12 +795,12 @@ def crop_images(payload):
                 # Handle Orientation
                 try:
                     img = ImageOps.exif_transpose(img)
-                except:
-                    pass
+                except (AttributeError, KeyError, TypeError):
+                    pass  # Image has no EXIF data or invalid EXIF
 
                 # Resolve crop box
                 crop_box = payload.get("crop_box")
-                print(f"DEBUG: image_tools crop_box: {crop_box}")
+                print(f"DEBUG: image_tools crop_box: {crop_box}", file=sys.stderr)
                 current_crop = None
                 if isinstance(crop_box, dict):
                     if 'x' in crop_box or 'width' in crop_box or 'height' in crop_box:
@@ -756,7 +810,7 @@ def crop_images(payload):
                 
                 if not current_crop:
                     # No crop defined - Fallback to full image
-                    print(f"WARNING: No crop coordinates provided for {file_path}, using full image.")
+                    print(f"WARNING: No crop coordinates provided for {file_path}, using full image.", file=sys.stderr)
                     current_crop = {'x': 0, 'y': 0, 'width': img.width, 'height': img.height}
 
                 def safe_int(val, default=0):
@@ -857,8 +911,8 @@ def design_images(payload):
                                 try:
                                     fallback = os.path.join(system_font_dir, "arial.ttf")
                                     font = ImageFont.truetype(fallback, font_size)
-                                except:
-                                    # Last resort
+                                except (OSError, IOError):
+                                    # Last resort: system default font
                                     font = ImageFont.load_default()
 
                             # Create text layer
@@ -911,7 +965,8 @@ def design_images(payload):
                         elif l_type == "image":
                             # Image Layer (Watermark/Icon)
                             src = layer.get("src")
-                            if src and os.path.exists(src):
+                            # Security: Validate path before opening to prevent path traversal
+                            if src and is_safe_path(src) and os.path.exists(src):
                                 with Image.open(src).convert("RGBA") as overlay:
                                     # Size logic
                                     width = layer.get("width")
@@ -957,45 +1012,157 @@ def design_images(payload):
 
     return {"processed_files": processed_files, "errors": errors}
 
+def _check_rembg_model(model_name: str) -> dict:
+    """
+    Check if the rembg model exists locally.
+    Returns dict with 'exists', 'path', and 'size' keys.
+    """
+    import os
+
+    # Model files are stored in ~/.u2net/ directory
+    home = os.path.expanduser("~")
+    model_dir = os.path.join(home, ".u2net")
+    model_file = os.path.join(model_dir, f"{model_name}.onnx")
+
+    if os.path.exists(model_file):
+        size_mb = os.path.getsize(model_file) / (1024 * 1024)
+        return {"exists": True, "path": model_file, "size_mb": round(size_mb, 1)}
+
+    return {"exists": False, "path": model_file, "size_mb": 0}
+
+
 def remove_background(payload):
+    import traceback
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+
+    # Timeout: 5 minutes (300 seconds) to allow for model download on first use
+    REMBG_TIMEOUT_SECONDS = 300
+
     try:
         from rembg import remove, new_session
-    except ImportError:
-        return {"processed_files": [], "errors": ["rembg module not allowed or missing."]}
+    except ImportError as e:
+        logger.error(f"Failed to import rembg: {e}\n{traceback.format_exc()}")
+        return {"processed_files": [], "errors": [f"Background removal module is not available: {str(e)}"]}
 
     files = payload.get("files", [])
     model_name = payload.get("model", "u2net") # u2net (general), u2netp (lightweight), u2net_human_seg (human)
-    
+
+    # Check if this is just a model status check
+    if payload.get("check_model_only"):
+        model_info = _check_rembg_model(model_name)
+        return {"model_status": model_info}
+
     processed_files = []
     errors = []
-    
-    # Pre-initialize session
+
+    # Pre-check: Verify model exists or needs download
+    model_info = _check_rembg_model(model_name)
+    logger.info(f"Model check: {model_info}")
+
+    if not model_info["exists"]:
+        logger.info(f"Model {model_name} not found at {model_info['path']}. Will attempt to download (~170MB)...")
+        # Return early with a special status so frontend can show download UI
+        if payload.get("skip_if_no_model"):
+            return {
+                "processed_files": [],
+                "errors": [],
+                "model_required": True,
+                "model_name": model_name,
+                "message": f"AI model '{model_name}' (~170MB) needs to be downloaded. Please ensure you have an internet connection."
+            }
+
+    # Pre-initialize session (this may download the model on first use)
+    # Use timeout to prevent hanging indefinitely
     try:
-        session = new_session(model_name)
+        import sys
+        if not model_info["exists"]:
+            logger.info(f"Downloading AI model: {model_name}. This may take a few minutes...")
+            print(f"[REMBG] Downloading AI model: {model_name}...", file=sys.stderr, flush=True)
+        else:
+            logger.info(f"Loading AI model: {model_name} ({model_info['size_mb']}MB)")
+            print(f"[REMBG] Loading AI model: {model_name} ({model_info['size_mb']}MB)...", file=sys.stderr, flush=True)
+
+        print(f"[REMBG] Calling new_session({model_name}) with {REMBG_TIMEOUT_SECONDS}s timeout...", file=sys.stderr, flush=True)
+
+        # Execute session creation with timeout
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(new_session, model_name)
+            try:
+                session = future.result(timeout=REMBG_TIMEOUT_SECONDS)
+            except FuturesTimeoutError:
+                logger.error(f"Timeout ({REMBG_TIMEOUT_SECONDS}s) loading rembg model {model_name}")
+                return {
+                    "processed_files": [],
+                    "errors": [f"Timeout loading AI model after {REMBG_TIMEOUT_SECONDS} seconds. The model download may be slow - please try again."],
+                    "error_type": "timeout"
+                }
+
+        print(f"[REMBG] Session created successfully!", file=sys.stderr, flush=True)
+        logger.info(f"Model {model_name} loaded successfully")
     except Exception as e:
-        logger.error(f"Failed to load rembg model {model_name}: {e}")
-        return {"processed_files": [], "errors": [f"Model load error: {str(e)}. Internet required for first run."]}
+        full_error = traceback.format_exc()
+        logger.error(f"Failed to load rembg model {model_name}: {e}\n{full_error}")
+        error_msg = str(e)
+
+        # Check for common error patterns
+        error_lower = error_msg.lower()
+        if any(word in error_lower for word in ["connection", "network", "download", "timeout", "urlopen", "ssl", "certificate"]):
+            return {
+                "processed_files": [],
+                "errors": [f"Failed to download AI model. Please check your internet connection and try again. The model (~170MB) is required for first-time use."],
+                "error_type": "network"
+            }
+        elif "permission" in error_lower or "access" in error_lower:
+            return {
+                "processed_files": [],
+                "errors": [f"Permission denied when accessing model files. Try running as administrator or check folder permissions for: {model_info['path']}"],
+                "error_type": "permission"
+            }
+        elif "memory" in error_lower or "onnx" in error_lower:
+            return {
+                "processed_files": [],
+                "errors": [f"Failed to initialize AI model. This may be due to insufficient memory or ONNX runtime issues. Details: {error_msg}"],
+                "error_type": "runtime"
+            }
+
+        return {"processed_files": [], "errors": [f"Failed to load AI model: {error_msg}"], "error_type": "unknown"}
 
     for file_path in files:
         try:
+            logger.info(f"Processing file: {file_path}")
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"File not found: {file_path}")
-            
+
+            logger.info(f"Reading file: {file_path}")
             with open(file_path, 'rb') as i:
                 input_data = i.read()
-                # Run rembg
-                output_data = remove(input_data, session=session)
-                
+                logger.info(f"File read, size: {len(input_data)} bytes")
+
+            # Run rembg with timeout
+            logger.info(f"Running background removal with {REMBG_TIMEOUT_SECONDS}s timeout...")
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(remove, input_data, session=session)
+                try:
+                    output_data = future.result(timeout=REMBG_TIMEOUT_SECONDS)
+                except FuturesTimeoutError:
+                    logger.error(f"Timeout ({REMBG_TIMEOUT_SECONDS}s) processing {file_path}")
+                    errors.append({"file": file_path, "error": f"Processing timed out after {REMBG_TIMEOUT_SECONDS} seconds. Try a smaller image."})
+                    continue
+            logger.info(f"Background removed, output size: {len(output_data)} bytes")
+
             base, ext = os.path.splitext(file_path)
-            output_path = f"{base}_nobg.png" # Always PNG for transparency
-            
+            output_path = f"{base}_nobg.png"  # Always PNG for transparency
+
+            logger.info(f"Writing output to: {output_path}")
             with open(output_path, 'wb') as o:
                 o.write(output_data)
-                
+
             processed_files.append(output_path)
-            
+            logger.info(f"Successfully processed: {file_path}")
+
         except Exception as e:
-            logger.error(f"Error removing bg for {file_path}: {e}")
+            full_error = traceback.format_exc()
+            logger.error(f"Error removing bg for {file_path}: {e}\n{full_error}")
             errors.append({"file": file_path, "error": str(e)})
 
     return {"processed_files": processed_files, "errors": errors}

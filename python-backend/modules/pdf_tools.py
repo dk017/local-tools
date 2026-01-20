@@ -2,6 +2,7 @@
 import logging
 import os
 import io
+import sys
 import platform
 import base64
 import fitz  # PyMuPDF
@@ -10,6 +11,14 @@ import pdfplumber
 import pandas as pd
 import pikepdf
 from PIL import Image, ImageChops, ImageOps
+
+# Try to import camelot for enhanced table detection
+try:
+    import camelot
+    CAMELOT_AVAILABLE = True
+except ImportError:
+    CAMELOT_AVAILABLE = False
+    logging.getLogger(__name__).info("Camelot not available - using pdfplumber only for table extraction")
 from pyhanko.sign import signers, fields
 try:
     from modules.security import validate_input_file
@@ -37,7 +46,7 @@ try:
 except ImportError:
     # Fallback if debug_utils not available
     def debug_log(msg):
-        print(f"[DEBUG] {msg}", flush=True)
+        print(f"[DEBUG] {msg}", file=sys.stderr, flush=True)
 
 
 logger = logging.getLogger(__name__)
@@ -88,6 +97,8 @@ def handle_pdf_action(action, payload):
         return extract_images_from_pdf(payload)
     elif action == "extract_tables":
         return extract_tables(payload)
+    elif action == "preview_tables":
+        return preview_tables(payload)
     elif action == "grayscale":
         return grayscale_pdf(payload)
     elif action == "repair":
@@ -132,6 +143,16 @@ def handle_pdf_action(action, payload):
         return extract_form_data(payload)
     elif action == "preview":
         return preview_pdf(payload)
+    elif action == "csv_to_pdf":
+        return csv_to_pdf(payload)
+    elif action == "txt_to_pdf":
+        return txt_to_pdf(payload)
+    elif action == "tiff_to_pdf":
+        return tiff_to_pdf(payload)
+    elif action == "rtf_to_pdf":
+        return rtf_to_pdf(payload)
+    elif action == "xml_to_pdf":
+        return xml_to_pdf(payload)
     else:
         raise ValueError(f"Unknown PDF action: {action}")
 
@@ -457,24 +478,70 @@ def split_pdf(payload):
             doc.close()
         return {"processed_files": [], "errors": [{"file": file_path, "error": str(e)}]}
 
+def get_pdf_compression_estimates(file_path):
+    """
+    Analyze PDF to estimate potential file size after compression for different levels.
+    """
+    try:
+        original_size = os.path.getsize(file_path)
+        doc = fitz.open(file_path)
+        
+        # Calculate image contribution
+        image_bytes = 0
+        for page in doc:
+            for img in page.get_images(full=True):
+                xref = img[0]
+                try:
+                    base_image = doc.extract_image(xref)
+                    image_bytes += len(base_image["image"])
+                except:
+                    pass
+        
+        doc.close()
+        
+        # Heuristic estimation factors
+        # Level 0: 5% reduction (metadata, unused objects)
+        # Level 1: 15% reduction (standard stream compression)
+        # Level 2: 40% reduction (80% image quality)
+        # Level 3: 70% reduction (60% image quality + downsampling)
+        
+        other_bytes = max(0, original_size - image_bytes)
+        
+        estimates = {
+            "original": original_size,
+            "levels": [
+                int(other_bytes * 0.95 + image_bytes * 0.90),  # Level 0
+                int(other_bytes * 0.90 + image_bytes * 0.70),  # Level 1
+                int(other_bytes * 0.85 + image_bytes * 0.40),  # Level 2
+                int(other_bytes * 0.80 + image_bytes * 0.15)   # Level 3
+            ]
+        }
+        return estimates
+    except Exception as e:
+        logger.error(f"Error estimating compression: {e}")
+        return None
+
 def compress_pdf(payload):
     """
     Compress PDF file to reduce size with configurable compression levels.
-
-    Compression Levels:
-    - 0 (Low): Minimal compression, highest quality
-    - 1 (Medium): Balanced compression and quality (default)
-    - 2 (High): Maximum compression, smaller file size
-    - 3 (Extreme): Aggressive compression with image downsampling
     """
     files = payload.get("files", [])
+    estimate_only = payload.get("estimate_only", False)
+
+    if estimate_only and files:
+        results = []
+        for f in files:
+            est = get_pdf_compression_estimates(f)
+            if est:
+                results.append({"file": f, "estimates": est})
+        return {"estimates": results}
 
     # Validate and clamp compression level to valid range 0-3
     try:
         level = int(payload.get("level", 1))
-        level = max(0, min(3, level))  # Clamp to 0-3
+        level = max(0, min(3, level))
     except (ValueError, TypeError):
-        level = 1  # Default to medium compression
+        level = 1
 
     processed_files = []
     errors = []
@@ -484,151 +551,83 @@ def compress_pdf(payload):
             errors.append({"file": file_path, "error": f"File not found: {file_path}"})
             continue
 
-        doc = None
         try:
             base, ext = os.path.splitext(file_path)
             output_path = f"{base}_compressed{ext}"
-
-            # Level 0: Minimal compression (just remove unused objects)
-            if level == 0:
-                with pikepdf.open(file_path) as pdf:
-                    pdf.save(output_path, compress_streams=True)
-
-            # Level 1: Balanced compression (default)
-            elif level == 1:
-                with pikepdf.open(file_path) as pdf:
-                    pdf.save(
-                        output_path,
-                        compress_streams=True,
-                        object_stream_mode=pikepdf.ObjectStreamMode.generate
-                    )
-
-            # Level 2: High compression (optimize images + object streams)
-            elif level == 2:
-                doc = fitz.open(file_path)
-
-                # Process each page to compress images
-                for page_num in range(len(doc)):
-                    page = doc[page_num]
-                    image_list = page.get_images(full=True)
-
-                    for img_index, img_info in enumerate(image_list):
-                        xref = img_info[0]
+            
+            # Using PyMuPDF's built-in optimization for better reliability
+            doc = fitz.open(file_path)
+            
+            # Apply image compression based on level
+            if level >= 2:
+                # Levels 2 and 3 involve image re-compression
+                quality = 80 if level == 2 else 60
+                optimized_xrefs = set()
+                
+                for page in doc:
+                    for img in page.get_images(full=True):
+                        xref = img[0]
+                        if xref in optimized_xrefs:
+                            continue
+                            
                         try:
-                            # Extract and recompress image
-                            base_image = doc.extract_image(xref)
-                            image_bytes = base_image["image"]
+                            # Extract and re-compress
+                            pix = fitz.Pixmap(doc, xref)
+                            
+                            # Convert to RGB if it's CMYK or has alpha (for JPEG compression)
+                            if pix.n - pix.alpha > 3 or pix.alpha:
+                                pix2 = fitz.Pixmap(fitz.csRGB, pix)
+                                pix = pix2
 
-                            # Compress using PIL with quality 85
-                            img = Image.open(io.BytesIO(image_bytes))
+                            # Use PIL for reliable JPEG compression with quality control
+                            img_obj = Image.frombytes("RGB" if pix.n >= 3 else "L", [pix.width, pix.height], pix.samples)
                             img_bytes_io = io.BytesIO()
-
-                            # Save with compression
-                            if img.mode == "RGBA":
-                                img.save(img_bytes_io, format="PNG", optimize=True, compress_level=9)
-                            else:
-                                img.save(img_bytes_io, format="JPEG", quality=85, optimize=True)
-
-                            compressed_bytes = img_bytes_io.getvalue()
-
+                            img_obj.save(img_bytes_io, format="JPEG", quality=quality, optimize=True)
+                            img_data = img_bytes_io.getvalue()
+                            
                             # Only replace if compressed version is smaller
-                            if len(compressed_bytes) < len(image_bytes):
-                                rects = page.get_image_rects(xref)
-                                if rects:
-                                    page.delete_image(xref)
-                                    for rect in rects:
-                                        page.insert_image(rect, stream=compressed_bytes)
+                            original_image = doc.extract_image(xref)
+                            if original_image and len(img_data) < len(original_image["image"]):
+                                # Use page.replace_image for reliable dictionary and filter updates
+                                page.replace_image(xref, stream=img_data)
+                                optimized_xrefs.add(xref)
                         except Exception as e:
-                            logger.warning(f"Could not compress image {xref}: {e}")
+                            logger.warning(f"Could not optimize image {xref}: {e}")
 
-                # Save with garbage collection
-                doc.save(output_path, garbage=4, deflate=True, clean=True)
-                doc.close()
+            # Save with appropriate flags
+            # garbage=4: Remove unused objects + deduplicate identical objects
+            # deflate=True: Compress streams
+            # clean=True: Sanitize the structure
+            
+            save_args = {
+                "garbage": 4,
+                "deflate": True,
+                "clean": True
+            }
+            
+            # Use extreme linearize/compression for Level 3
+            if level == 3:
+                save_args["linear"] = True
+            
+            doc.save(output_path, **save_args)
+            doc.close()
 
-                # Further compress with pikepdf
+            # Final pass with pikepdf for object stream optimization (Levels 1+)
+            if level >= 1:
                 with pikepdf.open(output_path, allow_overwriting_input=True) as pdf:
                     pdf.save(
                         output_path,
                         compress_streams=True,
                         object_stream_mode=pikepdf.ObjectStreamMode.generate
-                    )
-
-            # Level 3: Extreme compression (downsample images + max compression)
-            elif level == 3:
-                doc = fitz.open(file_path)
-
-                # Process each page to aggressively compress images
-                for page_num in range(len(doc)):
-                    page = doc[page_num]
-                    image_list = page.get_images(full=True)
-
-                    for img_index, img_info in enumerate(image_list):
-                        xref = img_info[0]
-                        try:
-                            # Extract image
-                            base_image = doc.extract_image(xref)
-                            image_bytes = base_image["image"]
-
-                            # Aggressively compress and downsample
-                            img = Image.open(io.BytesIO(image_bytes))
-
-                            # Downsample large images
-                            max_dimension = 1500
-                            if max(img.width, img.height) > max_dimension:
-                                ratio = max_dimension / max(img.width, img.height)
-                                new_size = (int(img.width * ratio), int(img.height * ratio))
-                                img = img.resize(new_size, Image.Resampling.LANCZOS)
-
-                            img_bytes_io = io.BytesIO()
-
-                            # Save with aggressive compression
-                            if img.mode == "RGBA":
-                                img.save(img_bytes_io, format="PNG", optimize=True, compress_level=9)
-                            else:
-                                # Convert to RGB if needed
-                                if img.mode != "RGB":
-                                    img = img.convert("RGB")
-                                img.save(img_bytes_io, format="JPEG", quality=70, optimize=True)
-
-                            compressed_bytes = img_bytes_io.getvalue()
-
-                            # Replace image
-                            rects = page.get_image_rects(xref)
-                            if rects:
-                                page.delete_image(xref)
-                                for rect in rects:
-                                    page.insert_image(rect, stream=compressed_bytes)
-                        except Exception as e:
-                            logger.warning(f"Could not compress image {xref}: {e}")
-
-                # Save with maximum garbage collection
-                doc.save(output_path, garbage=4, deflate=True, clean=True)
-                doc.close()
-
-                # Final pass with pikepdf
-                with pikepdf.open(output_path, allow_overwriting_input=True) as pdf:
-                    pdf.save(
-                        output_path,
-                        compress_streams=True,
-                        object_stream_mode=pikepdf.ObjectStreamMode.generate,
-                        recompress_flate=True
                     )
 
             if os.path.exists(output_path):
-                # Check compression ratio
-                original_size = os.path.getsize(file_path)
-                compressed_size = os.path.getsize(output_path)
-                ratio = ((original_size - compressed_size) / original_size) * 100
-
-                logger.info(f"Compressed {file_path}: {original_size} -> {compressed_size} bytes ({ratio:.1f}% reduction)")
                 processed_files.append(output_path)
             else:
                 errors.append({"file": file_path, "error": "Compression failed: output file not created"})
 
         except Exception as e:
             logger.error(f"Error compressing PDF {file_path}: {e}", exc_info=True)
-            if doc:
-                doc.close()
             errors.append({"file": file_path, "error": f"Compression failed: {str(e)}"})
 
     return {"processed_files": processed_files, "errors": errors}
@@ -770,10 +769,9 @@ def watermark_pdf(payload):
                 if watermark_type == "text":
                     # Text watermark
                     try:
-                        # Parse color - convert to RGBA with opacity
-                        # Support both color names and hex colors
+                        # Parse color - support both color names and hex colors
                         if color.startswith("#"):
-                            # Hex color (e.g., "#ff0000")
+                            # Hex color (e.g., "#ff0000" or "#ec0909")
                             hex_color = color.lstrip("#")
                             if len(hex_color) == 6:
                                 r = int(hex_color[0:2], 16) / 255.0
@@ -791,15 +789,14 @@ def watermark_pdf(payload):
                         else:
                             base_color = (0.5, 0.5, 0.5)
 
-                        # Apply opacity to color (convert RGB to RGBA)
-                        fill_color = base_color + (opacity,)
-
                         # Calculate position from percentages
                         point = fitz.Point(rect.width * x_percent, rect.height * y_percent)
 
-                        # Insert text with RGBA color (includes opacity)
-                        page.insert_text(point, text, fontsize=font_size, color=fill_color,
-                                       render_mode=0)  # render_mode=0 for fill
+                        # Use Shape for text with opacity support
+                        shape = page.new_shape()
+                        shape.insert_text(point, text, fontsize=font_size, color=base_color)
+                        shape.finish(fill_opacity=opacity)
+                        shape.commit(overlay=True)
                     except Exception as e:
                         errors.append({"file": file_path, "error": f"bad rotate value" if "rotate" in str(e).lower() else str(e)})
                         doc.close()
@@ -946,6 +943,15 @@ def pdf_to_word(payload):
 def pdf_to_images(payload):
     """Convert PDF pages to images."""
     files = payload.get("files", [])
+    output_format = payload.get("output_format", "png").lower()
+
+    # Validate format - support jpg/jpeg and png
+    if output_format in ["jpg", "jpeg"]:
+        output_format = "jpg"
+        extension = ".jpg"
+    else:
+        output_format = "png"
+        extension = ".png"
 
     processed_files = []
     errors = []
@@ -968,8 +974,21 @@ def pdf_to_images(payload):
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 pix = page.get_pixmap(dpi=300)
-                output_path = f"{base}_page_{page_num + 1}.png"
-                pix.save(output_path)
+                output_path = f"{base}_page_{page_num + 1}{extension}"
+
+                if output_format == "jpg":
+                    # For JPG, we need to convert through PIL for proper JPEG encoding
+                    from PIL import Image as PILImage
+                    import io
+                    img_data = pix.tobytes("ppm")
+                    pil_img = PILImage.open(io.BytesIO(img_data))
+                    # Convert to RGB if necessary (remove alpha channel for JPG)
+                    if pil_img.mode in ("RGBA", "LA", "P"):
+                        pil_img = pil_img.convert("RGB")
+                    pil_img.save(output_path, "JPEG", quality=95)
+                else:
+                    pix.save(output_path)
+
                 pix = None  # Free memory
                 if os.path.exists(output_path):
                     processed_files.append(output_path)
@@ -1076,7 +1095,7 @@ def extract_images_from_pdf(payload):
 
         doc = None
         try:
-            print(f"[EXTRACT_IMAGES] Starting extraction for {os.path.basename(file_path)}", flush=True)
+            print(f"[EXTRACT_IMAGES] Starting extraction for {os.path.basename(file_path)}", file=sys.stderr, flush=True)
 
             base, _ = os.path.splitext(file_path)
             images_dir = f"{base}_images"
@@ -1095,12 +1114,12 @@ def extract_images_from_pdf(payload):
 
                     # Skip if we've already extracted this image (duplicate detection)
                     if xref in extracted_xrefs:
-                        print(f"[EXTRACT_IMAGES] Skipping duplicate image xref={xref} on page {page_num + 1}", flush=True)
+                        print(f"[EXTRACT_IMAGES] Skipping duplicate image xref={xref} on page {page_num + 1}", file=sys.stderr, flush=True)
                         continue
 
                     # Check image count limit
                     if img_count >= MAX_IMAGES_PER_PDF:
-                        print(f"[EXTRACT_IMAGES] Reached maximum image limit ({MAX_IMAGES_PER_PDF})", flush=True)
+                        print(f"[EXTRACT_IMAGES] Reached maximum image limit ({MAX_IMAGES_PER_PDF})", file=sys.stderr, flush=True)
                         errors.append({
                             "file": file_path,
                             "error": f"PDF contains more than {MAX_IMAGES_PER_PDF} images. Only first {MAX_IMAGES_PER_PDF} extracted."
@@ -1115,7 +1134,7 @@ def extract_images_from_pdf(payload):
                         # Check image size
                         image_size_mb = len(image_bytes) / (1024 * 1024)
                         if image_size_mb > MAX_IMAGE_SIZE_MB:
-                            print(f"[EXTRACT_IMAGES] Skipping oversized image ({image_size_mb:.1f}MB)", flush=True)
+                            print(f"[EXTRACT_IMAGES] Skipping oversized image ({image_size_mb:.1f}MB)", file=sys.stderr, flush=True)
                             continue
 
                         img_count += 1
@@ -1127,13 +1146,13 @@ def extract_images_from_pdf(payload):
                         processed_files.append(output_path)
 
                     except Exception as img_err:
-                        print(f"[EXTRACT_IMAGES] Failed to extract image xref={xref}: {img_err}", flush=True)
+                        print(f"[EXTRACT_IMAGES] Failed to extract image xref={xref}: {img_err}", file=sys.stderr, flush=True)
                         continue
 
             if doc:
                 doc.close()
 
-            print(f"[EXTRACT_IMAGES] Extracted {img_count} unique images from {os.path.basename(file_path)}", flush=True)
+            print(f"[EXTRACT_IMAGES] Extracted {img_count} unique images from {os.path.basename(file_path)}", file=sys.stderr, flush=True)
 
             # Handle case where PDF has no images
             if img_count == 0:
@@ -1149,6 +1168,153 @@ def extract_images_from_pdf(payload):
             errors.append({"file": file_path, "error": f"Failed to process PDF: {str(e)}"})
 
     return {"processed_files": processed_files, "errors": errors}
+
+
+def _is_valid_table(table_data, min_columns=2, min_rows=2, require_structure=True, detection_mode="balanced"):
+    """
+    Validate if detected table data represents a real table vs misdetected text.
+
+    This function helps filter out false positives from text-based table detection
+    which can incorrectly interpret regular paragraph text as tables.
+
+    Args:
+        table_data: Table data (list of lists)
+        min_columns: Minimum columns required
+        min_rows: Minimum rows required
+        require_structure: If True, apply stricter validation for table structure
+        detection_mode: "strict", "balanced", or "aggressive"
+            - strict: Original thresholds, fewer false positives but may miss tables
+            - balanced: Default, good for most documents
+            - aggressive: Relaxed thresholds, catches more tables including forms
+
+    Returns:
+        tuple: (is_valid: bool, reason: str)
+    """
+    # Configure thresholds based on detection mode
+    if detection_mode == "aggressive":
+        # Relaxed thresholds for form-style documents and medical/technical reports
+        inconsistent_threshold = 0.5  # Allow 50% inconsistent rows
+        split_word_threshold = 0.5    # Allow 50% split-word patterns (raised from 0.35)
+        sparse_row_threshold = 0.25   # Only 25% need 2+ values (relaxed from 0.3)
+        empty_cell_threshold = 0.88   # Allow up to 88% empty cells (raised from 0.85)
+        min_non_empty = 2             # Minimum 2 non-empty cells
+    elif detection_mode == "strict":
+        # Original strict thresholds
+        inconsistent_threshold = 0.3
+        split_word_threshold = 0.2
+        sparse_row_threshold = 0.5
+        empty_cell_threshold = 0.6
+        min_non_empty = 3
+    else:  # balanced (default)
+        inconsistent_threshold = 0.4  # Slightly relaxed from 0.3
+        split_word_threshold = 0.25   # Slightly relaxed from 0.2
+        sparse_row_threshold = 0.4    # Slightly relaxed from 0.5
+        empty_cell_threshold = 0.75   # Relaxed from 0.6 for forms
+        min_non_empty = 2             # Reduced from 3
+
+    if not table_data or len(table_data) < min_rows:
+        return False, f"Too few rows ({len(table_data) if table_data else 0})"
+
+    if not table_data[0] or len(table_data[0]) < min_columns:
+        return False, f"Too few columns ({len(table_data[0]) if table_data and table_data[0] else 0})"
+
+    col_count = len(table_data[0])
+
+    # Check 1: Consistent column count across rows
+    inconsistent_rows = sum(1 for row in table_data if len(row) != col_count)
+    if inconsistent_rows > len(table_data) * inconsistent_threshold:
+        return False, f"Inconsistent column count ({inconsistent_rows}/{len(table_data)} rows)"
+
+    # Check 2: Look for signs of mid-word splits (indicates text misdetection)
+    # Real tables shouldn't have cells that look like split words
+    # BUT: Be careful not to reject medical/technical tables with legitimate lowercase text
+    split_word_indicators = 0
+    total_cells = 0
+
+    for row in table_data[:10]:  # Sample first 10 rows
+        for i, cell in enumerate(row):
+            if not cell:
+                continue
+            cell_str = str(cell).strip()
+            total_cells += 1
+
+            # Skip cells that are clearly legitimate table content:
+            # - Contains numbers (likely values, measurements, dates)
+            # - Contains units (mg, ml, %, etc.)
+            # - Contains slashes (dates, fractions, ranges like "Cholesterol/HDL")
+            # - Contains parentheses (units, references)
+            # - Contains colons (time, ratios)
+            # - Is a common table value pattern
+            if len(cell_str) > 0:
+                # Skip if contains numbers, slashes, parentheses, colons - likely real data
+                if any(c.isdigit() for c in cell_str):
+                    continue
+                if '/' in cell_str or '(' in cell_str or ':' in cell_str:
+                    continue
+                # Skip if looks like a unit (short text with common unit patterns)
+                if len(cell_str) <= 10 and any(u in cell_str.lower() for u in ['mg', 'ml', 'dl', 'ul', '%', 'g', 'l', 'iu', 'mmol', 'umol', 'ng', 'pg', 'fl', 'cells']):
+                    continue
+                # Skip if it's a common status/result word
+                if cell_str.lower() in ['normal', 'high', 'low', 'positive', 'negative', 'reactive', 'non-reactive', 'absent', 'present', 'nil', 'trace', 'male', 'female', 'yes', 'no']:
+                    continue
+
+                # Check for signs of mid-word split:
+                # - Cell is very short (1-3 chars) single lowercase fragment
+                # - Starts with lowercase AND is a short fragment without spaces
+                if cell_str[0].islower() and len(cell_str) < 8 and ' ' not in cell_str and not cell_str[0].isdigit():
+                    # Only count if it really looks like a word fragment (no special chars)
+                    if cell_str.isalpha():
+                        split_word_indicators += 1
+
+                # Cell ends abruptly and next cell continues the word
+                if (len(cell_str) > 3 and
+                    cell_str[-1].islower() and
+                    cell_str.isalpha() and  # Only pure alpha strings
+                    i < len(row) - 1 and
+                    row[i+1] and
+                    str(row[i+1]).strip() and
+                    len(str(row[i+1]).strip()) > 0 and
+                    str(row[i+1]).strip()[0].islower() and
+                    str(row[i+1]).strip().isalpha()):  # Next cell is also pure alpha
+                    split_word_indicators += 1
+
+    # If too many cells show split-word patterns, likely misdetected
+    # Use higher threshold since we're now more selective about what counts
+    effective_threshold = split_word_threshold * 1.5 if detection_mode == "aggressive" else split_word_threshold
+    if total_cells > 0 and split_word_indicators / total_cells > effective_threshold:
+        return False, f"Appears to be misdetected text (split words: {split_word_indicators}/{total_cells})"
+
+    # Check 3: Look for proper table structure
+    if require_structure:
+        # Real tables usually have:
+        # - Multiple non-empty cells per row
+        # - Some consistency in cell content length
+
+        rows_with_multiple_values = 0
+        for row in table_data:
+            non_empty_in_row = sum(1 for cell in row if cell and str(cell).strip())
+            if non_empty_in_row >= 2:
+                rows_with_multiple_values += 1
+
+        # Check against threshold
+        if rows_with_multiple_values < len(table_data) * sparse_row_threshold:
+            return False, f"Too many sparse rows ({rows_with_multiple_values}/{len(table_data)} have 2+ values)"
+
+    # Check 4: Empty cell ratio
+    total_cells = sum(len(row) for row in table_data)
+    empty_cells = sum(1 for row in table_data for cell in row if not cell or not str(cell).strip())
+    empty_ratio = empty_cells / total_cells if total_cells > 0 else 1
+
+    if empty_ratio > empty_cell_threshold:
+        return False, f"Too many empty cells ({empty_ratio:.0%})"
+
+    # Check 5: Minimum non-empty cells (quick quality check)
+    non_empty_count = total_cells - empty_cells
+    if non_empty_count < min_non_empty:
+        return False, f"Too few non-empty cells ({non_empty_count})"
+
+    return True, "Valid table"
+
 
 def _detect_header_row(table_data):
     """
@@ -1237,13 +1403,196 @@ def _detect_header_row(table_data):
     # Better to skip a header than to include it as data
     return True
 
+def _generate_table_fingerprint(table_data):
+    """
+    Generate a fingerprint for a table based on its structure and content patterns.
+
+    The fingerprint captures:
+    - Column count
+    - Header content (normalized)
+    - Data type patterns per column (numeric, text, date, mixed)
+    - Column width patterns (approximate character counts)
+
+    Args:
+        table_data: Table data (list of lists)
+
+    Returns:
+        dict: Fingerprint with structural and content information
+    """
+    if not table_data or len(table_data) == 0:
+        return None
+
+    col_count = len(table_data[0]) if table_data[0] else 0
+    if col_count == 0:
+        return None
+
+    has_header = _detect_header_row(table_data)
+
+    # Extract header if present
+    header_normalized = []
+    if has_header and len(table_data) > 0:
+        header_normalized = [str(cell).strip().lower() if cell else "" for cell in table_data[0]]
+
+    # Analyze data type patterns per column
+    data_rows = table_data[1:] if has_header else table_data
+    column_types = []
+    column_widths = []
+
+    for col_idx in range(col_count):
+        numeric_count = 0
+        text_count = 0
+        date_count = 0
+        empty_count = 0
+        total_width = 0
+
+        for row in data_rows[:10]:  # Sample first 10 data rows
+            if col_idx < len(row):
+                cell = row[col_idx]
+                cell_str = str(cell).strip() if cell else ""
+                total_width += len(cell_str)
+
+                if not cell_str:
+                    empty_count += 1
+                else:
+                    # Check if numeric
+                    cleaned = cell_str.replace(',', '').replace('$', '').replace('%', '').replace('€', '').replace('-', '')
+                    try:
+                        float(cleaned)
+                        numeric_count += 1
+                        continue
+                    except ValueError:
+                        pass
+
+                    # Check if date-like
+                    import re
+                    if re.match(r'^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}$', cell_str) or \
+                       re.match(r'^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)', cell_str.lower()):
+                        date_count += 1
+                        continue
+
+                    text_count += 1
+
+        # Determine dominant type
+        total = max(1, numeric_count + text_count + date_count)
+        if numeric_count / total > 0.6:
+            col_type = "numeric"
+        elif date_count / total > 0.4:
+            col_type = "date"
+        elif text_count / total > 0.6:
+            col_type = "text"
+        else:
+            col_type = "mixed"
+
+        column_types.append(col_type)
+        avg_width = total_width // max(1, len(data_rows[:10]))
+        column_widths.append(avg_width)
+
+    return {
+        "col_count": col_count,
+        "has_header": has_header,
+        "header": header_normalized,
+        "column_types": column_types,
+        "column_widths": column_widths,
+        "row_count": len(table_data)
+    }
+
+
+def _fingerprints_match(fp1, fp2, threshold=0.75):
+    """
+    Compare two table fingerprints to determine if they represent the same table type.
+
+    Args:
+        fp1: First fingerprint
+        fp2: Second fingerprint
+        threshold: Minimum similarity score (0.0 to 1.0)
+
+    Returns:
+        tuple: (bool: match, float: similarity_score, str: reason)
+    """
+    if not fp1 or not fp2:
+        return False, 0.0, "Missing fingerprint"
+
+    col1, col2 = fp1["col_count"], fp2["col_count"]
+
+    # Allow column count tolerance: exact match, or within 40% for tables with 3+ columns
+    # This handles cases where PDF extraction produces different column counts for the same table
+    # (e.g., one extraction method misses a column, or splits/merges columns)
+    if col1 != col2:
+        min_cols = min(col1, col2)
+        max_cols = max(col1, col2)
+        col_diff_ratio = (max_cols - min_cols) / max_cols if max_cols > 0 else 1
+
+        # Allow up to 40% difference for tables with 3+ columns (more lenient for extraction differences)
+        # For very small tables (1-2 cols), require exact match
+        if min_cols >= 3 and col_diff_ratio <= 0.4:
+            # Columns are close enough - use smaller count for comparison
+            col_count = min_cols
+            print(f"[MERGE] Column count close enough ({col1} vs {col2}, diff={col_diff_ratio:.0%}), using {col_count} for comparison", file=sys.stderr, flush=True)
+        elif min_cols >= 1 and col_diff_ratio <= 0.5:
+            # For 1-2 column tables, allow up to 50% difference (1 vs 2, 2 vs 3, etc.)
+            col_count = min_cols
+            print(f"[MERGE] Column count close enough ({col1} vs {col2}, diff={col_diff_ratio:.0%}), using {col_count} for comparison", file=sys.stderr, flush=True)
+        else:
+            return False, 0.0, f"Column count mismatch ({col1} vs {col2}, diff={col_diff_ratio:.0%})"
+    else:
+        col_count = col1
+    score = 0.0
+    max_score = 0.0
+
+    # 1. Column type similarity (weight: 50%) - MOST IMPORTANT for merging
+    # Tables that span pages will have same data types even if headers differ
+    max_score += 0.5
+    type_matches = sum(1 for t1, t2 in zip(fp1["column_types"][:col_count], fp2["column_types"][:col_count]) if t1 == t2)
+    type_score = type_matches / col_count if col_count > 0 else 0
+    score += 0.5 * type_score
+
+    # 2. Header similarity (weight: 30%)
+    max_score += 0.3
+    header_score = 0
+    if fp1["has_header"] and fp2["has_header"]:
+        header_matches = sum(1 for h1, h2 in zip(fp1["header"][:col_count], fp2["header"][:col_count])
+                           if h1 and h2 and (h1 == h2 or h1 in h2 or h2 in h1))
+        header_score = header_matches / col_count if col_count > 0 else 0
+        score += 0.3 * header_score
+    elif fp1["has_header"] and not fp2["has_header"]:
+        # Table 2 is likely a continuation (no header) - this is a GOOD sign for merging
+        score += 0.3  # Full credit - continuations typically don't repeat headers
+        header_score = 1.0
+    elif not fp1["has_header"] and not fp2["has_header"]:
+        # Both headerless - give full credit
+        score += 0.3
+        header_score = 1.0
+
+    # 3. Column width similarity (weight: 20%)
+    max_score += 0.2
+    width_diffs = []
+    for w1, w2 in zip(fp1["column_widths"][:col_count], fp2["column_widths"][:col_count]):
+        max_w = max(w1, w2, 1)
+        diff = abs(w1 - w2) / max_w
+        width_diffs.append(1 - min(diff, 1))
+    width_score = sum(width_diffs) / len(width_diffs) if width_diffs else 0
+    score += 0.2 * width_score
+
+    # Normalize score
+    final_score = score / max_score if max_score > 0 else 0
+
+    reason = f"Types: {type_score:.0%}, Header: {header_score:.0%}, Widths: {width_score:.0%}"
+
+    # Use a small epsilon for floating point comparison to avoid precision issues
+    epsilon = 0.001
+    matches = final_score >= (threshold - epsilon)
+
+    return matches, final_score, reason
+
+
 def _can_merge_tables(table1_data, table2_data, similarity_threshold=0.8):
     """
-    Determine if two tables can be merged based on column structure similarity.
+    Determine if two tables can be merged based on fingerprint comparison.
 
-    Handles both:
-    - Tables with matching headers
-    - Continuation tables without headers (common for page breaks)
+    Uses table fingerprinting to compare:
+    - Column structure (count, types, widths)
+    - Header content similarity
+    - Data type patterns
 
     Args:
         table1_data: First table (list of lists)
@@ -1254,78 +1603,522 @@ def _can_merge_tables(table1_data, table2_data, similarity_threshold=0.8):
         bool: True if tables can be merged
     """
     if not table1_data or not table2_data:
-        print(f"[MERGE] Cannot merge: empty table data", flush=True)
+        print(f"[MERGE] Cannot merge: empty table data", file=sys.stderr, flush=True)
         return False
 
-    # Get column counts
-    col_count1 = len(table1_data[0]) if table1_data else 0
-    col_count2 = len(table2_data[0]) if table2_data else 0
+    # Generate fingerprints for both tables
+    fp1 = _generate_table_fingerprint(table1_data)
+    fp2 = _generate_table_fingerprint(table2_data)
 
-    print(f"[MERGE] Table1: {len(table1_data)} rows, {col_count1} cols | Table2: {len(table2_data)} rows, {col_count2} cols", flush=True)
-
-    # Must have same number of columns
-    if col_count1 != col_count2 or col_count1 == 0:
-        print(f"[MERGE] Cannot merge: column count mismatch ({col_count1} vs {col_count2})", flush=True)
+    if not fp1 or not fp2:
+        print(f"[MERGE] Cannot merge: failed to generate fingerprint", file=sys.stderr, flush=True)
         return False
 
-    # Detect if tables have headers
-    table1_has_header = _detect_header_row(table1_data)
-    table2_has_header = _detect_header_row(table2_data)
-    print(f"[MERGE] Table1 has header: {table1_has_header} | Table2 has header: {table2_has_header}", flush=True)
+    print(f"[MERGE] Table1: {fp1['row_count']} rows, {fp1['col_count']} cols, types={fp1['column_types']}", file=sys.stderr, flush=True)
+    print(f"[MERGE] Table2: {fp2['row_count']} rows, {fp2['col_count']} cols, types={fp2['column_types']}", file=sys.stderr, flush=True)
 
-    # Case 1: Both have headers - compare them for similarity
-    if table1_has_header and table2_has_header and len(table1_data) > 1 and len(table2_data) > 1:
-        header1 = [str(cell).strip().lower() if cell else "" for cell in table1_data[0]]
-        header2 = [str(cell).strip().lower() if cell else "" for cell in table2_data[0]]
+    # Use fingerprint matching
+    can_merge, score, reason = _fingerprints_match(fp1, fp2, similarity_threshold)
 
-        # Count matching headers
-        matches = sum(1 for h1, h2 in zip(header1, header2) if h1 and h2 and h1 == h2)
+    print(f"[MERGE] Fingerprint match: {can_merge} (score={score:.2f}) - {reason}", file=sys.stderr, flush=True)
+
+    return can_merge
+
+
+def preview_tables(payload):
+    """
+    Preview tables in a PDF without extracting them.
+
+    Returns metadata about detected tables including:
+    - Page number and table position
+    - Row and column counts
+    - Header detection
+    - Sample data (first few rows)
+    - Fingerprint for merge suggestions
+    - Suggested merge groups
+
+    Args:
+        payload: Dict with 'files' list
+
+    Returns:
+        Dict with 'tables' list and 'merge_suggestions'
+    """
+    files = payload.get("files", [])
+    print(f"[PREVIEW_TABLES] Starting preview for {len(files)} file(s): {files}", file=sys.stderr, flush=True)
+
+    if not files:
+        return {
+            "tables": [],
+            "merge_suggestions": [],
+            "errors": [{"file": "none", "error": "No files provided"}]
+        }
+
+    # Configuration (same as extract_tables)
+    MIN_NON_EMPTY_CELLS = 3
+    MIN_ROWS = 1
+    COLUMN_SIMILARITY_THRESHOLD = 0.75
+
+    table_settings = {
+        "vertical_strategy": "lines",
+        "horizontal_strategy": "lines",
+        "snap_tolerance": 5,
+        "snap_x_tolerance": 5,
+        "snap_y_tolerance": 5,
+        "join_tolerance": 5,
+        "join_x_tolerance": 5,
+        "join_y_tolerance": 5,
+        "edge_min_length": 3,
+        "min_words_vertical": 1,
+        "min_words_horizontal": 1,
+        "intersection_tolerance": 5,
+        "text_tolerance": 5,
+        "text_x_tolerance": 5,
+        "text_y_tolerance": 5,
+    }
+
+    all_tables = []
+    errors = []
+    total_pages = 0
+
+    for file_path in files:
         try:
-            print(f"[MERGE] Headers: {header1[:3]}... vs {header2[:3]}... | Matches: {matches}/{col_count1}", flush=True)
-        except UnicodeEncodeError:
-            print(f"[MERGE] Headers comparison: {matches}/{col_count1} matches (contains Unicode)", flush=True)
+            if not os.path.exists(file_path):
+                errors.append({"file": file_path, "error": "File not found"})
+                continue
 
-        # If headers match well, they're likely the same table type
-        if matches / col_count1 >= similarity_threshold:
-            print(f"[MERGE] CAN MERGE: headers match well", flush=True)
-            return True
+            with pdfplumber.open(file_path) as pdf:
+                total_pages = len(pdf.pages)
 
-    # Case 2: Table 2 has NO header (continuation table) - just check column count
-    # This is the common case for tables split across pages
-    if table1_has_header and not table2_has_header:
-        print(f"[MERGE] CAN MERGE: table2 is headerless continuation", flush=True)
-        return True
+                # Scanned PDF detection
+                if total_pages > 0:
+                    text_found = False
+                    for i in range(min(3, total_pages)):
+                        page_text = pdf.pages[i].extract_text()
+                        if page_text and len(page_text.strip()) > 50:
+                            text_found = True
+                            break
 
-    # Case 3: Both have no clear headers - match by column count
-    if not table1_has_header and not table2_has_header:
-        print(f"[MERGE] CAN MERGE: both headerless with same columns", flush=True)
-        return True
+                    if not text_found:
+                        errors.append({
+                            "file": file_path,
+                            "error": "Scanned PDF detected. OCR required for table extraction."
+                        })
+                        continue
 
-    # Case 4: Table 1 has no header but table 2 does - unlikely to be continuation
-    print(f"[MERGE] Cannot merge: table1 no header but table2 has header (new table, not continuation)", flush=True)
-    return False
+                # Extract tables from each page
+                for page_num, page_obj in enumerate(pdf.pages):
+                    try:
+                        tables = page_obj.extract_tables(table_settings=table_settings)
+                        used_text_fallback = False
+
+                        # Fallback to text strategy (but mark it for stricter validation)
+                        if not tables:
+                            text_settings = {
+                                "vertical_strategy": "text",
+                                "horizontal_strategy": "text",
+                                "snap_tolerance": 5,
+                                "join_tolerance": 5,
+                            }
+                            tables = page_obj.extract_tables(table_settings=text_settings)
+                            used_text_fallback = True
+
+                        if not tables:
+                            continue
+
+                        for table_num, table in enumerate(tables):
+                            if not table or len(table) == 0:
+                                continue
+
+                            # Quality validation - stricter for text-based detection
+                            non_empty_cells = sum(1 for row in table for cell in row if cell and str(cell).strip())
+                            if non_empty_cells < MIN_NON_EMPTY_CELLS:
+                                continue
+                            if len(table) < MIN_ROWS + 1:
+                                continue
+
+                            # Validate table structure (stricter for text fallback)
+                            is_valid, reason = _is_valid_table(
+                                table,
+                                min_columns=2,
+                                min_rows=2,
+                                require_structure=used_text_fallback  # Stricter when using text fallback
+                            )
+                            if not is_valid:
+                                print(f"[PREVIEW] Rejecting table {table_num + 1} on page {page_num + 1}: {reason}", file=sys.stderr, flush=True)
+                                continue
+
+                            # Generate fingerprint
+                            fingerprint = _generate_table_fingerprint(table)
+                            has_header = _detect_header_row(table)
+
+                            # Get sample data (first 5 rows)
+                            sample_rows = []
+                            for row in table[:5]:
+                                sample_rows.append([str(cell)[:50] if cell else "" for cell in row])
+
+                            # Get header if detected
+                            header = None
+                            if has_header and len(table) > 0:
+                                header = [str(cell) if cell else "" for cell in table[0]]
+
+                            table_info = {
+                                "id": f"p{page_num + 1}_t{table_num + 1}",
+                                "file": os.path.basename(file_path),
+                                "page": page_num + 1,
+                                "table_index": table_num + 1,
+                                "rows": len(table),
+                                "columns": len(table[0]) if table else 0,
+                                "non_empty_cells": non_empty_cells,
+                                "has_header": has_header,
+                                "header": header,
+                                "sample_data": sample_rows,
+                                "column_types": fingerprint["column_types"] if fingerprint else [],
+                                "fingerprint_hash": hash(str(fingerprint)) if fingerprint else None
+                            }
+                            all_tables.append(table_info)
+
+                    except Exception as e:
+                        logger.warning(f"Preview failed for page {page_num + 1}: {e}")
+
+        except Exception as e:
+            errors.append({"file": file_path, "error": str(e)})
+
+    # Generate merge suggestions based on fingerprints
+    merge_suggestions = []
+    if len(all_tables) > 1:
+        # Group tables that can be merged
+        used_tables = set()
+
+        for i, table1 in enumerate(all_tables):
+            if table1["id"] in used_tables:
+                continue
+
+            merge_group = [table1["id"]]
+            group_total_rows = table1["rows"]  # Track row count incrementally (O(1) vs O(n))
+            group_fingerprint = None
+
+            # Find table data to get fingerprint (we need to re-extract for comparison)
+            # For efficiency, we use the column_types as a proxy
+            t1_types = tuple(table1["column_types"])
+
+            for j, table2 in enumerate(all_tables[i + 1:], start=i + 1):
+                if table2["id"] in used_tables:
+                    continue
+
+                t2_types = tuple(table2["column_types"])
+
+                # Simple fingerprint comparison: same column count and similar types
+                if table1["columns"] == table2["columns"]:
+                    type_matches = sum(1 for t1, t2 in zip(t1_types, t2_types) if t1 == t2)
+                    similarity = type_matches / len(t1_types) if t1_types else 0
+
+                    # Check header similarity if both have headers
+                    header_similar = True
+                    if table1["has_header"] and table2["has_header"] and table1["header"] and table2["header"]:
+                        header_matches = sum(1 for h1, h2 in zip(table1["header"], table2["header"])
+                                           if h1.lower() == h2.lower())
+                        header_similar = header_matches / len(table1["header"]) >= 0.7
+
+                    if similarity >= COLUMN_SIMILARITY_THRESHOLD and header_similar:
+                        merge_group.append(table2["id"])
+                        group_total_rows += table2["rows"]  # O(1) accumulation
+                        used_tables.add(table2["id"])
+
+            if len(merge_group) > 1:
+                used_tables.add(table1["id"])
+                merge_suggestions.append({
+                    "tables": merge_group,
+                    "reason": f"Similar structure: {table1['columns']} columns, matching data types",
+                    "total_rows": group_total_rows  # Already computed incrementally
+                })
+
+    result = {
+        "tables": all_tables,
+        "merge_suggestions": merge_suggestions,
+        "total_tables": len(all_tables),
+        "total_pages": total_pages,
+        "errors": errors
+    }
+    print(f"[PREVIEW_TABLES] Result: {len(all_tables)} tables, {total_pages} pages, {len(errors)} errors", file=sys.stderr, flush=True)
+    return result
+
+
+def _extract_tables_with_camelot(file_path, page_numbers=None, flavor="lattice"):
+    """
+    Extract tables using Camelot library (if available).
+
+    Camelot has two modes:
+    - lattice: For tables with clear borders/gridlines
+    - stream: For tables without clear borders (uses whitespace)
+
+    Args:
+        file_path: Path to PDF file
+        page_numbers: List of page numbers (1-indexed) or None for all
+        flavor: "lattice" or "stream"
+
+    Returns:
+        dict: {page_num: [table_data, ...]} where table_data is list of lists
+    """
+    if not CAMELOT_AVAILABLE:
+        return {}
+
+    try:
+        # Convert page numbers to camelot format
+        # Camelot accepts: "1,2,3" or "1-end" or "all"
+        if page_numbers and len(page_numbers) > 0:
+            # Convert to comma-separated string (Camelot uses 1-indexed, which we already have)
+            pages = ",".join(str(p) for p in page_numbers)
+            print(f"[CAMELOT] Processing only pages: {pages}", file=sys.stderr, flush=True)
+        else:
+            pages = "all"
+            print(f"[CAMELOT] Processing all pages (no page filter)", file=sys.stderr, flush=True)
+
+        # Extract tables - use different kwargs based on flavor
+        # Suppress Camelot warnings about image-based pages by catching them
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning, message=".*image-based.*")
+            if flavor == "lattice":
+                tables = camelot.read_pdf(
+                    file_path,
+                    pages=pages,
+                    flavor="lattice",
+                    strip_text='\n',
+                    line_scale=40,
+                )
+            else:  # stream
+                tables = camelot.read_pdf(
+                    file_path,
+                    pages=pages,
+                    flavor="stream",
+                    strip_text='\n',
+                    edge_tol=50,
+                    row_tol=10,
+                )
+
+        result = {}
+        processed_pages = set()
+        for table in tables:
+            page_num = table.page - 1  # Convert to 0-indexed
+            processed_pages.add(page_num + 1)  # Track which pages were actually processed (1-indexed)
+            if page_num not in result:
+                result[page_num] = []
+
+            # Convert pandas DataFrame to list of lists
+            df = table.df
+            table_data = [df.columns.tolist()] + df.values.tolist()
+
+            # Clean up empty strings
+            cleaned_data = []
+            for row in table_data:
+                cleaned_row = [cell if cell and str(cell).strip() else None for cell in row]
+                cleaned_data.append(cleaned_row)
+
+            result[page_num].append({
+                "data": cleaned_data,
+                "accuracy": table.accuracy,
+                "source": f"camelot_{flavor}"
+            })
+
+        return result
+
+    except Exception as e:
+        logger.warning(f"Camelot {flavor} extraction failed: {e}")
+        return {}
+
+
+def _deduplicate_tables(tables_list):
+    """
+    Remove duplicate tables detected by different strategies.
+
+    Compares tables by content similarity and keeps the highest quality version.
+
+    Args:
+        tables_list: List of table dicts with "data", "source", etc.
+
+    Returns:
+        List of deduplicated tables
+    """
+    if len(tables_list) <= 1:
+        return tables_list
+
+    def table_signature(table_data):
+        """Create a signature for comparison based on content."""
+        if not table_data:
+            return ""
+        # Use first few cells as signature
+        cells = []
+        for row in table_data[:3]:
+            for cell in row[:5]:
+                if cell:
+                    cells.append(str(cell).strip()[:20])
+        return "|".join(cells)
+
+    def table_quality(table_info):
+        """Score table quality for comparison."""
+        data = table_info.get("data", [])
+        non_empty = sum(1 for row in data for cell in row if cell and str(cell).strip())
+        accuracy = table_info.get("accuracy", 50)
+        # Prefer camelot_lattice > camelot_stream > pdfplumber
+        source_score = {"camelot_lattice": 100, "camelot_stream": 80, "pdfplumber_lines": 60, "pdfplumber_text": 40}
+        source = table_info.get("source", "pdfplumber_text")
+        return non_empty + source_score.get(source, 0) + accuracy
+
+    seen_signatures = {}
+    result = []
+
+    for table_info in tables_list:
+        sig = table_signature(table_info.get("data", []))
+        if not sig:
+            continue
+
+        # Check for similar existing table
+        is_duplicate = False
+        for existing_sig in list(seen_signatures.keys()):
+            # Simple similarity check - if 60% of signature matches
+            if sig[:50] == existing_sig[:50] or existing_sig[:50] == sig[:50]:
+                # Keep higher quality version
+                existing_idx = seen_signatures[existing_sig]
+                if table_quality(table_info) > table_quality(result[existing_idx]):
+                    result[existing_idx] = table_info
+                is_duplicate = True
+                break
+
+        if not is_duplicate:
+            seen_signatures[sig] = len(result)
+            result.append(table_info)
+
+    return result
+
+
+def _deduplicate_tables_global(all_tables, similarity_threshold=0.85):
+    """
+    Global deduplication across all pages and strategies using fingerprinting.
+    
+    This function identifies truly duplicate tables (same table detected by multiple
+    strategies or on multiple pages) and keeps only the highest quality version.
+    
+    Args:
+        all_tables: List of table dicts with "data", "source", "page_num", etc.
+        similarity_threshold: Minimum fingerprint similarity to consider duplicates (0.0 to 1.0)
+    
+    Returns:
+        List of deduplicated tables (only highest quality version of each unique table)
+    """
+    if len(all_tables) <= 1:
+        return all_tables
+    
+    def table_quality_score(table_info):
+        """Calculate quality score for table comparison."""
+        data = table_info.get("data", [])
+        non_empty = sum(1 for row in data for cell in row if cell and str(cell).strip())
+        accuracy = table_info.get("accuracy", 50)
+        # Prefer camelot_lattice > camelot_stream > pdfplumber_lines > pdfplumber_text
+        source_score = {
+            "camelot_lattice": 100, 
+            "camelot_stream": 80, 
+            "pdfplumber_lines": 60, 
+            "pdfplumber_text": 40,
+            "pdfplumber_mixed": 30
+        }
+        source = table_info.get("source", "pdfplumber_text")
+        # Also prefer tables with more rows (more complete)
+        row_count = len(data) if data else 0
+        return non_empty + source_score.get(source, 0) + accuracy + (row_count * 0.1)
+    
+    # Generate fingerprints for all tables
+    table_fingerprints = []
+    tables_without_fp = []  # Tables that couldn't be fingerprinted (keep them all)
+    
+    for idx, table_info in enumerate(all_tables):
+        fp = _generate_table_fingerprint(table_info.get("data", []))
+        if fp:
+            table_fingerprints.append({
+                "index": idx,
+                "table_info": table_info,
+                "fingerprint": fp,
+                "quality": table_quality_score(table_info)
+            })
+        else:
+            # Table without valid fingerprint - keep it (might be very small or malformed)
+            tables_without_fp.append(table_info)
+    
+    # Compare fingerprints to find duplicates
+    seen_groups = []
+    result_indices = []
+    
+    for i, table1 in enumerate(table_fingerprints):
+        if i in result_indices:
+            continue  # Already processed as a duplicate
+        
+        # Find all tables that match this one
+        matching_group = [i]
+        best_quality_idx = i
+        best_quality = table1["quality"]
+        
+        for j, table2 in enumerate(table_fingerprints[i+1:], start=i+1):
+            if j in result_indices:
+                continue
+            
+            # Compare fingerprints
+            can_merge, score, _ = _fingerprints_match(
+                table1["fingerprint"], 
+                table2["fingerprint"], 
+                similarity_threshold
+            )
+            
+            if can_merge:
+                matching_group.append(j)
+                if table2["quality"] > best_quality:
+                    best_quality = table2["quality"]
+                    best_quality_idx = j
+        
+        # Keep only the best quality table from the group
+        result_indices.append(best_quality_idx)
+        seen_groups.append(matching_group)
+        
+        if len(matching_group) > 1:
+            pages = [table_fingerprints[idx]["table_info"]["page_num"] + 1 for idx in matching_group]
+            sources = [table_fingerprints[idx]["table_info"].get("source", "unknown") for idx in matching_group]
+            print(f"[DEDUP] Found {len(matching_group)} duplicate tables on pages {pages} (sources: {sources}), keeping best quality version", file=sys.stderr, flush=True)
+    
+    # Return deduplicated tables (fingerprinted ones + ones without fingerprints)
+    result = [table_fingerprints[idx]["table_info"] for idx in result_indices]
+    result.extend(tables_without_fp)  # Add tables that couldn't be fingerprinted
+    print(f"[DEDUP] Global deduplication: {len(all_tables)} tables -> {len(result)} unique tables ({len(tables_without_fp)} without fingerprints)", file=sys.stderr, flush=True)
+    
+    return result
+
 
 def extract_tables(payload):
     """
     Extract tables from PDF to CSV or Excel with production-quality validation.
 
     Features:
+    - Multi-strategy detection (Camelot lattice → Camelot stream → pdfplumber lines → text)
+    - Configurable detection mode (strict/balanced/aggressive)
     - Scanned PDF detection
-    - Table quality validation
+    - Table quality validation with adjustable thresholds
     - Memory limits
     - UTF-8 encoding for CSV
     - Partial success handling
     - Detailed error categorization
     - Smart table merging across pages
+    - Deduplication of tables found by multiple strategies
     """
     try:
         files = payload.get("files", [])
         output_format = payload.get("output_format", "csv")
         merge_tables_enabled = payload.get("merge_tables", "false").lower() == "true"
+        # New: detection mode parameter - strict, balanced, or aggressive
+        detection_mode = payload.get("detection_mode", "balanced").lower()
+        if detection_mode not in ["strict", "balanced", "aggressive"]:
+            detection_mode = "balanced"
 
-        print(f"[EXTRACT_TABLES] Starting: {len(files)} file(s), format={output_format}, merge={merge_tables_enabled}", flush=True)
-        logger.info(f"Starting table extraction: {len(files)} file(s), format={output_format}, merge={merge_tables_enabled}")
+        print(f"[EXTRACT_TABLES] Starting: {len(files)} file(s), format={output_format}, merge={merge_tables_enabled}, mode={detection_mode}", file=sys.stderr, flush=True)
+        logger.info(f"Starting table extraction: {len(files)} file(s), format={output_format}, merge={merge_tables_enabled}, mode={detection_mode}")
         logger.info(f"Files received: {files}")
+        logger.info(f"Camelot available: {CAMELOT_AVAILABLE}")
 
         # Immediate validation - catch empty files list
         if not files:
@@ -1338,33 +2131,63 @@ def extract_tables(payload):
                 }]
             }
 
-        # Configuration
+        # Configuration based on detection mode
         MAX_CELLS_PER_TABLE = 100000  # Prevent memory issues
-        MIN_NON_EMPTY_CELLS = 3  # Minimum cells to consider table valid
-        MIN_ROWS = 1  # Minimum rows (excluding potential header)
-        COLUMN_SIMILARITY_THRESHOLD = 0.8  # 80% column match to consider tables mergeable
+        COLUMN_SIMILARITY_THRESHOLD = 0.75  # 75% column match to consider tables mergeable (lowered from 0.8 for better merging)
 
-        # pdfplumber table detection settings - tuned to catch edge cases
-        # These settings make detection more aggressive to avoid missing last rows
-        table_settings = {
-            "vertical_strategy": "lines",  # Use lines for vertical edges (more lenient than "lines_strict")
-            "horizontal_strategy": "lines",  # Use lines for horizontal edges
-            "explicit_vertical_lines": [],  # No explicit lines (auto-detect)
-            "explicit_horizontal_lines": [],  # No explicit lines (auto-detect)
-            "snap_tolerance": 5,  # Pixels tolerance for snapping to lines (increased from default 3)
-            "snap_x_tolerance": 5,
-            "snap_y_tolerance": 5,
-            "join_tolerance": 5,  # Join nearby line segments (increased from default 3)
-            "join_x_tolerance": 5,
-            "join_y_tolerance": 5,
-            "edge_min_length": 3,  # Minimum line length to detect (lowered to catch partial borders)
-            "min_words_vertical": 1,  # Minimum words to form vertical edge (lowered from default 3)
-            "min_words_horizontal": 1,  # Minimum words to form horizontal edge
-            "intersection_tolerance": 5,  # Tolerance for line intersections
-            "text_tolerance": 5,  # Tolerance for text alignment
-            "text_x_tolerance": 5,
-            "text_y_tolerance": 5,
-        }
+        # Adjust thresholds based on detection mode
+        if detection_mode == "aggressive":
+            MIN_NON_EMPTY_CELLS = 2
+            MIN_ROWS = 1
+            MIN_COLUMNS = 1  # Allow single-column tables for forms
+        elif detection_mode == "strict":
+            MIN_NON_EMPTY_CELLS = 4
+            MIN_ROWS = 2
+            MIN_COLUMNS = 2
+        else:  # balanced
+            MIN_NON_EMPTY_CELLS = 2
+            MIN_ROWS = 1
+            MIN_COLUMNS = 2
+
+        # pdfplumber table detection settings - tuned based on mode
+        if detection_mode == "aggressive":
+            table_settings = {
+                "vertical_strategy": "lines",
+                "horizontal_strategy": "lines",
+                "snap_tolerance": 8,
+                "snap_x_tolerance": 8,
+                "snap_y_tolerance": 8,
+                "join_tolerance": 8,
+                "join_x_tolerance": 8,
+                "join_y_tolerance": 8,
+                "edge_min_length": 2,
+                "min_words_vertical": 1,
+                "min_words_horizontal": 1,
+                "intersection_tolerance": 8,
+                "text_tolerance": 8,
+                "text_x_tolerance": 8,
+                "text_y_tolerance": 8,
+            }
+        else:
+            table_settings = {
+                "vertical_strategy": "lines",
+                "horizontal_strategy": "lines",
+                "explicit_vertical_lines": [],
+                "explicit_horizontal_lines": [],
+                "snap_tolerance": 5,
+                "snap_x_tolerance": 5,
+                "snap_y_tolerance": 5,
+                "join_tolerance": 5,
+                "join_x_tolerance": 5,
+                "join_y_tolerance": 5,
+                "edge_min_length": 3,
+                "min_words_vertical": 1,
+                "min_words_horizontal": 1,
+                "intersection_tolerance": 5,
+                "text_tolerance": 5,
+                "text_x_tolerance": 5,
+                "text_y_tolerance": 5,
+            }
 
         processed_files = []
         errors = []
@@ -1383,56 +2206,131 @@ def extract_tables(payload):
 
                 base, _ = os.path.splitext(file_path)
 
-                # Use pdfplumber for table extraction
+                # ========================================
+                # STEP 1: Detect text-based pages FIRST (before Camelot)
+                # Camelot is VERY slow on image-based pages, so we skip them
+                # ========================================
+                text_based_pages = []  # 1-indexed page numbers for Camelot
+                with pdfplumber.open(file_path) as pdf:
+                    total_pages = len(pdf.pages)
+                    
+                    # Quick check: detect which pages are text-based
+                    for page_num in range(total_pages):
+                        try:
+                            page_text = pdf.pages[page_num].extract_text()
+                            # If page has substantial text (> 50 chars), it's text-based
+                            if page_text and len(page_text.strip()) > 50:
+                                text_based_pages.append(page_num + 1)  # Camelot uses 1-indexed
+                        except Exception as e:
+                            print(f"[DEBUG] Error checking page {page_num + 1}: {e}", file=sys.stderr, flush=True)
+                            # If we can't extract text, assume it's image-based and skip
+                    
+                    print(f"[DEBUG] Found {len(text_based_pages)} text-based pages out of {total_pages} total: {text_based_pages}", file=sys.stderr, flush=True)
+                    
+                    # If no text-based pages found, it's a scanned PDF
+                    if len(text_based_pages) == 0:
+                        is_scanned = True
+                        errors.append({
+                            "file": file_path,
+                            "error": "This appears to be a scanned PDF (image-based). Table extraction requires text-based PDFs. Please convert using OCR first."
+                        })
+                        continue
+
+                # ========================================
+                # STRATEGY 1: Skip Camelot for now (performance issues with mixed PDFs)
+                # Camelot scans all pages internally even when specific pages are requested,
+                # which is very slow for PDFs with image-based pages
+                # ========================================
+                camelot_tables = {}
+                # Temporarily disabled Camelot due to performance issues
+                # if CAMELOT_AVAILABLE and text_based_pages:
+                #     print(f"[DEBUG] Trying Camelot lattice extraction on pages {text_based_pages}...", file=sys.stderr, flush=True)
+                #     camelot_tables = _extract_tables_with_camelot(file_path, page_numbers=text_based_pages, flavor="lattice")
+                #     ...
+                print(f"[DEBUG] Camelot extraction skipped (using pdfplumber only for better performance)", file=sys.stderr, flush=True)
+
+                # ========================================
+                # STRATEGY 2: Use pdfplumber as primary/fallback (all pages)
+                # ========================================
                 with pdfplumber.open(file_path) as pdf:
                     total_pages = len(pdf.pages)
 
-                    # Scanned PDF detection - check first few pages for extractable text
-                    if total_pages > 0:
-                        text_found = False
-                        pages_to_check = min(3, total_pages)  # Check first 3 pages
-                        for i in range(pages_to_check):
-                            page_text = pdf.pages[i].extract_text()
-                            if page_text and len(page_text.strip()) > 50:  # At least 50 chars
-                                text_found = True
-                                break
+                    # Note: Scanned PDF detection already done above before Camelot
+                    # We continue processing all pages with pdfplumber (it handles image pages gracefully)
 
-                        if not text_found:
-                            is_scanned = True
-                            errors.append({
-                                "file": file_path,
-                                "error": "This appears to be a scanned PDF (image-based). Table extraction requires text-based PDFs. Please convert using OCR first."
-                            })
-                            continue
-
-                    # Extract tables from each page - collect them for potential merging
+                    # Extract tables from each page
                     for page_num, page_obj in enumerate(pdf.pages):
                         try:
-                            # Extract tables with custom settings for better detection
+                            page_tables = []
+
+                            # Add Camelot results for this page (if any)
+                            if page_num in camelot_tables:
+                                for camelot_table in camelot_tables[page_num]:
+                                    page_tables.append(camelot_table)
+                                print(f"[DEBUG] Page {page_num + 1}: Added {len(camelot_tables[page_num])} Camelot tables", file=sys.stderr, flush=True)
+
+                            # Try pdfplumber strategies
+                            pdfplumber_tables = []
+
+                            # Strategy 2a: Lines-based detection
                             tables = page_obj.extract_tables(table_settings=table_settings)
+                            if tables:
+                                for t in tables:
+                                    if t:
+                                        pdfplumber_tables.append({"data": t, "source": "pdfplumber_lines", "accuracy": 70})
+                                print(f"[DEBUG] Page {page_num + 1}: pdfplumber lines found {len(tables)} tables", file=sys.stderr, flush=True)
 
-                            print(f"[DEBUG] Page {page_num + 1}: Found {len(tables) if tables else 0} tables", flush=True)
-
-                            # If no tables found with "lines" strategy, try "text" strategy as fallback
-                            if not tables:
+                            # Strategy 2b: Text-based detection (if lines found few or mode is aggressive)
+                            if not tables or detection_mode == "aggressive":
                                 text_settings = {
                                     "vertical_strategy": "text",
                                     "horizontal_strategy": "text",
-                                    "snap_tolerance": 5,
-                                    "join_tolerance": 5,
+                                    "snap_tolerance": 8 if detection_mode == "aggressive" else 5,
+                                    "join_tolerance": 8 if detection_mode == "aggressive" else 5,
+                                    "min_words_vertical": 1,
+                                    "min_words_horizontal": 1,
                                 }
-                                tables = page_obj.extract_tables(table_settings=text_settings)
-                                if tables:
-                                    print(f"[DEBUG] Page {page_num + 1}: Fallback to text strategy found {len(tables)} tables", flush=True)
+                                text_tables = page_obj.extract_tables(table_settings=text_settings)
+                                if text_tables:
+                                    for t in text_tables:
+                                        if t:
+                                            pdfplumber_tables.append({"data": t, "source": "pdfplumber_text", "accuracy": 50})
+                                    print(f"[DEBUG] Page {page_num + 1}: pdfplumber text found {len(text_tables)} tables", file=sys.stderr, flush=True)
 
-                            if not tables:
+                            # Strategy 2c: Mixed strategy for forms (aggressive mode only)
+                            if detection_mode == "aggressive" and len(pdfplumber_tables) == 0:
+                                mixed_settings = {
+                                    "vertical_strategy": "lines",
+                                    "horizontal_strategy": "text",
+                                    "snap_tolerance": 10,
+                                    "join_tolerance": 10,
+                                }
+                                mixed_tables = page_obj.extract_tables(table_settings=mixed_settings)
+                                if mixed_tables:
+                                    for t in mixed_tables:
+                                        if t:
+                                            pdfplumber_tables.append({"data": t, "source": "pdfplumber_mixed", "accuracy": 45})
+                                    print(f"[DEBUG] Page {page_num + 1}: pdfplumber mixed found {len(mixed_tables)} tables", file=sys.stderr, flush=True)
+
+                            page_tables.extend(pdfplumber_tables)
+
+                            # Deduplicate tables from different strategies
+                            if len(page_tables) > 1:
+                                page_tables = _deduplicate_tables(page_tables)
+                                print(f"[DEBUG] Page {page_num + 1}: After deduplication: {len(page_tables)} tables", file=sys.stderr, flush=True)
+
+                            if not page_tables:
                                 continue
 
-                            for table_num, table in enumerate(tables):
+                            # Validate and collect tables
+                            for table_num, table_info in enumerate(page_tables):
+                                table = table_info.get("data", [])
+                                source = table_info.get("source", "unknown")
+
                                 if not table or len(table) == 0:
                                     continue
 
-                                print(f"[DEBUG] Page {page_num + 1}, Table {table_num + 1}: {len(table)} rows, {len(table[0]) if table else 0} columns", flush=True)
+                                print(f"[DEBUG] Page {page_num + 1}, Table {table_num + 1} ({source}): {len(table)} rows, {len(table[0]) if table else 0} columns", file=sys.stderr, flush=True)
 
                                 # Table quality validation
                                 total_cells = sum(len(row) for row in table)
@@ -1455,8 +2353,28 @@ def extract_tables(payload):
                                     continue
 
                                 # Check minimum rows
-                                if len(table) < MIN_ROWS + 1:  # +1 for potential header
+                                if len(table) < MIN_ROWS + 1:
                                     logger.info(f"Skipping table {table_num + 1} on page {page_num + 1} (only {len(table)} rows)")
+                                    continue
+
+                                # Check minimum columns
+                                if table[0] and len(table[0]) < MIN_COLUMNS:
+                                    logger.info(f"Skipping table {table_num + 1} on page {page_num + 1} (only {len(table[0])} columns)")
+                                    continue
+
+                                # Validate table structure
+                                # Use relaxed validation for Camelot results (they're usually reliable)
+                                use_strict_validation = source.startswith("pdfplumber_text")
+                                is_valid, reason = _is_valid_table(
+                                    table,
+                                    min_columns=MIN_COLUMNS,
+                                    min_rows=MIN_ROWS + 1,
+                                    require_structure=use_strict_validation,
+                                    detection_mode=detection_mode
+                                )
+                                if not is_valid:
+                                    print(f"[DEBUG] Rejecting table {table_num + 1} on page {page_num + 1}: {reason}", file=sys.stderr, flush=True)
+                                    logger.info(f"Rejecting table {table_num + 1} on page {page_num + 1}: {reason}")
                                     continue
 
                                 tables_found += 1
@@ -1466,9 +2384,10 @@ def extract_tables(payload):
                                     "page_num": page_num,
                                     "table_num": table_num,
                                     "data": table,
-                                    "non_empty_cells": non_empty_cells
+                                    "non_empty_cells": non_empty_cells,
+                                    "source": source
                                 })
-                                logger.info(f"Collected table {table_num + 1} from page {page_num + 1} ({non_empty_cells} cells)")
+                                logger.info(f"Collected table {table_num + 1} from page {page_num + 1} ({non_empty_cells} cells, source={source})")
 
                         except Exception as e:
                             logger.warning(f"Table extraction failed for page {page_num + 1}: {e}")
@@ -1478,37 +2397,118 @@ def extract_tables(payload):
                             })
 
                 # Process collected tables - merge if enabled, otherwise save individually
-                print(f"[DEBUG] Collected {len(collected_tables)} tables total, merge_enabled={merge_tables_enabled}", flush=True)
+                print(f"[DEBUG] Collected {len(collected_tables)} tables total, merge_enabled={merge_tables_enabled}", file=sys.stderr, flush=True)
                 if collected_tables:
+                    # Step 1: Global deduplication - remove truly duplicate tables across all pages/strategies
+                    # This prevents the same table from being saved multiple times
+                    # Use same threshold as merge to ensure consistency
+                    deduplicated_tables = _deduplicate_tables_global(collected_tables, similarity_threshold=COLUMN_SIMILARITY_THRESHOLD)
+                    print(f"[DEBUG] After global deduplication: {len(deduplicated_tables)} unique tables", file=sys.stderr, flush=True)
+                    
                     if merge_tables_enabled:
-                        # Group consecutive tables that can be merged
-                        merged_groups = []
-                        current_group = [collected_tables[0]]
+                        # NEW APPROACH: Content-first merging based on fingerprints
+                        # This allows merging tables across different strategies if they have similar structure
 
-                        for i in range(1, len(collected_tables)):
-                            prev_table = current_group[-1]
-                            curr_table = collected_tables[i]
-
-                            # Check if consecutive pages and can merge
-                            is_consecutive = curr_table["page_num"] == prev_table["page_num"] + 1
-                            can_merge = _can_merge_tables(prev_table["data"], curr_table["data"], COLUMN_SIMILARITY_THRESHOLD) if is_consecutive else False
-                            print(f"[DEBUG] Comparing page {prev_table['page_num']+1} -> page {curr_table['page_num']+1}: consecutive={is_consecutive}, can_merge={can_merge}", flush=True)
-
-                            if is_consecutive and can_merge:
-                                current_group.append(curr_table)
+                        # Step 2: Generate fingerprints for all tables
+                        table_fingerprints = []
+                        tables_without_fp = []  # Tables without fingerprints (save individually)
+                        
+                        for table in deduplicated_tables:
+                            fp = _generate_table_fingerprint(table.get("data", []))
+                            if fp:
+                                table_fingerprints.append({
+                                    "table": table,
+                                    "fingerprint": fp
+                                })
                             else:
-                                # Start new group
-                                merged_groups.append(current_group)
-                                current_group = [curr_table]
+                                # Table without valid fingerprint - save individually
+                                tables_without_fp.append(table)
 
-                        # Don't forget the last group
-                        merged_groups.append(current_group)
+                        # Step 3: Find mergeable tables based on content similarity (not strategy)
+                        # When merge is enabled, we want to merge tables that span pages
+                        # and only save standalone tables (that couldn't be merged with anything)
+                        merged_groups = []
+                        processed_indices = set()
+
+                        # Sort tables by page number for easier processing
+                        sorted_tables = sorted(enumerate(table_fingerprints), 
+                                             key=lambda x: (x[1]["table"]["page_num"], x[1]["table"]["table_num"]))
+
+                        for i, (orig_idx, table1_info) in enumerate(sorted_tables):
+                            if i in processed_indices:
+                                continue
+
+                            current_group = [table1_info["table"]]
+                            processed_indices.add(i)
+
+                            # Look for continuation tables on subsequent pages (within reasonable distance)
+                            # Allow up to 4 page gap if similarity is high enough
+                            for j, (orig_idx2, table2_info) in enumerate(sorted_tables[i+1:], start=i+1):
+                                if j in processed_indices:
+                                    continue
+
+                                prev_table = current_group[-1]
+                                curr_table = table2_info["table"]
+                                
+                                # Check page distance - allow larger gaps for high similarity
+                                page_diff = curr_table["page_num"] - prev_table["page_num"]
+                                
+                                # Allow gaps up to 4 pages, but prefer consecutive pages
+                                max_page_gap = 4
+                                if page_diff > max_page_gap:
+                                    break  # Too far, stop looking for this group
+                                
+                                if page_diff <= 0:
+                                    continue  # Same or earlier page, skip
+
+                                # Check if tables can be merged based on fingerprint similarity
+                                can_merge, score, reason = _fingerprints_match(
+                                    table1_info["fingerprint"],
+                                    table2_info["fingerprint"],
+                                    COLUMN_SIMILARITY_THRESHOLD
+                                )
+                                
+                                # For non-consecutive pages, require higher similarity
+                                # But be more lenient - only increase threshold slightly
+                                required_similarity = COLUMN_SIMILARITY_THRESHOLD
+                                if page_diff > 1:
+                                    # Require 3% higher similarity for each page gap (reduced from 5%)
+                                    required_similarity = min(0.90, COLUMN_SIMILARITY_THRESHOLD + (page_diff - 1) * 0.03)
+                                
+                                # Use epsilon for floating point comparison
+                                epsilon = 0.001
+                                can_merge = can_merge and score >= (required_similarity - epsilon)
+
+                                print(f"[MERGE] Page {prev_table['page_num']+1} -> {curr_table['page_num']+1} (gap={page_diff}): can_merge={can_merge}, score={score:.2f}, required={required_similarity:.2f} - {reason}", file=sys.stderr, flush=True)
+
+                                if can_merge:
+                                    current_group.append(curr_table)
+                                    processed_indices.add(j)
+
+                            merged_groups.append(current_group)
+
+                        # Also add any unprocessed tables as single-table groups (standalone tables)
+                        for i, (orig_idx, table_info) in enumerate(sorted_tables):
+                            if i not in processed_indices:
+                                merged_groups.append([table_info["table"]])
+                                processed_indices.add(i)
+                        
+                        # Add tables without fingerprints as individual groups
+                        for table in tables_without_fp:
+                            merged_groups.append([table])
+
+                        print(f"[DEBUG] Created {len(merged_groups)} merge groups", file=sys.stderr, flush=True)
+                        for idx, group in enumerate(merged_groups):
+                            if len(group) > 1:
+                                pages = [t["page_num"]+1 for t in group]
+                                print(f"[DEBUG] Group {idx+1}: {len(group)} tables merged from pages {pages} (source: {group[0].get('source', 'unknown')})", file=sys.stderr, flush=True)
 
                         # Process each group
                         for group_idx, group in enumerate(merged_groups):
                             try:
                                 if len(group) == 1:
-                                    # Single table - save as is
+                                    # Single table - this is a standalone table that couldn't be merged with anything
+                                    # Save it as an individual table
                                     table_meta = group[0]
                                     table = table_meta["data"]
 
@@ -1526,7 +2526,7 @@ def extract_tables(payload):
                                         df.to_excel(output_path, index=False, engine='openpyxl')
                                         processed_files.append(output_path)
 
-                                    logger.info(f"Saved single table from page {table_meta['page_num'] + 1}")
+                                    logger.info(f"Saved standalone table from page {table_meta['page_num'] + 1} (could not be merged)")
                                 else:
                                     # Multiple tables - merge them intelligently
                                     first_table = group[0]["data"]
@@ -1572,14 +2572,25 @@ def extract_tables(payload):
                                     start_page = group[0]["page_num"] + 1
                                     end_page = group[-1]["page_num"] + 1
 
+                                    # Create unique filename to avoid duplicates
+                                    # Include source strategy in filename to differentiate
+                                    source_str = group[0].get("source", "unknown").replace("camelot_", "").replace("pdfplumber_", "")
                                     if output_format == "csv":
-                                        output_path = f"{base}_p{start_page}-{end_page}_merged.csv"
-                                        df.to_csv(output_path, index=False, encoding='utf-8-sig')
-                                        processed_files.append(output_path)
+                                        output_path = f"{base}_p{start_page}-{end_page}_merged_{source_str}.csv"
+                                        # Check if file already exists (avoid duplicates)
+                                        if output_path not in processed_files:
+                                            df.to_csv(output_path, index=False, encoding='utf-8-sig')
+                                            processed_files.append(output_path)
+                                        else:
+                                            logger.warning(f"Skipping duplicate merged file: {output_path}")
                                     elif output_format == "excel" or output_format == "xlsx":
-                                        output_path = f"{base}_p{start_page}-{end_page}_merged.xlsx"
-                                        df.to_excel(output_path, index=False, engine='openpyxl')
-                                        processed_files.append(output_path)
+                                        output_path = f"{base}_p{start_page}-{end_page}_merged_{source_str}.xlsx"
+                                        # Check if file already exists (avoid duplicates)
+                                        if output_path not in processed_files:
+                                            df.to_excel(output_path, index=False, engine='openpyxl')
+                                            processed_files.append(output_path)
+                                        else:
+                                            logger.warning(f"Skipping duplicate merged file: {output_path}")
 
                                     logger.info(f"Merged {len(group)} tables from pages {start_page}-{end_page} ({len(all_rows)} total rows)")
 
@@ -1590,8 +2601,9 @@ def extract_tables(payload):
                                     "error": f"Failed to save merged table: {str(e)}"
                                 })
                     else:
-                        # Merge disabled - save each table individually (original behavior)
-                        for table_meta in collected_tables:
+                        # Merge disabled - save each table individually
+                        # Use deduplicated tables to prevent duplicate files
+                        for table_meta in deduplicated_tables:
                             try:
                                 table = table_meta["data"]
                                 page_num = table_meta["page_num"]
@@ -1783,24 +2795,24 @@ def repair_pdf(payload):
                 continue
 
             file_size = os.path.getsize(file_path)
-            print(f"[REPAIR] Starting repair for {os.path.basename(file_path)} (size: {file_size} bytes)", flush=True)
+            print(f"[REPAIR] Starting repair for {os.path.basename(file_path)} (size: {file_size} bytes)", file=sys.stderr, flush=True)
 
             # Verify file is readable and check PDF magic header
             try:
                 with open(file_path, 'rb') as f:
                     first_bytes = f.read(1024)
-                    print(f"[REPAIR] File readable. First bytes: {first_bytes[:20]}", flush=True)
+                    print(f"[REPAIR] File readable. First bytes: {first_bytes[:20]}", file=sys.stderr, flush=True)
 
                     # Check for valid PDF header
                     if not first_bytes.startswith(b'%PDF-'):
                         # File has no PDF structure at all - cannot repair
                         error_msg = "This file is not a valid PDF or is completely corrupted beyond repair. PDF files must start with '%PDF-' header, but this file does not. The repair tool can only fix PDFs with minor internal corruption, not files that have lost their entire PDF structure."
 
-                        print(f"[REPAIR] ERROR: {error_msg}", flush=True)
+                        print(f"[REPAIR] ERROR: {error_msg}", file=sys.stderr, flush=True)
                         errors.append({"file": file_path, "error": error_msg})
                         continue
             except Exception as read_err:
-                print(f"[REPAIR] Cannot read file with Python: {read_err}", flush=True)
+                print(f"[REPAIR] Cannot read file with Python: {read_err}", file=sys.stderr, flush=True)
                 errors.append({"file": file_path, "error": f"Cannot read file: {read_err}"})
                 continue
 
@@ -1809,7 +2821,7 @@ def repair_pdf(payload):
 
             # Strategy 1: Standard repair with aggressive garbage collection
             try:
-                print(f"[REPAIR] Attempting fitz.open() with file_path: {file_path}", flush=True)
+                print(f"[REPAIR] Attempting fitz.open() with file_path: {file_path}", file=sys.stderr, flush=True)
                 doc = fitz.open(file_path)
                 doc.save(
                     output_path,
@@ -1820,10 +2832,10 @@ def repair_pdf(payload):
                 )
                 doc.close()
                 repaired = True
-                print(f"[REPAIR] Strategy 1 (standard) succeeded for {os.path.basename(file_path)}")
+                print(f"[REPAIR] Strategy 1 (standard) succeeded for {os.path.basename(file_path)}", file=sys.stderr)
             except Exception as e1:
                 last_error = e1
-                print(f"[REPAIR] Strategy 1 failed: {e1}")
+                print(f"[REPAIR] Strategy 1 failed: {e1}", file=sys.stderr)
 
                 # Strategy 2: Try with linear=True (rebuild PDF structure)
                 try:
@@ -1836,10 +2848,10 @@ def repair_pdf(payload):
                     )
                     doc.close()
                     repaired = True
-                    print(f"[REPAIR] Strategy 2 (linearize) succeeded for {os.path.basename(file_path)}")
+                    print(f"[REPAIR] Strategy 2 (linearize) succeeded for {os.path.basename(file_path)}", file=sys.stderr)
                 except Exception as e2:
                     last_error = e2
-                    print(f"[REPAIR] Strategy 2 failed: {e2}")
+                    print(f"[REPAIR] Strategy 2 failed: {e2}", file=sys.stderr)
 
                     # Strategy 3: Force full rewrite (no incremental)
                     try:
@@ -1853,10 +2865,10 @@ def repair_pdf(payload):
                         )
                         doc.close()
                         repaired = True
-                        print(f"[REPAIR] Strategy 3 (full rewrite) succeeded for {os.path.basename(file_path)}")
+                        print(f"[REPAIR] Strategy 3 (full rewrite) succeeded for {os.path.basename(file_path)}", file=sys.stderr)
                     except Exception as e3:
                         last_error = e3
-                        print(f"[REPAIR] Strategy 3 failed: {e3}")
+                        print(f"[REPAIR] Strategy 3 failed: {e3}", file=sys.stderr)
 
             if repaired:
                 processed_files.append(output_path)
@@ -1871,27 +2883,68 @@ def repair_pdf(payload):
     return {"processed_files": processed_files, "errors": errors}
 
 def flatten_pdf(payload):
-    """Flatten PDF (make form fields non-editable)."""
+    """Flatten PDF - make form fields non-editable and merge annotations into content."""
     files = payload.get("files", [])
 
     processed_files = []
     errors = []
 
     for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
         try:
             base, ext = os.path.splitext(file_path)
             output_path = f"{base}_flattened{ext}"
 
             doc = fitz.open(file_path)
 
+            # Check if document has any annotations or form fields
+            has_annotations = False
             for page in doc:
-                page.flatten_annotations()
+                if page.annots() or page.widgets():
+                    has_annotations = True
+                    break
 
-            doc.save(output_path)
+            if not has_annotations:
+                # No annotations to flatten - just copy the file
+                doc.save(output_path)
+                doc.close()
+                processed_files.append(output_path)
+                continue
+
+            # Flatten all annotations on each page
+            for page in doc:
+                # First flatten widgets (form fields)
+                widgets = list(page.widgets())
+                for widget in widgets:
+                    try:
+                        widget.update()  # Ensure widget is rendered
+                    except Exception:
+                        pass
+
+                # Then flatten all annotations
+                try:
+                    page.apply_redactions()  # Apply any redaction annotations first
+                except Exception:
+                    pass
+
+                # Flatten remaining annotations
+                annots = list(page.annots()) if page.annots() else []
+                for annot in annots:
+                    try:
+                        # Convert annotation to drawing
+                        page.draw_rect(annot.rect, color=None, fill=None)
+                    except Exception:
+                        pass
+
+            doc.save(output_path, garbage=4, deflate=True)
             doc.close()
             processed_files.append(output_path)
+
         except Exception as e:
-            errors.append({"file": file_path, "error": str(e)})
+            errors.append({"file": file_path, "error": f"Failed to flatten: {str(e)}"})
 
     return {"processed_files": processed_files, "errors": errors}
 
@@ -1974,6 +3027,138 @@ def delete_pages(payload):
 
     return {"processed_files": processed_files, "errors": errors}
 
+
+def _find_diff_regions(diff_image, block_size=20, threshold=10, merge_distance=30):
+    """
+    Find regions with differences in a diff image using block-based detection.
+
+    Args:
+        diff_image: PIL Image showing pixel differences (from ImageChops.difference)
+        block_size: Size of blocks to analyze (smaller = more precise, larger = faster)
+        threshold: Minimum difference value to consider as a change (0-255)
+        merge_distance: Maximum distance between regions to merge them
+
+    Returns:
+        List of (x1, y1, x2, y2) tuples representing difference regions
+    """
+    import numpy as np
+
+    # Convert to grayscale for simpler analysis
+    diff_gray = diff_image.convert('L')
+    diff_array = np.array(diff_gray)
+
+    width, height = diff_image.size
+    diff_blocks = []
+
+    # Scan the image in blocks to find areas with differences
+    for y in range(0, height, block_size):
+        for x in range(0, width, block_size):
+            # Get the block
+            block_x2 = min(x + block_size, width)
+            block_y2 = min(y + block_size, height)
+            block = diff_array[y:block_y2, x:block_x2]
+
+            # Check if this block has significant differences
+            if np.max(block) > threshold:
+                diff_blocks.append((x, y, block_x2, block_y2))
+
+    if not diff_blocks:
+        return []
+
+    # Merge nearby blocks into larger regions
+    merged_regions = _merge_nearby_regions(diff_blocks, merge_distance)
+
+    # Add padding around regions for better visibility
+    padding = 5
+    padded_regions = []
+    for x1, y1, x2, y2 in merged_regions:
+        padded_regions.append((
+            max(0, x1 - padding),
+            max(0, y1 - padding),
+            min(width, x2 + padding),
+            min(height, y2 + padding)
+        ))
+
+    return padded_regions
+
+
+def _merge_nearby_regions(regions, max_distance):
+    """
+    Merge regions that are close together into larger bounding boxes.
+
+    Args:
+        regions: List of (x1, y1, x2, y2) tuples
+        max_distance: Maximum distance between regions to merge
+
+    Returns:
+        List of merged (x1, y1, x2, y2) tuples
+    """
+    if not regions:
+        return []
+
+    # Sort regions by position
+    regions = sorted(regions, key=lambda r: (r[1], r[0]))
+
+    merged = []
+    current = list(regions[0])
+
+    for region in regions[1:]:
+        x1, y1, x2, y2 = region
+
+        # Check if this region is close enough to merge with current
+        # Two regions are close if their bounding boxes overlap or are within max_distance
+        close_x = (x1 <= current[2] + max_distance) and (x2 >= current[0] - max_distance)
+        close_y = (y1 <= current[3] + max_distance) and (y2 >= current[1] - max_distance)
+
+        if close_x and close_y:
+            # Merge: expand current region to include this one
+            current[0] = min(current[0], x1)
+            current[1] = min(current[1], y1)
+            current[2] = max(current[2], x2)
+            current[3] = max(current[3], y2)
+        else:
+            # Start new region
+            merged.append(tuple(current))
+            current = [x1, y1, x2, y2]
+
+    # Don't forget the last region
+    merged.append(tuple(current))
+
+    # Second pass: merge any remaining overlapping regions
+    changed = True
+    while changed:
+        changed = False
+        new_merged = []
+        skip = set()
+
+        for i, r1 in enumerate(merged):
+            if i in skip:
+                continue
+
+            current = list(r1)
+            for j, r2 in enumerate(merged[i+1:], i+1):
+                if j in skip:
+                    continue
+
+                # Check if r2 overlaps or is close to current
+                close_x = (r2[0] <= current[2] + max_distance) and (r2[2] >= current[0] - max_distance)
+                close_y = (r2[1] <= current[3] + max_distance) and (r2[3] >= current[1] - max_distance)
+
+                if close_x and close_y:
+                    current[0] = min(current[0], r2[0])
+                    current[1] = min(current[1], r2[1])
+                    current[2] = max(current[2], r2[2])
+                    current[3] = max(current[3], r2[3])
+                    skip.add(j)
+                    changed = True
+
+            new_merged.append(tuple(current))
+
+        merged = new_merged
+
+    return merged
+
+
 def diff_pdfs(payload):
     """
     Compare two PDFs visually with highlighted differences.
@@ -2009,7 +3194,7 @@ def diff_pdfs(payload):
     new_doc = None
 
     try:
-        print(f"[PDF_DIFF] Starting comparison: {os.path.basename(files[0])} vs {os.path.basename(files[1])}", flush=True)
+        print(f"[PDF_DIFF] Starting comparison: {os.path.basename(files[0])} vs {os.path.basename(files[1])}", file=sys.stderr, flush=True)
 
         doc1 = fitz.open(files[0])
         doc2 = fitz.open(files[1])
@@ -2022,7 +3207,7 @@ def diff_pdfs(payload):
         if max_pages > MAX_TOTAL_PAGES:
             return {"processed_files": [], "errors": [{"file": files[0], "error": f"Total page count ({max_pages}) exceeds limit of {MAX_TOTAL_PAGES} pages."}]}
 
-        print(f"[PDF_DIFF] File 1: {len(doc1)} pages, File 2: {len(doc2)} pages", flush=True)
+        print(f"[PDF_DIFF] File 1: {len(doc1)} pages, File 2: {len(doc2)} pages", file=sys.stderr, flush=True)
 
         # Better output naming: include both file names
         base1 = os.path.splitext(os.path.basename(files[0]))[0]
@@ -2073,9 +3258,10 @@ def diff_pdfs(payload):
             # Try to detect and highlight differences
             if page_num < len(doc1) and page_num < len(doc2):
                 try:
-                    # Render both pages as images
-                    pix1 = doc1[page_num].get_pixmap(matrix=fitz.Matrix(2, 2))
-                    pix2 = doc2[page_num].get_pixmap(matrix=fitz.Matrix(2, 2))
+                    # Render both pages as images at higher resolution for accurate diff
+                    scale_factor = 2  # 2x scale for comparison
+                    pix1 = doc1[page_num].get_pixmap(matrix=fitz.Matrix(scale_factor, scale_factor))
+                    pix2 = doc2[page_num].get_pixmap(matrix=fitz.Matrix(scale_factor, scale_factor))
 
                     # Convert to PIL Images for comparison
                     img1 = Image.frombytes("RGB", [pix1.width, pix1.height], pix1.samples)
@@ -2083,7 +3269,6 @@ def diff_pdfs(payload):
 
                     # Ensure both images are the same size
                     if img1.size != img2.size:
-                        # Resize to match dimensions
                         max_width = max(img1.width, img2.width)
                         max_height = max(img1.height, img2.height)
                         img1_resized = Image.new("RGB", (max_width, max_height), (255, 255, 255))
@@ -2093,22 +3278,72 @@ def diff_pdfs(payload):
                         img1 = img1_resized
                         img2 = img2_resized
 
-                    # Calculate difference
+                    # Calculate pixel-level difference
                     diff = ImageChops.difference(img1, img2)
 
                     # Check if there are differences
                     if diff.getbbox():
                         differences_found += 1
-                        # Add difference indicator (avoid Unicode characters)
+
+                        # Find specific regions with differences using block-based detection
+                        # Use larger block size and merge distance for cleaner output
+                        diff_regions = _find_diff_regions(diff, block_size=30, threshold=15, merge_distance=50)
+
+                        # Scale factor to convert from image coords to PDF coords
+                        coord_scale = 1.0 / scale_factor
+
+                        print(f"[PDF_DIFF] Page {page_num + 1}: Found {len(diff_regions)} regions to highlight", file=sys.stderr, flush=True)
+
+                        # Draw highlight rectangles on both sides for each difference region
+                        for idx, region in enumerate(diff_regions):
+                            x1, y1, x2, y2 = region
+
+                            # Scale coordinates back to PDF space
+                            pdf_x1 = x1 * coord_scale
+                            pdf_y1 = y1 * coord_scale
+                            pdf_x2 = x2 * coord_scale
+                            pdf_y2 = y2 * coord_scale
+
+                            print(f"[PDF_DIFF]   Region {idx+1}: img({x1},{y1})-({x2},{y2}) -> pdf({pdf_x1:.1f},{pdf_y1:.1f})-({pdf_x2:.1f},{pdf_y2:.1f})", file=sys.stderr, flush=True)
+
+                            # Left side (File 1) - highlight in red
+                            left_rect = fitz.Rect(
+                                20 + pdf_x1,
+                                40 + pdf_y1,
+                                20 + pdf_x2,
+                                40 + pdf_y2
+                            )
+
+                            # Use highlight annotation for better visibility
+                            highlight1 = page.add_rect_annot(left_rect)
+                            highlight1.set_colors(stroke=(1, 0, 0), fill=(1, 0.7, 0.7))
+                            highlight1.set_opacity(0.4)
+                            highlight1.set_border(width=2)
+                            highlight1.update()
+
+                            # Right side (File 2) - highlight in blue
+                            right_rect = fitz.Rect(
+                                ref_width + 40 + pdf_x1,
+                                40 + pdf_y1,
+                                ref_width + 40 + pdf_x2,
+                                40 + pdf_y2
+                            )
+
+                            highlight2 = page.add_rect_annot(right_rect)
+                            highlight2.set_colors(stroke=(0, 0, 1), fill=(0.7, 0.7, 1))
+                            highlight2.set_opacity(0.4)
+                            highlight2.set_border(width=2)
+                            highlight2.update()
+
+                        # Add difference indicator with count
                         try:
                             page.insert_text(
                                 fitz.Point(20, ref_height + 60),
-                                f"! Page {page_num + 1}: Differences detected",
+                                f"Page {page_num + 1}: {len(diff_regions)} difference(s) found",
                                 fontsize=10,
-                                color=(0.8, 0, 0)  # Red
+                                color=(0.8, 0, 0)
                             )
                         except Exception:
-                            # Fallback without special characters
                             page.insert_text(
                                 fitz.Point(20, ref_height + 60),
                                 f"Page {page_num + 1}: Different",
@@ -2116,17 +3351,7 @@ def diff_pdfs(payload):
                                 color=(0.8, 0, 0)
                             )
 
-                        # Add red border around pages with differences
-                        page.draw_rect(
-                            fitz.Rect(18, 38, ref_width + 22, ref_height + 42),
-                            color=(1, 0, 0),
-                            width=2
-                        )
-                        page.draw_rect(
-                            fitz.Rect(ref_width + 38, 38, ref_width * 2 + 42, ref_height + 42),
-                            color=(1, 0, 0),
-                            width=2
-                        )
+                        print(f"[PDF_DIFF] Page {page_num + 1}: Found {len(diff_regions)} difference regions", file=sys.stderr, flush=True)
                     else:
                         # Pages are identical
                         try:
@@ -2134,7 +3359,7 @@ def diff_pdfs(payload):
                                 fitz.Point(20, ref_height + 60),
                                 f"Page {page_num + 1}: Identical",
                                 fontsize=10,
-                                color=(0, 0.6, 0)  # Green
+                                color=(0, 0.6, 0)
                             )
                         except Exception:
                             page.insert_text(
@@ -2146,16 +3371,18 @@ def diff_pdfs(payload):
 
                 except Exception as e:
                     # Log and notify user of comparison failure for this page
-                    print(f"[PDF_DIFF] Could not detect differences for page {page_num + 1}: {e}", flush=True)
+                    print(f"[PDF_DIFF] Could not detect differences for page {page_num + 1}: {e}", file=sys.stderr, flush=True)
+                    import traceback
+                    traceback.print_exc()
                     try:
                         page.insert_text(
                             fitz.Point(20, ref_height + 60),
                             f"Page {page_num + 1}: Comparison failed",
                             fontsize=10,
-                            color=(0.5, 0.5, 0.5)  # Gray
+                            color=(0.5, 0.5, 0.5)
                         )
                     except Exception:
-                        pass  # Silent fail on text insertion
+                        pass
 
             elif page_num >= len(doc1):
                 # Page only in doc2
@@ -2192,8 +3419,8 @@ def diff_pdfs(payload):
                         color=(0.8, 0, 0)
                     )
 
-        # Add summary page at the beginning
-        summary_page = new_doc.new_page(0, width=ref_width * 2 + 40, height=200)
+        # Add summary page at the beginning with legend
+        summary_page = new_doc.new_page(0, width=ref_width * 2 + 40, height=280)
         summary_page.insert_text(
             fitz.Point(20, 40),
             "PDF Comparison Summary",
@@ -2225,8 +3452,47 @@ def diff_pdfs(payload):
             color=(0.8, 0, 0) if differences_found > 0 else (0, 0.6, 0)
         )
 
+        # Add legend for color coding
+        summary_page.insert_text(
+            fitz.Point(20, 175),
+            "Legend:",
+            fontsize=12,
+            color=(0, 0, 0)
+        )
+        # Red box for File 1 differences
+        legend_rect1 = fitz.Rect(20, 185, 40, 200)
+        shape = summary_page.new_shape()
+        shape.draw_rect(legend_rect1)
+        shape.finish(color=(1, 0, 0), fill=(1, 0.8, 0.8), fill_opacity=0.5)
+        shape.commit()
+        summary_page.insert_text(
+            fitz.Point(50, 197),
+            "Red highlight = Content in File 1 (left side)",
+            fontsize=10,
+            color=(0, 0, 0)
+        )
+        # Blue box for File 2 differences
+        legend_rect2 = fitz.Rect(20, 210, 40, 225)
+        shape = summary_page.new_shape()
+        shape.draw_rect(legend_rect2)
+        shape.finish(color=(0, 0, 1), fill=(0.8, 0.8, 1), fill_opacity=0.5)
+        shape.commit()
+        summary_page.insert_text(
+            fitz.Point(50, 222),
+            "Blue highlight = Content in File 2 (right side)",
+            fontsize=10,
+            color=(0, 0, 0)
+        )
+        # Green text for identical
+        summary_page.insert_text(
+            fitz.Point(20, 250),
+            "Green text = Pages are identical",
+            fontsize=10,
+            color=(0, 0.6, 0)
+        )
+
         new_doc.save(output_path, garbage=4, deflate=True)
-        print(f"[PDF_DIFF] Comparison complete. {differences_found} pages with differences found.", flush=True)
+        print(f"[PDF_DIFF] Comparison complete. {differences_found} pages with differences found.", file=sys.stderr, flush=True)
 
         if new_doc:
             new_doc.close()
@@ -2239,7 +3505,7 @@ def diff_pdfs(payload):
 
     except Exception as e:
         logger.error(f"Error comparing PDFs: {e}", exc_info=True)
-        print(f"[PDF_DIFF] Comparison failed: {e}", flush=True)
+        print(f"[PDF_DIFF] Comparison failed: {e}", file=sys.stderr, flush=True)
         if new_doc:
             new_doc.close()
         if doc1:
@@ -2265,7 +3531,7 @@ def create_booklet(payload):
     files = payload.get("files", [])
 
     # Production limits
-    MAX_PAGES = 200  # Booklets larger than this are impractical
+    MAX_PAGES = 1000  # Increased from 200 to support larger documents
 
     processed_files = []
     errors = []
@@ -2279,7 +3545,7 @@ def create_booklet(payload):
         new_doc = None
 
         try:
-            print(f"[BOOKLET] Starting booklet creation for {os.path.basename(file_path)}", flush=True)
+            logger.info(f"[BOOKLET] Starting booklet creation for {os.path.basename(file_path)}")
 
             doc = fitz.open(file_path)
             total_pages = len(doc)
@@ -2298,7 +3564,7 @@ def create_booklet(payload):
                 pages_needed = ((pages_needed // 4) + 1) * 4
 
             blank_pages_added = pages_needed - total_pages
-            print(f"[BOOKLET] Original pages: {total_pages}, booklet pages: {pages_needed}, blank pages: {blank_pages_added}", flush=True)
+            logger.info(f"[BOOKLET] Original pages: {total_pages}, booklet pages: {pages_needed}, blank pages: {blank_pages_added}")
 
             base, ext = os.path.splitext(file_path)
             output_path = f"{base}_booklet{ext}"
@@ -2324,7 +3590,7 @@ def create_booklet(payload):
                 # Order for this sheet: front-right, front-left, back-left, back-right
                 booklet_pages.extend([front_right, front_left, back_left, back_right])
 
-            print(f"[BOOKLET] Page order: {booklet_pages}", flush=True)
+            logger.info(f"[BOOKLET] Page order: {booklet_pages}")
 
             # Insert pages in booklet order
             for page_idx in booklet_pages:
@@ -2344,7 +3610,7 @@ def create_booklet(payload):
                         )
 
             new_doc.save(output_path, garbage=4, deflate=True)
-            print(f"[BOOKLET] Created booklet with {len(new_doc)} pages (added {blank_pages_added} blank pages)", flush=True)
+            logger.info(f"[BOOKLET] Created booklet with {len(new_doc)} pages (added {blank_pages_added} blank pages)")
 
             if new_doc:
                 new_doc.close()
@@ -2355,7 +3621,6 @@ def create_booklet(payload):
 
         except Exception as e:
             logger.error(f"Error creating booklet from {file_path}: {e}", exc_info=True)
-            print(f"[BOOKLET] Failed: {e}", flush=True)
             if new_doc:
                 new_doc.close()
             if doc:
@@ -2404,7 +3669,7 @@ def scrub_pdf(payload):
             continue
 
         try:
-            print(f"[SCRUBBER] Starting deep scrub for {os.path.basename(file_path)}", flush=True)
+            print(f"[SCRUBBER] Starting deep scrub for {os.path.basename(file_path)}", file=sys.stderr, flush=True)
 
             base, ext = os.path.splitext(file_path)
             output_path = f"{base}_scrubbed{ext}"
@@ -2427,7 +3692,7 @@ def scrub_pdf(payload):
                             del pdf.docinfo[key]
                         items_removed.append("document info")
                     except Exception as e:
-                        print(f"[SCRUBBER] Could not clear docinfo: {e}", flush=True)
+                        print(f"[SCRUBBER] Could not clear docinfo: {e}", file=sys.stderr, flush=True)
 
                 # 3. Remove JavaScript
                 try:
@@ -2435,7 +3700,7 @@ def scrub_pdf(payload):
                         del pdf.Root.Names.JavaScript
                         items_removed.append("JavaScript")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove JavaScript: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove JavaScript: {e}", file=sys.stderr, flush=True)
 
                 # 4. Remove embedded files/attachments
                 try:
@@ -2443,7 +3708,7 @@ def scrub_pdf(payload):
                         del pdf.Root.Names.EmbeddedFiles
                         items_removed.append("embedded files")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove embedded files: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove embedded files: {e}", file=sys.stderr, flush=True)
 
                 # 5. Remove OpenAction (auto-execute on open)
                 try:
@@ -2451,7 +3716,7 @@ def scrub_pdf(payload):
                         del pdf.Root.OpenAction
                         items_removed.append("OpenAction")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove OpenAction: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove OpenAction: {e}", file=sys.stderr, flush=True)
 
                 # 6. Remove AA (Additional Actions)
                 try:
@@ -2459,7 +3724,7 @@ def scrub_pdf(payload):
                         del pdf.Root.AA
                         items_removed.append("additional actions")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove additional actions: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove additional actions: {e}", file=sys.stderr, flush=True)
 
                 # 7. Remove Named Destinations
                 try:
@@ -2467,7 +3732,7 @@ def scrub_pdf(payload):
                         del pdf.Root.Names.Dests
                         items_removed.append("named destinations")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove named destinations: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove named destinations: {e}", file=sys.stderr, flush=True)
 
                 # 8. Remove Outlines (bookmarks - can contain user names/dates)
                 try:
@@ -2475,7 +3740,7 @@ def scrub_pdf(payload):
                         del pdf.Root.Outlines
                         items_removed.append("bookmarks")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove bookmarks: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove bookmarks: {e}", file=sys.stderr, flush=True)
 
                 # 9. Remove Threads (article threads)
                 try:
@@ -2483,7 +3748,7 @@ def scrub_pdf(payload):
                         del pdf.Root.Threads
                         items_removed.append("threads")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove threads: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove threads: {e}", file=sys.stderr, flush=True)
 
                 # 10. Remove Optional Content Groups (hidden layers)
                 try:
@@ -2491,7 +3756,7 @@ def scrub_pdf(payload):
                         del pdf.Root.OCProperties
                         items_removed.append("optional content layers")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove optional content: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove optional content: {e}", file=sys.stderr, flush=True)
 
                 # 11. Remove ViewerPreferences (can leak info)
                 try:
@@ -2499,7 +3764,7 @@ def scrub_pdf(payload):
                         del pdf.Root.ViewerPreferences
                         items_removed.append("viewer preferences")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove viewer preferences: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove viewer preferences: {e}", file=sys.stderr, flush=True)
 
                 # 12. Remove MarkInfo (accessibility/tagging info)
                 try:
@@ -2507,7 +3772,7 @@ def scrub_pdf(payload):
                         del pdf.Root.MarkInfo
                         items_removed.append("mark info")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove mark info: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove mark info: {e}", file=sys.stderr, flush=True)
 
                 # 13. Remove StructTreeRoot (structure tree - can contain metadata)
                 try:
@@ -2515,7 +3780,7 @@ def scrub_pdf(payload):
                         del pdf.Root.StructTreeRoot
                         items_removed.append("structure tree")
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove structure tree: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove structure tree: {e}", file=sys.stderr, flush=True)
 
                 # 14. Process each page
                 for page_num, page in enumerate(pdf.pages):
@@ -2524,28 +3789,28 @@ def scrub_pdf(payload):
                         if '/Annots' in page:
                             del page['/Annots']
                     except Exception as e:
-                        print(f"[SCRUBBER] Could not remove annotations from page {page_num + 1}: {e}", flush=True)
+                        print(f"[SCRUBBER] Could not remove annotations from page {page_num + 1}: {e}", file=sys.stderr, flush=True)
 
                     # Remove page metadata
                     try:
                         if '/Metadata' in page:
                             del page['/Metadata']
                     except Exception as e:
-                        print(f"[SCRUBBER] Could not remove page metadata from page {page_num + 1}: {e}", flush=True)
+                        print(f"[SCRUBBER] Could not remove page metadata from page {page_num + 1}: {e}", file=sys.stderr, flush=True)
 
                     # Remove piece info (editing history)
                     try:
                         if '/PieceInfo' in page:
                             del page['/PieceInfo']
                     except Exception as e:
-                        print(f"[SCRUBBER] Could not remove piece info from page {page_num + 1}: {e}", flush=True)
+                        print(f"[SCRUBBER] Could not remove piece info from page {page_num + 1}: {e}", file=sys.stderr, flush=True)
 
                     # Remove additional actions on page
                     try:
                         if '/AA' in page:
                             del page['/AA']
                     except Exception as e:
-                        print(f"[SCRUBBER] Could not remove additional actions from page {page_num + 1}: {e}", flush=True)
+                        print(f"[SCRUBBER] Could not remove additional actions from page {page_num + 1}: {e}", file=sys.stderr, flush=True)
 
                 if not items_removed:
                     items_removed.append("page annotations")
@@ -2554,7 +3819,7 @@ def scrub_pdf(payload):
                 try:
                     pdf.remove_unreferenced_resources()
                 except Exception as e:
-                    print(f"[SCRUBBER] Could not remove unreferenced resources: {e}", flush=True)
+                    print(f"[SCRUBBER] Could not remove unreferenced resources: {e}", file=sys.stderr, flush=True)
 
                 # Save with linearization (web optimization) and compression
                 try:
@@ -2567,15 +3832,15 @@ def scrub_pdf(payload):
                     )
                 except Exception as save_err:
                     # If linearization fails, try without it
-                    print(f"[SCRUBBER] Linearization failed, trying without: {save_err}", flush=True)
+                    print(f"[SCRUBBER] Linearization failed, trying without: {save_err}", file=sys.stderr, flush=True)
                     pdf.save(
                         output_path,
                         compress_streams=True,
                         stream_decode_level=pikepdf.StreamDecodeLevel.generalized
                     )
 
-            print(f"[SCRUBBER] Removed: {', '.join(items_removed)}", flush=True)
-            print(f"[SCRUBBER] Scrubbed PDF saved: {os.path.basename(output_path)}", flush=True)
+            print(f"[SCRUBBER] Removed: {', '.join(items_removed)}", file=sys.stderr, flush=True)
+            print(f"[SCRUBBER] Scrubbed PDF saved: {os.path.basename(output_path)}", file=sys.stderr, flush=True)
 
             processed_files.append(output_path)
 
@@ -2583,7 +3848,7 @@ def scrub_pdf(payload):
             errors.append({"file": file_path, "error": "PDF is password-protected. Cannot scrub encrypted files. Please unlock the PDF first."})
         except Exception as e:
             logger.error(f"Error scrubbing PDF {file_path}: {e}", exc_info=True)
-            print(f"[SCRUBBER] Failed: {e}", flush=True)
+            print(f"[SCRUBBER] Failed: {e}", file=sys.stderr, flush=True)
             errors.append({"file": file_path, "error": f"Failed to scrub PDF: {str(e)}"})
 
     return {"processed_files": processed_files, "errors": errors}
@@ -2596,8 +3861,8 @@ def redact_pdf(payload):
     """
     files = payload.get("files", [])
 
+    # Log operation details without exposing sensitive content
     logger.info(f"Redact PDF called with payload keys: {payload.keys()}")
-    logger.info(f"Payload texts: {payload.get('texts')}, text: {payload.get('text')}")
 
     # Support both single text (legacy) and multiple texts array
     texts_to_redact = []
@@ -2605,21 +3870,28 @@ def redact_pdf(payload):
         # New format: JSON array of texts
         import json
         try:
-            texts_to_redact = json.loads(payload.get("texts"))
-            logger.info(f"Parsed texts from JSON: {texts_to_redact}")
-            if not isinstance(texts_to_redact, list):
-                texts_to_redact = [texts_to_redact]
-        except Exception as e:
-            logger.warning(f"Failed to parse texts as JSON: {e}, using as-is")
+            parsed = json.loads(payload.get("texts"))
+            # Validate parsed result is a list
+            if isinstance(parsed, list):
+                texts_to_redact = parsed
+            elif isinstance(parsed, str):
+                texts_to_redact = [parsed]
+            else:
+                logger.warning(f"Unexpected JSON type for texts: {type(parsed).__name__}, using as-is")
+                texts_to_redact = [str(parsed)]
+            logger.info(f"Parsed {len(texts_to_redact)} text(s) from JSON")
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse texts as JSON: {type(e).__name__}, using as-is")
             texts_to_redact = [payload.get("texts")]
     elif payload.get("text"):
         # Legacy format: single text
-        logger.info(f"Using legacy single text format: {payload.get('text')}")
+        logger.info("Using legacy single text format")
         texts_to_redact = [payload.get("text")]
 
     # Filter out empty strings
     texts_to_redact = [t.strip() for t in texts_to_redact if t and t.strip()]
-    logger.info(f"Final texts to redact after filtering: {texts_to_redact}")
+    # Log count only, not the actual sensitive content being redacted
+    logger.info(f"Processing {len(texts_to_redact)} text(s) for redaction")
 
     if not texts_to_redact:
         file_name = files[0] if files else "unknown"
@@ -2759,7 +4031,7 @@ def sign_pdf(payload):
             passphrase=password.encode('utf-8') if password else None
         )
 
-        print(f"[SIGNER] Successfully loaded certificate for signing", flush=True)
+        print(f"[SIGNER] Successfully loaded certificate for signing", file=sys.stderr, flush=True)
 
     except Exception as e:
         logger.error(f"Error loading certificate: {e}", exc_info=True)
@@ -2810,7 +4082,7 @@ def sign_pdf(payload):
             x = max(10, min(x, page_width - sig_width - 10))
             y = max(10, min(y, page_height - sig_height - 10))
 
-            print(f"[SIGNER] Signature box position: ({x}, {y}) on {page_width}x{page_height} page", flush=True)
+            print(f"[SIGNER] Signature box position: ({x}, {y}) on {page_width}x{page_height} page", file=sys.stderr, flush=True)
 
             # Create signature field specification
             sig_field_spec = SigFieldSpec(
@@ -2860,7 +4132,7 @@ def sign_pdf(payload):
                     writer.write(outf)
 
             processed_files.append(output_path)
-            print(f"[SIGNER] Successfully signed: {output_path}", flush=True)
+            print(f"[SIGNER] Successfully signed: {output_path}", file=sys.stderr, flush=True)
 
         except Exception as e:
             logger.error(f"Error signing PDF {file_path}: {e}", exc_info=True)
@@ -2870,7 +4142,7 @@ def sign_pdf(payload):
     try:
         if cert_file and os.path.exists(cert_file):
             os.remove(cert_file)
-            print(f"[SECURITY] Deleted certificate file: {cert_file}", flush=True)
+            print(f"[SECURITY] Deleted certificate file: {cert_file}", file=sys.stderr, flush=True)
     except Exception as e:
         logger.warning(f"Failed to delete certificate file: {e}")
 
@@ -2963,7 +4235,7 @@ def optimize_pdf(payload):
                 })
                 continue
 
-            print(f"[OPTIMIZE] Starting optimization for {os.path.basename(file_path)} ({len(doc)} pages, {pdf_size_mb:.2f}MB)", flush=True)
+            print(f"[OPTIMIZE] Starting optimization for {os.path.basename(file_path)} ({len(doc)} pages, {pdf_size_mb:.2f}MB)", file=sys.stderr, flush=True)
 
             base, ext = os.path.splitext(file_path)
             output_path = f"{base}_web_optimized{ext}"
@@ -2991,9 +4263,9 @@ def optimize_pdf(payload):
                 optimized_size_mb = os.path.getsize(output_path) / (1024 * 1024)
                 reduction_percent = ((original_size_mb - optimized_size_mb) / original_size_mb) * 100
 
-                print(f"[OPTIMIZE] {os.path.basename(file_path)}: {original_size_mb:.2f}MB → {optimized_size_mb:.2f}MB ({reduction_percent:+.1f}%)", flush=True)
+                print(f"[OPTIMIZE] {os.path.basename(file_path)}: {original_size_mb:.2f}MB → {optimized_size_mb:.2f}MB ({reduction_percent:+.1f}%)", file=sys.stderr, flush=True)
             except Exception as e:
-                print(f"[OPTIMIZE] Could not calculate size reduction: {e}", flush=True)
+                print(f"[OPTIMIZE] Could not calculate size reduction: {e}", file=sys.stderr, flush=True)
 
             if os.path.exists(output_path):
                 processed_files.append(output_path)
@@ -3014,7 +4286,13 @@ def optimize_pdf(payload):
     return {"processed_files": processed_files, "errors": errors}
 
 def word_to_pdf(payload):
-    """Convert Word documents to PDF."""
+    """
+    Convert Word documents to PDF.
+
+    Note: This is a BETA feature. Best results with LibreOffice installed.
+    Python-only fallback preserves text and basic formatting but may lose
+    complex layouts, images, and advanced formatting.
+    """
     files = payload.get("files", [])
     libreoffice_path = payload.get("libreoffice_path")
 
@@ -3022,13 +4300,17 @@ def word_to_pdf(payload):
     errors = []
 
     for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
         try:
             base, _ = os.path.splitext(file_path)
             output_path = f"{base}.pdf"
+            conversion_method = None
 
             # Try LibreOffice first (best quality)
-            libreoffice_available = False
-            if libreoffice_path or os.name == 'nt':
+            if libreoffice_path or os.name == 'nt' or os.name == 'posix':
                 if os.name == 'nt':
                     possible_paths = [
                         libreoffice_path,
@@ -3039,45 +4321,129 @@ def word_to_pdf(payload):
                     possible_paths = [libreoffice_path, "/usr/bin/soffice", "/usr/local/bin/soffice", "soffice"]
 
                 for path in possible_paths:
-                    if path and (os.path.exists(path) or path == "soffice"):
+                    if path and (os.path.exists(path) if path != "soffice" else True):
                         try:
                             import subprocess
+                            output_dir = os.path.dirname(output_path) or "."
                             cmd = [path, "--headless", "--convert-to", "pdf",
-                                   "--outdir", os.path.dirname(output_path) or ".", file_path]
+                                   "--outdir", output_dir, file_path]
                             result = subprocess.run(cmd, capture_output=True, timeout=120, text=True)
                             if result.returncode == 0 and os.path.exists(output_path):
-                                libreoffice_available = True
+                                conversion_method = "libreoffice"
                                 break
-                        except:
+                        except Exception as lo_err:
+                            print(f"[WORD2PDF] LibreOffice attempt failed: {lo_err}", file=sys.stderr)
                             continue
 
-            # Fallback: Python-only conversion
-            if not libreoffice_available:
+            # Fallback: Improved Python-only conversion
+            if not conversion_method:
                 try:
                     from docx import Document
+                    from docx.shared import Pt, Inches
                     from reportlab.lib.pagesizes import letter
-                    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-                    from reportlab.lib.styles import getSampleStyleSheet
+                    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+                    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+                    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+                    from reportlab.lib import colors
+                    from reportlab.lib.units import inch
+                    import io
 
                     doc = Document(file_path)
-                    pdf_doc = SimpleDocTemplate(output_path, pagesize=letter)
+                    pdf_doc = SimpleDocTemplate(
+                        output_path,
+                        pagesize=letter,
+                        leftMargin=0.75*inch,
+                        rightMargin=0.75*inch,
+                        topMargin=0.75*inch,
+                        bottomMargin=0.75*inch
+                    )
                     story = []
                     styles = getSampleStyleSheet()
 
+                    # Create custom styles for different heading levels
+                    custom_styles = {
+                        'Heading1': ParagraphStyle('CustomH1', parent=styles['Heading1'], fontSize=18, spaceAfter=12),
+                        'Heading2': ParagraphStyle('CustomH2', parent=styles['Heading2'], fontSize=14, spaceAfter=10),
+                        'Heading3': ParagraphStyle('CustomH3', parent=styles['Heading3'], fontSize=12, spaceAfter=8),
+                        'Normal': ParagraphStyle('CustomNormal', parent=styles['Normal'], fontSize=11, spaceAfter=6),
+                        'Bold': ParagraphStyle('CustomBold', parent=styles['Normal'], fontSize=11, spaceAfter=6, fontName='Helvetica-Bold'),
+                    }
+
+                    # Process paragraphs
                     for para in doc.paragraphs:
-                        if para.text.strip():
-                            story.append(Paragraph(para.text, styles['Normal']))
-                            story.append(Spacer(1, 12))
+                        if not para.text.strip():
+                            story.append(Spacer(1, 6))
+                            continue
+
+                        # Determine style based on paragraph style name
+                        style_name = para.style.name if para.style else 'Normal'
+                        if 'Heading 1' in style_name:
+                            style = custom_styles['Heading1']
+                        elif 'Heading 2' in style_name:
+                            style = custom_styles['Heading2']
+                        elif 'Heading 3' in style_name:
+                            style = custom_styles['Heading3']
+                        else:
+                            # Check for bold text
+                            has_bold = any(run.bold for run in para.runs if run.bold)
+                            style = custom_styles['Bold'] if has_bold else custom_styles['Normal']
+
+                        # Escape special characters for reportlab
+                        text = para.text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+                        try:
+                            story.append(Paragraph(text, style))
+                        except Exception:
+                            # If paragraph fails, try plain text
+                            story.append(Paragraph(text, styles['Normal']))
+
+                    # Process tables
+                    for table in doc.tables:
+                        table_data = []
+                        for row in table.rows:
+                            row_data = []
+                            for cell in row.cells:
+                                cell_text = cell.text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                                row_data.append(cell_text[:100])  # Truncate long cells
+                            table_data.append(row_data)
+
+                        if table_data:
+                            try:
+                                t = Table(table_data)
+                                t.setStyle(TableStyle([
+                                    ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.9, 0.9, 0.9)),
+                                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                                    ('FONTSIZE', (0, 0), (-1, -1), 9),
+                                    ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)
+                                ]))
+                                story.append(Spacer(1, 12))
+                                story.append(t)
+                                story.append(Spacer(1, 12))
+                            except Exception as table_err:
+                                print(f"[WORD2PDF] Table conversion failed: {table_err}", file=sys.stderr)
+
+                    if not story:
+                        story.append(Paragraph("(Document appears to be empty or contains unsupported content)", styles['Normal']))
 
                     pdf_doc.build(story)
-                except ImportError:
-                    errors.append({"file": file_path, "error": "python-docx and reportlab required for Word conversion"})
+                    conversion_method = "python-docx"
+
+                except ImportError as ie:
+                    errors.append({"file": file_path, "error": f"Required library missing: {str(ie)}"})
                     continue
                 except Exception as e:
                     errors.append({"file": file_path, "error": f"Conversion failed: {str(e)}"})
                     continue
 
-            processed_files.append(output_path)
+            if os.path.exists(output_path):
+                processed_files.append(output_path)
+                print(f"[WORD2PDF] Converted using {conversion_method}: {os.path.basename(output_path)}", file=sys.stderr)
+            else:
+                errors.append({"file": file_path, "error": "Output file was not created"})
+
         except Exception as e:
             errors.append({"file": file_path, "error": str(e)})
 
@@ -3158,7 +4524,13 @@ def powerpoint_to_pdf(payload):
     return {"processed_files": processed_files, "errors": errors}
 
 def excel_to_pdf(payload):
-    """Convert Excel spreadsheets to PDF."""
+    """
+    Convert Excel spreadsheets to PDF.
+
+    Note: This is a BETA feature. Best results with LibreOffice installed.
+    Python-only fallback creates a table-based PDF but may not preserve
+    cell formatting, colors, formulas, or charts.
+    """
     files = payload.get("files", [])
     libreoffice_path = payload.get("libreoffice_path")
 
@@ -3166,13 +4538,17 @@ def excel_to_pdf(payload):
     errors = []
 
     for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
         try:
             base, _ = os.path.splitext(file_path)
             output_path = f"{base}.pdf"
+            conversion_method = None
 
             # Try LibreOffice first
-            libreoffice_available = False
-            if libreoffice_path or os.name == 'nt':
+            if libreoffice_path or os.name == 'nt' or os.name == 'posix':
                 if os.name == 'nt':
                     possible_paths = [
                         libreoffice_path,
@@ -3183,56 +4559,405 @@ def excel_to_pdf(payload):
                     possible_paths = [libreoffice_path, "/usr/bin/soffice", "/usr/local/bin/soffice", "soffice"]
 
                 for path in possible_paths:
-                    if path and (os.path.exists(path) or path == "soffice"):
+                    if path and (os.path.exists(path) if path != "soffice" else True):
                         try:
                             import subprocess
+                            output_dir = os.path.dirname(output_path) or "."
                             cmd = [path, "--headless", "--convert-to", "pdf",
-                                   "--outdir", os.path.dirname(output_path) or ".", file_path]
+                                   "--outdir", output_dir, file_path]
                             result = subprocess.run(cmd, capture_output=True, timeout=120, text=True)
                             if result.returncode == 0 and os.path.exists(output_path):
-                                libreoffice_available = True
+                                conversion_method = "libreoffice"
                                 break
-                        except:
+                        except Exception as lo_err:
+                            print(f"[EXCEL2PDF] LibreOffice attempt failed: {lo_err}", file=sys.stderr)
                             continue
 
-            # Fallback: Python-only conversion
-            if not libreoffice_available:
+            # Fallback: Improved Python-only conversion
+            if not conversion_method:
                 try:
                     import openpyxl
-                    from reportlab.lib.pagesizes import letter, landscape
-                    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-                    from reportlab.lib.styles import getSampleStyleSheet
+                    from reportlab.lib.pagesizes import letter, landscape, A4
+                    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, LongTable
+                    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
                     from reportlab.lib import colors
+                    from reportlab.lib.units import inch
 
-                    wb = openpyxl.load_workbook(file_path)
-                    pdf_doc = SimpleDocTemplate(output_path, pagesize=landscape(letter))
+                    wb = openpyxl.load_workbook(file_path, data_only=True)  # data_only to get calculated values
+                    pdf_doc = SimpleDocTemplate(
+                        output_path,
+                        pagesize=landscape(letter),
+                        leftMargin=0.5*inch,
+                        rightMargin=0.5*inch,
+                        topMargin=0.5*inch,
+                        bottomMargin=0.5*inch
+                    )
                     story = []
                     styles = getSampleStyleSheet()
 
-                    for sheet_name in wb.sheetnames:
-                        ws = wb[sheet_name]
-                        data = []
-                        for row in ws.iter_rows(values_only=True):
-                            data.append([str(cell) if cell is not None else "" for cell in row])
+                    # Create styles for table cells with text wrapping
+                    # For very wide tables, use smaller font size for better fit
+                    cell_style = ParagraphStyle(
+                        'CellStyle',
+                        parent=styles['Normal'],
+                        fontSize=8,
+                        leading=10,  # Line spacing
+                        wordWrap='CJK'  # Enable word wrapping
+                    )
+                    
+                    # Create a style for header cells
+                    header_style = ParagraphStyle(
+                        'HeaderStyle',
+                        parent=styles['Normal'],
+                        fontSize=8,
+                        leading=10,
+                        wordWrap='CJK',
+                        fontName='Helvetica-Bold'
+                    )
+                    
+                    # Create compact styles for very wide tables (50+ columns)
+                    compact_cell_style = ParagraphStyle(
+                        'CompactCellStyle',
+                        parent=styles['Normal'],
+                        fontSize=6,  # Smaller font for wide tables
+                        leading=7,   # Tighter line spacing
+                        wordWrap='CJK'
+                    )
+                    
+                    compact_header_style = ParagraphStyle(
+                        'CompactHeaderStyle',
+                        parent=styles['Normal'],
+                        fontSize=6,  # Smaller font for wide tables
+                        leading=7,   # Tighter line spacing
+                        wordWrap='CJK',
+                        fontName='Helvetica-Bold'
+                    )
 
-                        if data:
-                            table = Table(data)
-                            table.setStyle(TableStyle([
-                                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                            ]))
-                            story.append(Paragraph(sheet_name, styles['Heading1']))
-                            story.append(table)
+                    # Helper function to escape XML special characters
+                    def escape_xml(text):
+                        """Escape XML special characters for Paragraph objects"""
+                        text = str(text)
+                        text = text.replace('&', '&amp;')
+                        text = text.replace('<', '&lt;')
+                        text = text.replace('>', '&gt;')
+                        return text
+
+                    def calculate_dynamic_column_widths(raw_data, available_width, font_size=8, is_very_wide=False):
+                        """
+                        Calculate column widths based on actual content length.
+                        
+                        Args:
+                            raw_data: List of rows (first row is header)
+                            available_width: Available page width in points
+                            font_size: Font size in points
+                            is_very_wide: True if table has 50+ columns
+                        
+                        Returns:
+                            List of column widths in points
+                        """
+                        if not raw_data or not raw_data[0]:
+                            return []
+                        
+                        num_cols = len(raw_data[0])
+                        sample_size = min(50, len(raw_data) - 1)  # Sample first 50 data rows (skip header)
+                        
+                        # Step 1: Analyze content per column
+                        column_metrics = []
+                        for col_idx in range(num_cols):
+                            max_len = 0
+                            total_len = 0
+                            count = 0
+                            
+                            # Check header (first row)
+                            if len(raw_data) > 0 and col_idx < len(raw_data[0]):
+                                header_text = str(raw_data[0][col_idx] or "")
+                                header_len = len(header_text)
+                                max_len = max(max_len, header_len)
+                            
+                            # Check sample data rows (skip header row)
+                            for row in raw_data[1:sample_size+1]:
+                                if col_idx < len(row):
+                                    cell_text = str(row[col_idx] or "")
+                                    cell_len = len(cell_text)
+                                    max_len = max(max_len, cell_len)
+                                    total_len += cell_len
+                                    count += 1
+                            
+                            avg_len = total_len / max(count, 1)
+                            # Use weighted approach: 70% max, 30% average (favors max but considers average)
+                            target_len = max_len * 0.7 + avg_len * 0.3
+                            
+                            column_metrics.append({
+                                'max_len': max_len,
+                                'avg_len': avg_len,
+                                'target_len': target_len
+                            })
+                        
+                        # Step 2: Estimate required widths
+                        # Character width factor depends on font size (inches per character)
+                        char_width_factors = {6: 0.05, 8: 0.06, 10: 0.07}
+                        char_width_factor = char_width_factors.get(font_size, 0.06)
+                        
+                        estimated_widths = []
+                        for metric in column_metrics:
+                            # Estimate width needed (in points: 1 inch = 72 points)
+                            # Add 20% padding for readability
+                            width_inches = metric['target_len'] * char_width_factor * 1.2
+                            width_points = width_inches * 72
+                            estimated_widths.append(width_points)
+                        
+                        # Step 3: Set min/max bounds
+                        # For very wide tables, use smaller min width
+                        min_width_points = (0.15 * 72) if is_very_wide else (0.2 * 72)  # 0.15-0.2 inches minimum
+                        max_width_points = available_width * 0.4  # 40% of page max
+                        
+                        bounded_widths = [
+                            max(min_width_points, min(w, max_width_points))
+                            for w in estimated_widths
+                        ]
+                        
+                        # Step 4: Normalize to fit available width
+                        total_estimated = sum(bounded_widths)
+                        
+                        if total_estimated > available_width:
+                            # Scale down proportionally
+                            scale_factor = available_width / total_estimated
+                            final_widths = [w * scale_factor for w in bounded_widths]
+                        else:
+                            # Distribute excess to columns that need it most
+                            excess = available_width - total_estimated
+                            if excess > 0:
+                                # Give more to columns that are close to their max or have long content
+                                priorities = []
+                                for i, (w, metric) in enumerate(zip(bounded_widths, column_metrics)):
+                                    # Priority based on: how close to max, and content length
+                                    width_ratio = (w / max_width_points) if max_width_points > 0 else 0
+                                    content_ratio = min(metric['target_len'] / 100, 1.0)  # Normalize content length
+                                    priority = width_ratio * 0.6 + content_ratio * 0.4
+                                    priorities.append(priority)
+                                
+                                total_priority = sum(priorities) or 1
+                                final_widths = [
+                                    w + (excess * p / total_priority)
+                                    for w, p in zip(bounded_widths, priorities)
+                                ]
+                            else:
+                                final_widths = bounded_widths
+                        
+                        return final_widths
+
+                    for sheet_idx, sheet_name in enumerate(wb.sheetnames):
+                        ws = wb[sheet_name]
+
+                        # Get the actual data range
+                        raw_data = []  # Store raw data first
+                        max_col = ws.max_column or 1
+                        max_row = ws.max_row or 1
+
+                        # Limit to reasonable size to prevent memory issues
+                        # For large files, allow more columns/rows but with warnings
+                        max_col_limit = payload.get('max_columns', 50)  # Configurable, default 50
+                        max_row_limit = payload.get('max_rows', 2000)  # Configurable, default 2000
+                        max_col = min(max_col, max_col_limit)
+                        max_row = min(max_row, max_row_limit)
+                        
+                        # Track if we're truncating data
+                        data_truncated = False
+                        if ws.max_column > max_col or ws.max_row > max_row:
+                            data_truncated = True
+
+                        # First pass: collect raw data
+                        for row_idx, row in enumerate(ws.iter_rows(min_row=1, max_row=max_row, max_col=max_col, values_only=True)):
+                            if row_idx >= max_row:
+                                break
+                            row_data = []
+                            for cell in row:
+                                if cell is None:
+                                    row_data.append("")
+                                elif isinstance(cell, (int, float)):
+                                    # Format numbers nicely
+                                    if isinstance(cell, float) and cell == int(cell):
+                                        row_data.append(str(int(cell)))
+                                    else:
+                                        row_data.append(str(cell))
+                                else:
+                                    row_data.append(str(cell))
+                            raw_data.append(row_data)
+
+                        # Calculate column widths before creating Paragraphs
+                        if raw_data and any(any(cell for cell in row) for row in raw_data):
+                            num_cols = len(raw_data[0]) if raw_data else 1
+                            available_width = landscape(letter)[0] - inch  # Page width minus margins
+                            
+                            # Detect very wide tables (50+ columns) - need special handling
+                            is_very_wide = num_cols >= 50
+                            
+                            # Use dynamic column width calculation based on content
+                            font_size = 6 if is_very_wide else 8
+                            col_widths = calculate_dynamic_column_widths(
+                                raw_data, 
+                                available_width, 
+                                font_size=font_size,
+                                is_very_wide=is_very_wide
+                            )
+                            
+                            # Calculate per-column text handling limits based on individual column widths
+                            # This allows different columns to have different text handling strategies
+                            available_height = landscape(letter)[1] - 2*0.5*inch
+                            max_cell_height = available_height * 0.5  # ~270 points max cell height
+                            max_lines = int(max_cell_height / 10)  # ~27 lines at 10pt leading
+                            
+                            # For each column, determine if we can use Paragraphs and what the limits are
+                            column_text_limits = []
+                            for col_idx, col_w in enumerate(col_widths):
+                                # Determine if this column is wide enough for Paragraph wrapping
+                                use_para = col_w >= 30  # Only use Paragraphs for columns >= 30 points wide
+                                
+                                if use_para and not is_very_wide:
+                                    # Calculate safe character limit for this column
+                                    chars_per_line = max(10, int(col_w / (font_size * 0.6)))
+                                    max_chars = max_lines * chars_per_line
+                                    max_chars = min(max_chars, 150)  # Cap at 150 chars for Paragraphs
+                                else:
+                                    # Use plain strings for narrow columns or very wide tables
+                                    max_chars = 0  # 0 means use plain strings
+                                    # Set plain string length limit based on column width
+                                    if is_very_wide:
+                                        max_chars = 30  # Very aggressive for wide tables
+                                    else:
+                                        # Estimate how many chars fit in this column width
+                                        chars_per_line = max(5, int(col_w / (font_size * 0.5)))
+                                        max_chars = chars_per_line * 2  # Allow 2 lines worth
+                                        max_chars = min(max_chars, 100)  # Cap at 100
+                                
+                                column_text_limits.append({
+                                    'use_paragraph': use_para and not is_very_wide,
+                                    'max_chars': max_chars,
+                                    'width': col_w
+                                })
+                            
+                            # Set active styles
+                            if is_very_wide:
+                                active_cell_style = compact_cell_style
+                                active_header_style = compact_header_style
+                            else:
+                                active_cell_style = cell_style
+                                active_header_style = header_style
+                            
+                            # Second pass: convert to Paragraph objects with proper limits
+                            data = []
+                            for row_idx, row_data in enumerate(raw_data):
+                                is_header = (row_idx == 0)
+                                current_style = active_header_style if is_header else active_cell_style
+                                
+                                paragraph_row = []
+                                for cell_idx, cell_text in enumerate(row_data):
+                                    if not cell_text:  # Empty string or None
+                                        paragraph_row.append("")
+                                    else:
+                                        # Get text handling strategy for this specific column
+                                        if cell_idx < len(column_text_limits):
+                                            col_limit = column_text_limits[cell_idx]
+                                            use_para = col_limit['use_paragraph']
+                                            max_chars = col_limit['max_chars']
+                                        else:
+                                            # Fallback if index is out of range
+                                            use_para = False
+                                            max_chars = 50
+                                        
+                                        # Truncate extremely long text to prevent cells taller than page
+                                        text = str(cell_text).strip()
+                                        original_length = len(text)
+                                        
+                                        # Handle text based on this column's width and limits
+                                        if not use_para or original_length > max_chars:
+                                            # Use plain string for narrow columns or very long text
+                                            # This prevents ReportLab from creating extremely tall cells
+                                            if original_length > max_chars:
+                                                truncate_at = max_chars - 20  # Leave room for truncation message
+                                                text = text[:truncate_at] + "... [truncated]"
+                                            paragraph_row.append(text)
+                                        else:
+                                            # For shorter text in wider columns, use Paragraph for proper wrapping
+                                            try:
+                                                para = Paragraph(escape_xml(text), current_style)
+                                                paragraph_row.append(para)
+                                            except Exception as para_err:
+                                                # If Paragraph creation fails, use plain string as fallback
+                                                print(f"[EXCEL2PDF] Paragraph creation failed for cell ({row_idx},{cell_idx}), using plain text: {para_err}", file=sys.stderr)
+                                                paragraph_row.append(text)
+                                data.append(paragraph_row)
+
+                        if data and any(any(cell for cell in row) for row in data):
+                            # Add sheet name as heading
+                            sheet_title = f"<b>{sheet_name}</b>"
+                            if data_truncated:
+                                sheet_title += f" <i>(Showing {max_col} of {ws.max_column} columns, {max_row} of {ws.max_row} rows)</i>"
+                            story.append(Paragraph(sheet_title, styles['Heading2']))
+                            story.append(Spacer(1, 12))
+
+                            try:
+                                # Use LongTable for better pagination with large datasets
+                                # LongTable handles page breaks more efficiently than Table
+                                use_longtable = len(data) > 100  # Use LongTable for tables with more than 100 rows
+                                
+                                # Use dynamically calculated column widths
+                                if use_longtable:
+                                    table = LongTable(data, colWidths=col_widths, repeatRows=1)
+                                else:
+                                    table = Table(data, colWidths=col_widths)
+                                # Adjust table style based on table width
+                                if is_very_wide:
+                                    # For very wide tables, use smaller font and tighter padding
+                                    table_style = TableStyle([
+                                        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.2, 0.4, 0.6)),
+                                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                                        ('FONTSIZE', (0, 0), (-1, -1), 6),  # Smaller font for wide tables
+                                        ('BOTTOMPADDING', (0, 0), (-1, 0), 4),  # Tighter padding
+                                        ('TOPPADDING', (0, 0), (-1, -1), 2),  # Tighter padding
+                                        ('LEFTPADDING', (0, 0), (-1, -1), 2),  # Minimal side padding
+                                        ('RIGHTPADDING', (0, 0), (-1, -1), 2),  # Minimal side padding
+                                        ('BACKGROUND', (0, 1), (-1, -1), colors.Color(0.95, 0.95, 0.95)),
+                                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.Color(0.95, 0.95, 0.95)]),
+                                        ('GRID', (0, 0), (-1, -1), 0.3, colors.Color(0.7, 0.7, 0.7)),  # Thinner grid
+                                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                    ])
+                                else:
+                                    # Standard style for normal tables
+                                    table_style = TableStyle([
+                                        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.2, 0.4, 0.6)),
+                                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                                        ('FONTSIZE', (0, 0), (-1, -1), 8),
+                                        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                                        ('TOPPADDING', (0, 0), (-1, -1), 4),
+                                        ('BACKGROUND', (0, 1), (-1, -1), colors.Color(0.95, 0.95, 0.95)),
+                                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.Color(0.95, 0.95, 0.95)]),
+                                        ('GRID', (0, 0), (-1, -1), 0.5, colors.Color(0.7, 0.7, 0.7)),
+                                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                    ])
+                                
+                                table.setStyle(table_style)
+                                story.append(table)
+                            except Exception as table_err:
+                                print(f"[EXCEL2PDF] Table creation failed for {sheet_name}: {table_err}", file=sys.stderr)
+                                story.append(Paragraph(f"(Could not render sheet: {sheet_name})", styles['Normal']))
+
+                            # Add page break between sheets
+                            if sheet_idx < len(wb.sheetnames) - 1:
+                                story.append(PageBreak())
+
+                    if not story:
+                        story.append(Paragraph("(Spreadsheet appears to be empty)", styles['Normal']))
 
                     pdf_doc.build(story)
-                except ImportError:
-                    errors.append({"file": file_path, "error": "openpyxl and reportlab required for Excel conversion"})
+                    conversion_method = "openpyxl"
+
+                except ImportError as ie:
+                    errors.append({"file": file_path, "error": f"Required library missing: {str(ie)}"})
                     continue
                 except Exception as e:
                     errors.append({"file": file_path, "error": f"Conversion failed: {str(e)}"})
@@ -3262,12 +4987,68 @@ def html_to_pdf(payload):
                 HTML(filename=file_path).write_pdf(output_path)
                 processed_files.append(output_path)
                 continue
-            except ImportError:
-                logger.warning("WeasyPrint not available, trying alternative")
-            except Exception as e:
-                logger.warning(f"WeasyPrint conversion failed: {e}, trying fallback")
+            except (ImportError, Exception) as e:
+                logger.warning(f"WeasyPrint conversion unavailable or failed: {e}, trying browser fallback")
 
-            # Fallback: Basic HTML parsing and PDF generation
+            # Try Browser-based conversion (Headless Edge/Chrome/Chromium) - Best for high-quality offline rendering
+            browser_success = False
+            browser_paths = []
+            
+            # 1. Platform-specific common paths
+            if platform.system() == "Windows":
+                browser_paths = [
+                    os.path.join(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"), "Microsoft\\Edge\\Application\\msedge.exe"),
+                    os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "Microsoft\\Edge\\Application\\msedge.exe"),
+                    os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "Google\\Chrome\\Application\\chrome.exe"),
+                    os.path.join(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"), "Google\\Chrome\\Application\\chrome.exe")
+                ]
+            elif platform.system() == "Darwin":  # macOS
+                browser_paths = [
+                    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+                    "/Applications/Chromium.app/Contents/MacOS/Chromium"
+                ]
+            
+            # 2. Add system PATH search for common browser binaries (especially for Linux)
+            import shutil
+            for bin_name in ['google-chrome', 'microsoft-edge', 'chromium', 'chromium-browser', 'chrome', 'google-chrome-stable']:
+                path = shutil.which(bin_name)
+                if path and path not in browser_paths:
+                    browser_paths.append(path)
+            
+            for browser_path in browser_paths:
+                if browser_path and os.path.exists(browser_path):
+                    try:
+                        import subprocess
+                        abs_file_path = os.path.abspath(file_path)
+                        abs_output_path = os.path.abspath(output_path)
+                        
+                        # Format file URL correctly (works for all platforms)
+                        file_url = f"file:///{abs_file_path.replace(os.sep, '/')}"
+                        
+                        subprocess.run([
+                            browser_path, 
+                            '--headless', 
+                            '--disable-gpu', 
+                            f'--print-to-pdf={abs_output_path}', 
+                            '--no-margins',
+                            '--disable-extensions',
+                            '--disable-software-rasterizer',
+                            file_url
+                        ], check=True, timeout=30, capture_output=True)
+                        
+                        if os.path.exists(output_path):
+                            processed_files.append(output_path)
+                            browser_success = True
+                            logger.info(f"Successfully converted HTML to PDF using browser: {browser_path}")
+                            break
+                    except Exception as be:
+                        logger.warning(f"Browser conversion failed with {browser_path}: {be}")
+
+            if browser_success:
+                continue
+
+            # Fallback: Basic HTML parsing and PDF generation (Text-only)
             try:
                 from html.parser import HTMLParser
                 from reportlab.lib.pagesizes import letter
@@ -3947,7 +5728,7 @@ def extract_metadata(payload):
 
             if os.path.exists(output_path):
                 processed_files.append(output_path)
-                print(f"[METADATA] Extracted metadata from {os.path.basename(file_path)} → {os.path.basename(output_path)}", flush=True)
+                print(f"[METADATA] Extracted metadata from {os.path.basename(file_path)} → {os.path.basename(output_path)}", file=sys.stderr, flush=True)
             else:
                 errors.append({"file": file_path, "error": "Failed to create metadata file"})
 
@@ -4090,7 +5871,7 @@ def extract_form_data(payload):
                 })
                 continue
 
-            print(f"[FORM DATA] Extracting from {os.path.basename(file_path)} ({len(doc)} pages, {pdf_size_mb:.2f}MB)", flush=True)
+            print(f"[FORM DATA] Extracting from {os.path.basename(file_path)} ({len(doc)} pages, {pdf_size_mb:.2f}MB)", file=sys.stderr, flush=True)
 
             form_fields = []
             base, _ = os.path.splitext(file_path)
@@ -4108,7 +5889,7 @@ def extract_form_data(payload):
                         for field in fields:
                             # SECURITY: Check field count limit
                             if len(form_fields) >= MAX_FIELDS:
-                                print(f"[FORM DATA] Field limit reached ({MAX_FIELDS}). Stopping extraction.", flush=True)
+                                print(f"[FORM DATA] Field limit reached ({MAX_FIELDS}). Stopping extraction.", file=sys.stderr, flush=True)
                                 break
 
                             field_info = {}
@@ -4152,7 +5933,7 @@ def extract_form_data(payload):
                             field_info['Page'] = 'Unknown'
                             form_fields.append(field_info)
 
-                        print(f"[FORM DATA] Found {len(form_fields)} AcroForm fields", flush=True)
+                        print(f"[FORM DATA] Found {len(form_fields)} AcroForm fields", file=sys.stderr, flush=True)
             except Exception as e:
                 logger.warning(f"pypdf form extraction failed: {e}")
 
@@ -4166,7 +5947,7 @@ def extract_form_data(payload):
                         for widget in widgets:
                             # SECURITY: Check field count limit
                             if len(form_fields) >= MAX_FIELDS:
-                                print(f"[FORM DATA] Field limit reached ({MAX_FIELDS}). Stopping extraction.", flush=True)
+                                print(f"[FORM DATA] Field limit reached ({MAX_FIELDS}). Stopping extraction.", file=sys.stderr, flush=True)
                                 break
 
                             field_info = {}
@@ -4201,7 +5982,7 @@ def extract_form_data(payload):
                             break
 
                     if form_fields:
-                        print(f"[FORM DATA] Found {len(form_fields)} widget fields", flush=True)
+                        print(f"[FORM DATA] Found {len(form_fields)} widget fields", file=sys.stderr, flush=True)
                 except Exception as e:
                     logger.warning(f"PyMuPDF widget extraction failed: {e}")
 
@@ -4211,7 +5992,7 @@ def extract_form_data(payload):
                     # SECURITY: Limit pages for text extraction
                     pages_to_extract = min(len(doc), MAX_FLATTENED_PAGES)
                     if len(doc) > MAX_FLATTENED_PAGES:
-                        print(f"[FORM DATA] Limiting flattened form extraction to first {MAX_FLATTENED_PAGES} pages", flush=True)
+                        print(f"[FORM DATA] Limiting flattened form extraction to first {MAX_FLATTENED_PAGES} pages", file=sys.stderr, flush=True)
 
                     for page_num in range(pages_to_extract):
                         # SECURITY: Check field count limit
@@ -4313,4 +6094,539 @@ def extract_form_data(payload):
                     pass
 
     return {"processed_files": processed_files, "errors": errors}
+
+# ============================================================================
+# FILE TO PDF CONVERSION FUNCTIONS
+# ============================================================================
+
+def csv_to_pdf(payload):
+    """
+    Convert CSV files to PDF documents with formatted tables.
+    """
+    files = payload.get("files", [])
+    processed_files = []
+    errors = []
+
+    for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
+        try:
+            base, _ = os.path.splitext(file_path)
+            output_path = f"{base}.pdf"
+
+            # Read CSV file
+            try:
+                # Try different encodings
+                df = None
+                for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                    try:
+                        df = pd.read_csv(file_path, encoding=encoding)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+
+                if df is None:
+                    errors.append({"file": file_path, "error": "Could not read CSV file. Check encoding."})
+                    continue
+
+            except Exception as e:
+                errors.append({"file": file_path, "error": f"Failed to parse CSV: {str(e)}"})
+                continue
+
+            # Create PDF with reportlab
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import letter, landscape
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+
+            # Determine orientation based on column count
+            page_size = landscape(letter) if len(df.columns) > 6 else letter
+
+            doc = SimpleDocTemplate(
+                output_path,
+                pagesize=page_size,
+                rightMargin=0.5*inch,
+                leftMargin=0.5*inch,
+                topMargin=0.5*inch,
+                bottomMargin=0.5*inch
+            )
+
+            elements = []
+            styles = getSampleStyleSheet()
+
+            # Create a style for table cells with text wrapping
+            cell_style = ParagraphStyle(
+                'CellStyle',
+                parent=styles['Normal'],
+                fontSize=8,
+                leading=10,  # Line spacing
+                wordWrap='CJK'  # Enable word wrapping
+            )
+            
+            # Create a style for header cells
+            header_style = ParagraphStyle(
+                'HeaderStyle',
+                parent=styles['Normal'],
+                fontSize=9,
+                leading=11,
+                wordWrap='CJK',
+                fontName='Helvetica-Bold'
+            )
+
+            # Add title
+            title = Paragraph(f"CSV Data: {os.path.basename(file_path)}", styles['Title'])
+            elements.append(title)
+            elements.append(Spacer(1, 0.25*inch))
+
+            # Prepare table data (header + rows)
+            # Limit to 1000 rows to prevent memory issues
+            max_rows = min(len(df), 1000)
+            if len(df) > 1000:
+                elements.append(Paragraph(f"Note: Showing first 1000 of {len(df)} rows", styles['Italic']))
+                elements.append(Spacer(1, 0.1*inch))
+
+            table_data = [df.columns.tolist()] + df.head(max_rows).values.tolist()
+
+            # Convert cell data to Paragraph objects for proper text wrapping
+            # This preserves full content and enables automatic wrapping
+            def escape_xml(text):
+                """Escape XML special characters for Paragraph objects"""
+                text = str(text)
+                text = text.replace('&', '&amp;')
+                text = text.replace('<', '&lt;')
+                text = text.replace('>', '&gt;')
+                return text
+
+            for i, row in enumerate(table_data):
+                if i == 0:
+                    # Header row - use header style
+                    table_data[i] = [Paragraph(escape_xml(cell), header_style) for cell in row]
+                else:
+                    # Data rows - use cell style
+                    table_data[i] = [Paragraph(escape_xml(cell), cell_style) for cell in row]
+
+            # Calculate column widths
+            # Remove the restrictive 2-inch cap and allow columns to use more space
+            available_width = page_size[0] - 1*inch
+            col_width = available_width / len(df.columns)
+            # Allow columns to use up to 40% of page width (better for landscape mode)
+            max_col_width = available_width * 0.4
+            col_widths = [min(col_width, max_col_width) for _ in df.columns]
+
+            table = Table(table_data, colWidths=col_widths, repeatRows=1)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4A90D9')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F8F9FA')),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DEE2E6')),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+
+            elements.append(table)
+            doc.build(elements)
+
+            if os.path.exists(output_path):
+                processed_files.append(output_path)
+            else:
+                errors.append({"file": file_path, "error": "Failed to create PDF"})
+
+        except Exception as e:
+            logger.error(f"Error converting CSV to PDF {file_path}: {e}", exc_info=True)
+            errors.append({"file": file_path, "error": str(e)})
+
+    return {"processed_files": processed_files, "errors": errors}
+
+
+def txt_to_pdf(payload):
+    """
+    Convert plain text files to PDF documents.
+    """
+    files = payload.get("files", [])
+    processed_files = []
+    errors = []
+
+    for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
+        try:
+            base, _ = os.path.splitext(file_path)
+            output_path = f"{base}.pdf"
+
+            # Read text file
+            text_content = None
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as f:
+                        text_content = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+
+            if text_content is None:
+                errors.append({"file": file_path, "error": "Could not read text file. Check encoding."})
+                continue
+
+            # Create PDF with reportlab
+            from reportlab.lib.pagesizes import letter
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from reportlab.lib.enums import TA_LEFT
+
+            doc = SimpleDocTemplate(
+                output_path,
+                pagesize=letter,
+                rightMargin=0.75*inch,
+                leftMargin=0.75*inch,
+                topMargin=0.75*inch,
+                bottomMargin=0.75*inch
+            )
+
+            elements = []
+            styles = getSampleStyleSheet()
+
+            # Create monospace style for text
+            mono_style = ParagraphStyle(
+                'MonoText',
+                parent=styles['Normal'],
+                fontName='Courier',
+                fontSize=10,
+                leading=14,
+                alignment=TA_LEFT,
+                spaceAfter=6
+            )
+
+            # Add title
+            title = Paragraph(f"{os.path.basename(file_path)}", styles['Title'])
+            elements.append(title)
+            elements.append(Spacer(1, 0.25*inch))
+
+            # Process text - handle line breaks and special characters
+            lines = text_content.split('\n')
+            for line in lines:
+                # Escape XML special characters
+                line = line.replace('&', '&amp;')
+                line = line.replace('<', '&lt;')
+                line = line.replace('>', '&gt;')
+                # Replace multiple spaces with non-breaking spaces
+                line = line.replace('  ', '&nbsp;&nbsp;')
+                # Handle tabs
+                line = line.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')
+
+                if line.strip():
+                    elements.append(Paragraph(line, mono_style))
+                else:
+                    elements.append(Spacer(1, 0.1*inch))
+
+            doc.build(elements)
+
+            if os.path.exists(output_path):
+                processed_files.append(output_path)
+            else:
+                errors.append({"file": file_path, "error": "Failed to create PDF"})
+
+        except Exception as e:
+            logger.error(f"Error converting TXT to PDF {file_path}: {e}", exc_info=True)
+            errors.append({"file": file_path, "error": str(e)})
+
+    return {"processed_files": processed_files, "errors": errors}
+
+
+def tiff_to_pdf(payload):
+    """
+    Convert TIFF images to PDF documents. Supports multi-page TIFF files.
+    """
+    files = payload.get("files", [])
+    processed_files = []
+    errors = []
+
+    for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
+        try:
+            base, _ = os.path.splitext(file_path)
+            output_path = f"{base}.pdf"
+
+            # Open TIFF image
+            img = Image.open(file_path)
+
+            # Get all frames for multi-page TIFF
+            frames = []
+            try:
+                while True:
+                    # Convert to RGB if necessary
+                    frame = img.copy()
+                    if frame.mode in ('RGBA', 'LA', 'P'):
+                        # Create white background for transparency
+                        background = Image.new('RGB', frame.size, (255, 255, 255))
+                        if frame.mode == 'P':
+                            frame = frame.convert('RGBA')
+                        background.paste(frame, mask=frame.split()[-1] if frame.mode in ('RGBA', 'LA') else None)
+                        frame = background
+                    elif frame.mode != 'RGB':
+                        frame = frame.convert('RGB')
+
+                    frames.append(frame)
+                    img.seek(img.tell() + 1)
+            except EOFError:
+                pass  # End of frames
+
+            if not frames:
+                errors.append({"file": file_path, "error": "No valid frames in TIFF file"})
+                continue
+
+            # Save as PDF
+            if len(frames) == 1:
+                frames[0].save(output_path, 'PDF', resolution=150.0)
+            else:
+                # Multi-page PDF
+                frames[0].save(
+                    output_path,
+                    'PDF',
+                    resolution=150.0,
+                    save_all=True,
+                    append_images=frames[1:]
+                )
+
+            if os.path.exists(output_path):
+                processed_files.append(output_path)
+            else:
+                errors.append({"file": file_path, "error": "Failed to create PDF"})
+
+        except Exception as e:
+            logger.error(f"Error converting TIFF to PDF {file_path}: {e}", exc_info=True)
+            errors.append({"file": file_path, "error": str(e)})
+
+    return {"processed_files": processed_files, "errors": errors}
+
+
+def rtf_to_pdf(payload):
+    """
+    Convert RTF (Rich Text Format) files to PDF documents.
+    Uses striprtf for parsing and reportlab for PDF generation.
+    """
+    files = payload.get("files", [])
+    processed_files = []
+    errors = []
+
+    # Try to import striprtf
+    try:
+        from striprtf.striprtf import rtf_to_text
+    except ImportError:
+        return {
+            "processed_files": [],
+            "errors": [{"file": "system", "error": "RTF conversion requires striprtf library. Install with: pip install striprtf"}]
+        }
+
+    for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
+        try:
+            base, _ = os.path.splitext(file_path)
+            output_path = f"{base}.pdf"
+
+            # Read RTF file
+            rtf_content = None
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as f:
+                        rtf_content = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+
+            if rtf_content is None:
+                errors.append({"file": file_path, "error": "Could not read RTF file. Check encoding."})
+                continue
+
+            # Convert RTF to plain text
+            try:
+                text_content = rtf_to_text(rtf_content)
+            except Exception as e:
+                errors.append({"file": file_path, "error": f"Failed to parse RTF: {str(e)}"})
+                continue
+
+            # Create PDF with reportlab
+            from reportlab.lib.pagesizes import letter
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.lib.units import inch
+
+            doc = SimpleDocTemplate(
+                output_path,
+                pagesize=letter,
+                rightMargin=0.75*inch,
+                leftMargin=0.75*inch,
+                topMargin=0.75*inch,
+                bottomMargin=0.75*inch
+            )
+
+            elements = []
+            styles = getSampleStyleSheet()
+
+            # Add title
+            title = Paragraph(f"{os.path.basename(file_path)}", styles['Title'])
+            elements.append(title)
+            elements.append(Spacer(1, 0.25*inch))
+
+            # Process text - handle line breaks
+            paragraphs = text_content.split('\n\n')  # Split by double newlines for paragraphs
+            for para in paragraphs:
+                # Clean up single newlines within paragraphs
+                para = para.replace('\n', ' ').strip()
+                # Escape XML special characters
+                para = para.replace('&', '&amp;')
+                para = para.replace('<', '&lt;')
+                para = para.replace('>', '&gt;')
+
+                if para:
+                    elements.append(Paragraph(para, styles['Normal']))
+                    elements.append(Spacer(1, 0.1*inch))
+
+            doc.build(elements)
+
+            if os.path.exists(output_path):
+                processed_files.append(output_path)
+            else:
+                errors.append({"file": file_path, "error": "Failed to create PDF"})
+
+        except Exception as e:
+            logger.error(f"Error converting RTF to PDF {file_path}: {e}", exc_info=True)
+            errors.append({"file": file_path, "error": str(e)})
+
+    return {"processed_files": processed_files, "errors": errors}
+
+
+def xml_to_pdf(payload):
+    """
+    Convert XML files to readable PDF documents.
+    Renders XML structure in a formatted, readable way.
+    """
+    files = payload.get("files", [])
+    processed_files = []
+    errors = []
+
+    for file_path in files:
+        if not os.path.exists(file_path):
+            errors.append({"file": file_path, "error": f"File not found: {file_path}"})
+            continue
+
+        try:
+            base, _ = os.path.splitext(file_path)
+            output_path = f"{base}.pdf"
+
+            # Read XML file
+            xml_content = None
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as f:
+                        xml_content = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+
+            if xml_content is None:
+                errors.append({"file": file_path, "error": "Could not read XML file. Check encoding."})
+                continue
+
+            # Parse and pretty-print XML (using defusedxml for XXE protection)
+            import defusedxml.ElementTree as ET
+            from defusedxml.minidom import parseString
+
+            try:
+                # Parse XML (defusedxml prevents XXE attacks)
+                root = ET.fromstring(xml_content)
+                # Pretty print
+                xml_str = ET.tostring(root, encoding='unicode')
+                dom = parseString(xml_str)
+                pretty_xml = dom.toprettyxml(indent="  ")
+                # Remove extra blank lines
+                pretty_xml = '\n'.join([line for line in pretty_xml.split('\n') if line.strip()])
+            except ET.ParseError as e:
+                # If XML parsing fails, use raw content
+                logger.warning(f"XML parsing failed, using raw content: {e}")
+                pretty_xml = xml_content
+
+            # Create PDF with reportlab
+            from reportlab.lib.pagesizes import letter
+            from reportlab.lib import colors
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Preformatted
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from reportlab.lib.enums import TA_LEFT
+
+            doc = SimpleDocTemplate(
+                output_path,
+                pagesize=letter,
+                rightMargin=0.5*inch,
+                leftMargin=0.5*inch,
+                topMargin=0.75*inch,
+                bottomMargin=0.75*inch
+            )
+
+            elements = []
+            styles = getSampleStyleSheet()
+
+            # Create code style for XML
+            code_style = ParagraphStyle(
+                'XMLCode',
+                parent=styles['Code'],
+                fontName='Courier',
+                fontSize=8,
+                leading=10,
+                alignment=TA_LEFT,
+                textColor=colors.HexColor('#333333'),
+                backColor=colors.HexColor('#F5F5F5'),
+                borderColor=colors.HexColor('#DDDDDD'),
+                borderWidth=1,
+                borderPadding=8,
+            )
+
+            # Add title
+            title = Paragraph(f"XML Document: {os.path.basename(file_path)}", styles['Title'])
+            elements.append(title)
+            elements.append(Spacer(1, 0.25*inch))
+
+            # Process XML lines
+            lines = pretty_xml.split('\n')
+            for line in lines:
+                # Escape special characters for reportlab
+                line = line.replace('&', '&amp;')
+                line = line.replace('<', '&lt;')
+                line = line.replace('>', '&gt;')
+                # Preserve indentation
+                line = line.replace('  ', '&nbsp;&nbsp;')
+
+                if line.strip():
+                    elements.append(Paragraph(line, code_style))
+
+            doc.build(elements)
+
+            if os.path.exists(output_path):
+                processed_files.append(output_path)
+            else:
+                errors.append({"file": file_path, "error": "Failed to create PDF"})
+
+        except Exception as e:
+            logger.error(f"Error converting XML to PDF {file_path}: {e}", exc_info=True)
+            errors.append({"file": file_path, "error": str(e)})
+
+    return {"processed_files": processed_files, "errors": errors}
+
 # Trigger reload

@@ -3,8 +3,12 @@ import shutil
 import tempfile
 import zipfile
 import sys
+import logging
 from typing import List, Optional, Tuple
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
+
+# Setup module-level logger
+logger = logging.getLogger(__name__)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -196,17 +200,28 @@ async def pdf_endpoint(
     page_order: Optional[str] = Form(None),
     angle: Optional[float] = Form(None),
     page: Optional[int] = Form(None),
-    merge_tables: Optional[str] = Form(None)
+    merge_tables: Optional[str] = Form(None),
+    detection_mode: Optional[str] = Form(None)
 ):
     # Track all temp files for cleanup
     temp_files_to_cleanup = []
 
     saved_files = []
     for f in files:
-        # For PDF endpoints, validate files as PDFs (except for special actions)
-        file_type = 'pdf'
-        if action in ('images_to_pdf',):
-            file_type = 'image'  # This action accepts images
+        # For PDF endpoints, validate files based on action type
+        # Conversion tools accept their respective input formats
+        file_type = 'pdf'  # Default for most PDF tools
+        
+        # Image input tools
+        if action in ('images_to_pdf', 'tiff_to_pdf'):
+            file_type = 'image'
+        # Office/document conversion tools - no validation (various formats)
+        # These files have complex formats that are validated by their conversion functions
+        elif action in ('word_to_pdf', 'excel_to_pdf', 'powerpoint_to_pdf', 
+                        'csv_to_pdf', 'txt_to_pdf', 'rtf_to_pdf', 'xml_to_pdf', 
+                        'html_to_pdf'):
+            file_type = None  # Skip magic byte validation for Office/document files
+        
         path = await save_upload_file(f, expected_type=file_type)
         saved_files.append(path)
         temp_files_to_cleanup.append(path)
@@ -246,7 +261,8 @@ async def pdf_endpoint(
         "page_order": page_order,
         "angle": angle,
         "page": page,
-        "merge_tables": merge_tables
+        "merge_tables": merge_tables,
+        "detection_mode": detection_mode or "balanced"
     }
 
     # Handle split/preview specifically where we might need file path
@@ -264,7 +280,7 @@ async def pdf_endpoint(
     debug_log(f"Action: {action}, Payload keys: {list(payload.keys())}")
     if "file" in payload: debug_log(f"File: {payload['file']}")
     if action == "extract_tables":
-        print(f"[DEBUG] extract_tables called with merge_tables={merge_tables}")
+        print(f"[DEBUG] extract_tables called with merge_tables={merge_tables}, detection_mode={detection_mode or 'balanced'}")
 
     try:
         result = handle_pdf_action(action, payload)
@@ -272,7 +288,7 @@ async def pdf_endpoint(
         print(f"Action Result for {action}: {result}")
 
         # Special Case: Preview and Palette returns JSON, not file
-        if action == "preview" or action == "extract_palette":
+        if action == "preview" or action == "extract_palette" or action == "preview_tables":
             return result
 
         processed_files = result.get("processed_files", [])
@@ -334,9 +350,11 @@ async def pdf_endpoint(
         raise he
     except Exception as e:
         import traceback
+        # Log full details server-side only (not exposed to client)
         traceback.print_exc()
-        print(f"Server Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Server Error: {e}")
+        # Return generic error message to client to prevent information disclosure
+        raise HTTPException(status_code=500, detail="An internal server error occurred. Please try again.")
     finally:
         # Cleanup temp UPLOAD files (the original uploads, not processed outputs)
         # Processed files are returned to client and will be cleaned up by OS temp cleanup

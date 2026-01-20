@@ -10,11 +10,18 @@ fastapi
 uvicorn
 python-multipart
 slowapi>=0.1.9
+# Security - XXE protection
+defusedxml>=0.7.1
+# Background removal
 rembg
 onnxruntime
 pooch
+numba
+llvmlite
 pdfplumber
 pikepdf
+# Enhanced table extraction
+camelot-py[cv]>=0.11.0
 pillow-heif
 pyhanko[crypto]
 requests
@@ -29,4 +36,6 @@ pytesseract>=0.3.10
 pdf2image>=1.16.3
 # Image upscaling
 opencv-contrib-python>=4.8.0
+# RTF conversion
+striprtf>=0.0.26
 
