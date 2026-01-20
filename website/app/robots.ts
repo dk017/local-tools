@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: '/private/',
         },
-        sitemap: 'https://offlinetools.com/sitemap.xml', // Replace with actual domain
+        sitemap: 'https://localtools.pro/sitemap.xml',
     };
 }
