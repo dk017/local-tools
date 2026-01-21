@@ -13,9 +13,9 @@
     },
     "Hero": {
         "badge": "Desktop-First PDF & Image Suite",
-        "title": "Process Sensitive Documents Without Uploading Them",
-        "subtitle": "50+ professional PDF and image tools that run entirely on your computer. Built for lawyers, accountants, healthcare teams, and anyone who handles confidential files.",
-        "cta_primary": "Get Desktop License - $59/year",
+        "title": "Process client files without the privacy roulette.",
+        "subtitle": "50+ pro tools running entirely on your machine. No cloud, no tracking, and no \"we may use your data\" fine print. Just fast, offline workflows that keep you compliant.",
+        "cta_primary": "Get LocalTools – $59/year",
         "cta_secondary": "See All Tools",
         "cta_secondary_link": "Or try free online tools",
         "stat_offline": "100% Offline Processing",
@@ -487,6 +487,76 @@
             "f1": "Drag & Drop",
             "f2": "Delete Pages",
             "f3": "Offline Privacy"
+        },
+        "pdf-to-jpg": {
+            "h1": "Convert PDF to JPG",
+            "p1": "Convert PDF pages to high-quality JPG images. Fast, free, and 100% private processing.",
+            "f1": "High Quality",
+            "f2": "Batch Convert",
+            "f3": "Privacy First"
+        },
+        "pdf-to-png": {
+            "h1": "Convert PDF to PNG",
+            "p1": "Convert PDF pages to PNG images with transparency support. Fast and private.",
+            "f1": "Transparency Support",
+            "f2": "High Resolution",
+            "f3": "Private Processing"
+        },
+        "pdf-to-csv": {
+            "h1": "PDF to CSV",
+            "p1": "Extract tables from PDF and convert to CSV format. Perfect for data analysis.",
+            "f1": "Table Detection",
+            "f2": "Clean Data",
+            "f3": "Easy Export"
+        },
+        "pdf-to-excel": {
+            "h1": "PDF to Excel",
+            "p1": "Convert PDF tables to Excel spreadsheets. Extract data with precision.",
+            "f1": "Smart Detection",
+            "f2": "Excel Format",
+            "f3": "Data Extraction"
+        },
+        "csv-to-pdf": {
+            "h1": "CSV to PDF",
+            "p1": "Convert CSV files to beautifully formatted PDF tables.",
+            "f1": "Clean Tables",
+            "f2": "Professional Look",
+            "f3": "Easy Sharing"
+        },
+        "txt-to-pdf": {
+            "h1": "TXT to PDF",
+            "p1": "Convert plain text files to PDF documents. Simple and fast.",
+            "f1": "Clean Formatting",
+            "f2": "Fast Conversion",
+            "f3": "Privacy First"
+        },
+        "tiff-to-pdf": {
+            "h1": "TIFF to PDF",
+            "p1": "Convert TIFF images to PDF documents. Supports multi-page TIFF files.",
+            "f1": "Multi-page Support",
+            "f2": "High Quality",
+            "f3": "Easy Conversion"
+        },
+        "rtf-to-pdf": {
+            "h1": "RTF to PDF",
+            "p1": "Convert Rich Text Format files to PDF documents while preserving formatting.",
+            "f1": "Format Preserved",
+            "f2": "Clean Output",
+            "f3": "Fast Processing"
+        },
+        "xml-to-pdf": {
+            "h1": "XML to PDF",
+            "p1": "Convert XML files to readable PDF documents. Structured and organized.",
+            "f1": "Structured View",
+            "f2": "Readable Format",
+            "f3": "Professional Output"
+        },
+        "ppt-to-pdf": {
+            "h1": "PPT to PDF",
+            "p1": "Convert PowerPoint presentations to PDF format. Keep your slides perfect.",
+            "f1": "Layout Preserved",
+            "f2": "All Slides",
+            "f3": "Fast Conversion"
         }
     },
     "Tools": {
