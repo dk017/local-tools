@@ -3028,145 +3028,132 @@ def delete_pages(payload):
     return {"processed_files": processed_files, "errors": errors}
 
 
-def _find_diff_regions(diff_image, block_size=20, threshold=10, merge_distance=30):
+def _extract_text_with_positions(page):
     """
-    Find regions with differences in a diff image using block-based detection.
+    Extract text with bounding box positions from a PDF page.
 
     Args:
-        diff_image: PIL Image showing pixel differences (from ImageChops.difference)
-        block_size: Size of blocks to analyze (smaller = more precise, larger = faster)
-        threshold: Minimum difference value to consider as a change (0-255)
-        merge_distance: Maximum distance between regions to merge them
+        page: PyMuPDF page object
 
     Returns:
-        List of (x1, y1, x2, y2) tuples representing difference regions
+        List of dicts with 'text', 'bbox' (x0, y0, x1, y1), and 'line_num'
     """
-    import numpy as np
+    words = []
+    # get_text("words") returns: (x0, y0, x1, y1, "word", block_no, line_no, word_no)
+    word_list = page.get_text("words")
 
-    # Convert to grayscale for simpler analysis
-    diff_gray = diff_image.convert('L')
-    diff_array = np.array(diff_gray)
+    for word_info in word_list:
+        x0, y0, x1, y1, text, block_no, line_no, word_no = word_info
+        words.append({
+            'text': text,
+            'bbox': (x0, y0, x1, y1),
+            'block_no': block_no,
+            'line_no': line_no,
+            'word_no': word_no
+        })
 
-    width, height = diff_image.size
-    diff_blocks = []
-
-    # Scan the image in blocks to find areas with differences
-    for y in range(0, height, block_size):
-        for x in range(0, width, block_size):
-            # Get the block
-            block_x2 = min(x + block_size, width)
-            block_y2 = min(y + block_size, height)
-            block = diff_array[y:block_y2, x:block_x2]
-
-            # Check if this block has significant differences
-            if np.max(block) > threshold:
-                diff_blocks.append((x, y, block_x2, block_y2))
-
-    if not diff_blocks:
-        return []
-
-    # Merge nearby blocks into larger regions
-    merged_regions = _merge_nearby_regions(diff_blocks, merge_distance)
-
-    # Add padding around regions for better visibility
-    padding = 5
-    padded_regions = []
-    for x1, y1, x2, y2 in merged_regions:
-        padded_regions.append((
-            max(0, x1 - padding),
-            max(0, y1 - padding),
-            min(width, x2 + padding),
-            min(height, y2 + padding)
-        ))
-
-    return padded_regions
+    return words
 
 
-def _merge_nearby_regions(regions, max_distance):
+def _find_text_differences(words1, words2):
     """
-    Merge regions that are close together into larger bounding boxes.
+    Find text differences between two lists of words using difflib.
 
     Args:
-        regions: List of (x1, y1, x2, y2) tuples
-        max_distance: Maximum distance between regions to merge
+        words1: List of word dicts from page 1
+        words2: List of word dicts from page 2
 
     Returns:
-        List of merged (x1, y1, x2, y2) tuples
+        Tuple of (deleted_bboxes, added_bboxes, changed_bboxes_page1, changed_bboxes_page2)
+        Each is a list of (x0, y0, x1, y1) bounding boxes
     """
-    if not regions:
+    import difflib
+
+    # Extract just the text for comparison
+    text1 = [w['text'] for w in words1]
+    text2 = [w['text'] for w in words2]
+
+    # Use SequenceMatcher to find differences
+    matcher = difflib.SequenceMatcher(None, text1, text2)
+
+    deleted_bboxes = []  # In doc1 but not in doc2 (red)
+    added_bboxes = []    # In doc2 but not in doc1 (green)
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == 'delete':
+            # Text exists in doc1 but not in doc2
+            for idx in range(i1, i2):
+                if idx < len(words1):
+                    deleted_bboxes.append(words1[idx]['bbox'])
+        elif tag == 'insert':
+            # Text exists in doc2 but not in doc1
+            for idx in range(j1, j2):
+                if idx < len(words2):
+                    added_bboxes.append(words2[idx]['bbox'])
+        elif tag == 'replace':
+            # Text changed between doc1 and doc2
+            for idx in range(i1, i2):
+                if idx < len(words1):
+                    deleted_bboxes.append(words1[idx]['bbox'])
+            for idx in range(j1, j2):
+                if idx < len(words2):
+                    added_bboxes.append(words2[idx]['bbox'])
+
+    return deleted_bboxes, added_bboxes
+
+
+def _merge_adjacent_bboxes(bboxes, tolerance=5):
+    """
+    Merge bounding boxes that are on the same line and adjacent.
+
+    Args:
+        bboxes: List of (x0, y0, x1, y1) tuples
+        tolerance: Vertical tolerance for considering boxes on same line
+
+    Returns:
+        List of merged (x0, y0, x1, y1) tuples
+    """
+    if not bboxes:
         return []
 
-    # Sort regions by position
-    regions = sorted(regions, key=lambda r: (r[1], r[0]))
+    # Sort by y position (line), then x position
+    sorted_boxes = sorted(bboxes, key=lambda b: (round(b[1] / tolerance), b[0]))
 
     merged = []
-    current = list(regions[0])
+    current = list(sorted_boxes[0])
 
-    for region in regions[1:]:
-        x1, y1, x2, y2 = region
+    for bbox in sorted_boxes[1:]:
+        x0, y0, x1, y1 = bbox
 
-        # Check if this region is close enough to merge with current
-        # Two regions are close if their bounding boxes overlap or are within max_distance
-        close_x = (x1 <= current[2] + max_distance) and (x2 >= current[0] - max_distance)
-        close_y = (y1 <= current[3] + max_distance) and (y2 >= current[1] - max_distance)
+        # Check if on same line (similar y) and adjacent/overlapping in x
+        same_line = abs(y0 - current[1]) < tolerance and abs(y1 - current[3]) < tolerance
+        adjacent_x = x0 <= current[2] + tolerance * 3  # Allow small gap between words
 
-        if close_x and close_y:
-            # Merge: expand current region to include this one
-            current[0] = min(current[0], x1)
-            current[1] = min(current[1], y1)
-            current[2] = max(current[2], x2)
-            current[3] = max(current[3], y2)
+        if same_line and adjacent_x:
+            # Extend current box
+            current[2] = max(current[2], x1)
+            current[1] = min(current[1], y0)
+            current[3] = max(current[3], y1)
         else:
-            # Start new region
             merged.append(tuple(current))
-            current = [x1, y1, x2, y2]
+            current = [x0, y0, x1, y1]
 
-    # Don't forget the last region
     merged.append(tuple(current))
-
-    # Second pass: merge any remaining overlapping regions
-    changed = True
-    while changed:
-        changed = False
-        new_merged = []
-        skip = set()
-
-        for i, r1 in enumerate(merged):
-            if i in skip:
-                continue
-
-            current = list(r1)
-            for j, r2 in enumerate(merged[i+1:], i+1):
-                if j in skip:
-                    continue
-
-                # Check if r2 overlaps or is close to current
-                close_x = (r2[0] <= current[2] + max_distance) and (r2[2] >= current[0] - max_distance)
-                close_y = (r2[1] <= current[3] + max_distance) and (r2[3] >= current[1] - max_distance)
-
-                if close_x and close_y:
-                    current[0] = min(current[0], r2[0])
-                    current[1] = min(current[1], r2[1])
-                    current[2] = max(current[2], r2[2])
-                    current[3] = max(current[3], r2[3])
-                    skip.add(j)
-                    changed = True
-
-            new_merged.append(tuple(current))
-
-        merged = new_merged
-
     return merged
 
 
 def diff_pdfs(payload):
     """
-    Compare two PDFs visually with highlighted differences.
+    Compare two PDFs using text-based comparison with highlighted differences.
+
+    Uses difflib to find actual text differences (not pixel-level), resulting in
+    precise highlighting of only the words/phrases that changed.
 
     Creates a comparison PDF showing:
     - Side-by-side view of both PDFs
-    - Differences highlighted in red/green
-    - Page-by-page comparison
+    - Deleted text highlighted in RED (left side - File 1)
+    - Added text highlighted in GREEN (right side - File 2)
+    - Page-by-page comparison with difference counts
     """
     files = payload.get("files", [])
 
@@ -3255,91 +3242,64 @@ def diff_pdfs(payload):
                     page_num
                 )
 
-            # Try to detect and highlight differences
+            # Try to detect and highlight differences using TEXT-BASED comparison
             if page_num < len(doc1) and page_num < len(doc2):
                 try:
-                    # Render both pages as images at higher resolution for accurate diff
-                    scale_factor = 2  # 2x scale for comparison
-                    pix1 = doc1[page_num].get_pixmap(matrix=fitz.Matrix(scale_factor, scale_factor))
-                    pix2 = doc2[page_num].get_pixmap(matrix=fitz.Matrix(scale_factor, scale_factor))
+                    # Extract text with positions from both pages
+                    words1 = _extract_text_with_positions(doc1[page_num])
+                    words2 = _extract_text_with_positions(doc2[page_num])
 
-                    # Convert to PIL Images for comparison
-                    img1 = Image.frombytes("RGB", [pix1.width, pix1.height], pix1.samples)
-                    img2 = Image.frombytes("RGB", [pix2.width, pix2.height], pix2.samples)
+                    print(f"[PDF_DIFF] Page {page_num + 1}: Extracted {len(words1)} words from doc1, {len(words2)} words from doc2", file=sys.stderr, flush=True)
 
-                    # Ensure both images are the same size
-                    if img1.size != img2.size:
-                        max_width = max(img1.width, img2.width)
-                        max_height = max(img1.height, img2.height)
-                        img1_resized = Image.new("RGB", (max_width, max_height), (255, 255, 255))
-                        img2_resized = Image.new("RGB", (max_width, max_height), (255, 255, 255))
-                        img1_resized.paste(img1, (0, 0))
-                        img2_resized.paste(img2, (0, 0))
-                        img1 = img1_resized
-                        img2 = img2_resized
+                    # Find text differences using difflib
+                    deleted_bboxes, added_bboxes = _find_text_differences(words1, words2)
 
-                    # Calculate pixel-level difference
-                    diff = ImageChops.difference(img1, img2)
+                    # Merge adjacent bboxes for cleaner highlighting
+                    deleted_merged = _merge_adjacent_bboxes(deleted_bboxes)
+                    added_merged = _merge_adjacent_bboxes(added_bboxes)
 
-                    # Check if there are differences
-                    if diff.getbbox():
+                    total_diffs = len(deleted_merged) + len(added_merged)
+
+                    if total_diffs > 0:
                         differences_found += 1
 
-                        # Find specific regions with differences using block-based detection
-                        # Use larger block size and merge distance for cleaner output
-                        diff_regions = _find_diff_regions(diff, block_size=30, threshold=15, merge_distance=50)
+                        print(f"[PDF_DIFF] Page {page_num + 1}: Found {len(deleted_merged)} deletions, {len(added_merged)} additions", file=sys.stderr, flush=True)
 
-                        # Scale factor to convert from image coords to PDF coords
-                        coord_scale = 1.0 / scale_factor
+                        # Highlight deleted text (in doc1) - RED
+                        for bbox in deleted_merged:
+                            x0, y0, x1, y1 = bbox
+                            # Left side offset: 20px margin
+                            left_rect = fitz.Rect(20 + x0, 40 + y0, 20 + x1, 40 + y1)
 
-                        print(f"[PDF_DIFF] Page {page_num + 1}: Found {len(diff_regions)} regions to highlight", file=sys.stderr, flush=True)
+                            highlight = page.add_rect_annot(left_rect)
+                            highlight.set_colors(stroke=(0.8, 0, 0), fill=(1, 0.8, 0.8))
+                            highlight.set_opacity(0.4)
+                            highlight.set_border(width=1)
+                            highlight.update()
 
-                        # Draw highlight rectangles on both sides for each difference region
-                        for idx, region in enumerate(diff_regions):
-                            x1, y1, x2, y2 = region
+                        # Highlight added text (in doc2) - GREEN
+                        for bbox in added_merged:
+                            x0, y0, x1, y1 = bbox
+                            # Right side offset: ref_width + 40px margin
+                            right_rect = fitz.Rect(ref_width + 40 + x0, 40 + y0, ref_width + 40 + x1, 40 + y1)
 
-                            # Scale coordinates back to PDF space
-                            pdf_x1 = x1 * coord_scale
-                            pdf_y1 = y1 * coord_scale
-                            pdf_x2 = x2 * coord_scale
-                            pdf_y2 = y2 * coord_scale
+                            highlight = page.add_rect_annot(right_rect)
+                            highlight.set_colors(stroke=(0, 0.6, 0), fill=(0.8, 1, 0.8))
+                            highlight.set_opacity(0.4)
+                            highlight.set_border(width=1)
+                            highlight.update()
 
-                            print(f"[PDF_DIFF]   Region {idx+1}: img({x1},{y1})-({x2},{y2}) -> pdf({pdf_x1:.1f},{pdf_y1:.1f})-({pdf_x2:.1f},{pdf_y2:.1f})", file=sys.stderr, flush=True)
+                        # Add difference summary
+                        summary_parts = []
+                        if len(deleted_merged) > 0:
+                            summary_parts.append(f"{len(deleted_merged)} removed")
+                        if len(added_merged) > 0:
+                            summary_parts.append(f"{len(added_merged)} added")
 
-                            # Left side (File 1) - highlight in red
-                            left_rect = fitz.Rect(
-                                20 + pdf_x1,
-                                40 + pdf_y1,
-                                20 + pdf_x2,
-                                40 + pdf_y2
-                            )
-
-                            # Use highlight annotation for better visibility
-                            highlight1 = page.add_rect_annot(left_rect)
-                            highlight1.set_colors(stroke=(1, 0, 0), fill=(1, 0.7, 0.7))
-                            highlight1.set_opacity(0.4)
-                            highlight1.set_border(width=2)
-                            highlight1.update()
-
-                            # Right side (File 2) - highlight in blue
-                            right_rect = fitz.Rect(
-                                ref_width + 40 + pdf_x1,
-                                40 + pdf_y1,
-                                ref_width + 40 + pdf_x2,
-                                40 + pdf_y2
-                            )
-
-                            highlight2 = page.add_rect_annot(right_rect)
-                            highlight2.set_colors(stroke=(0, 0, 1), fill=(0.7, 0.7, 1))
-                            highlight2.set_opacity(0.4)
-                            highlight2.set_border(width=2)
-                            highlight2.update()
-
-                        # Add difference indicator with count
                         try:
                             page.insert_text(
                                 fitz.Point(20, ref_height + 60),
-                                f"Page {page_num + 1}: {len(diff_regions)} difference(s) found",
+                                f"Page {page_num + 1}: {', '.join(summary_parts)}",
                                 fontsize=10,
                                 color=(0.8, 0, 0)
                             )
@@ -3351,9 +3311,9 @@ def diff_pdfs(payload):
                                 color=(0.8, 0, 0)
                             )
 
-                        print(f"[PDF_DIFF] Page {page_num + 1}: Found {len(diff_regions)} difference regions", file=sys.stderr, flush=True)
+                        print(f"[PDF_DIFF] Page {page_num + 1}: Highlighted {len(deleted_merged)} deletions (red), {len(added_merged)} additions (green)", file=sys.stderr, flush=True)
                     else:
-                        # Pages are identical
+                        # Pages are identical (no text differences)
                         try:
                             page.insert_text(
                                 fitz.Point(20, ref_height + 60),
