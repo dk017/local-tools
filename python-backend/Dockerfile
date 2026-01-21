@@ -24,8 +24,15 @@ COPY . .
 # Create directory for temp files
 RUN mkdir -p /tmp/offline_tools_api && chmod 777 /tmp/offline_tools_api
 
-# Run users as non-root (security best practice)
+# Create non-root user (security best practice)
 RUN useradd -m appuser
+
+# Pre-download rembg U2Net model (~170MB) during build
+# This avoids slow first-request downloads at runtime
+RUN mkdir -p /home/appuser/.u2net && \
+    HOME=/home/appuser python -c "from rembg import new_session; new_session('u2net')" && \
+    chown -R appuser:appuser /home/appuser/.u2net
+
 USER appuser
 
 EXPOSE 8000

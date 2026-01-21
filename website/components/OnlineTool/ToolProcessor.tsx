@@ -1433,9 +1433,9 @@ export function ToolProcessor({
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      // Set timeout - longer for table extraction (can take time for large PDFs)
-      const isTableExtraction = toolSlug === "extract-tables" || toolSlug === "pdf-to-csv" || toolSlug === "pdf-to-excel";
-      const timeoutDuration = isTableExtraction ? 300000 : 120000; // 5 minutes for table extraction, 2 minutes for others
+      // Set timeout - longer for intensive operations (table extraction, compression)
+      const isLongRunningOperation = toolSlug === "extract-tables" || toolSlug === "pdf-to-csv" || toolSlug === "pdf-to-excel" || toolSlug === "compress-pdf";
+      const timeoutDuration = isLongRunningOperation ? 300000 : 120000; // 5 minutes for intensive ops, 2 minutes for others
       const timeoutId = setTimeout(() => {
         if (abortControllerRef.current) {
           abortControllerRef.current.abort();
@@ -1453,7 +1453,7 @@ export function ToolProcessor({
         clearTimeout(timeoutId);
         const isAbort = (networkError as Error).name === "AbortError";
         if (isAbort) {
-          const timeoutMinutes = isTableExtraction ? "5 mins" : "2 mins";
+          const timeoutMinutes = isLongRunningOperation ? "5 mins" : "2 mins";
           throw new Error(
             `Request timed out (took longer than ${timeoutMinutes}) or was cancelled.`
           );

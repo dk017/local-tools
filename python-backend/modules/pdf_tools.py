@@ -1032,7 +1032,7 @@ def images_to_pdf(payload):
                 errors.append({"file": file_path, "error": str(e)})
 
         if images:
-            images[0].save(output_path, save_all=True, append_images=images[1:])
+            images[0].save(output_path, format="PDF", save_all=True, append_images=images[1:])
             processed_files.append(output_path)
     except Exception as e:
         errors.append({"file": files[0] if files else "unknown", "error": str(e)})
