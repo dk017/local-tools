@@ -9,7 +9,7 @@ import { Pricing } from "@/components/Pricing";
 import { FAQ } from "@/components/FAQ";
 import { FinalCTA } from "@/components/FinalCTA";
 import { Footer } from "@/components/Footer";
-import { EmailCaptureModal } from "@/components/EmailCaptureModal";
+// import { EmailCaptureModal } from "@/components/EmailCaptureModal"; // Disabled for now
 
 export default function Home() {
   return (
@@ -25,7 +25,7 @@ export default function Home() {
       <FAQ />
       <FinalCTA />
       <Footer />
-      <EmailCaptureModal />
+      {/* <EmailCaptureModal /> */}
     </div>
   );
 }
