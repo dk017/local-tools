@@ -394,7 +394,10 @@ export function ToolProcessor({
       toolSlug === "watermark-image" ||
       toolSlug === "photo-studio" ||
       toolSlug === "grid-split" ||
-      toolSlug === "remove-image-metadata";
+      toolSlug === "remove-image-metadata" ||
+      toolSlug === "jpg-to-png" ||
+      toolSlug === "png-to-jpg" ||
+      toolSlug === "heic-to-jpg";
 
     const isWordTool = toolSlug === "word-to-pdf";
     const isPowerPointTool = toolSlug === "powerpoint-to-pdf" || toolSlug === "ppt-to-pdf";
@@ -1018,6 +1021,8 @@ export function ToolProcessor({
     // BATCH IMAGE TOOLS: convert, resize, compress, heic-to-jpg, remove-bg, watermark, upscale
     const batchImageTools = [
       "convert-image",
+      "jpg-to-png",
+      "png-to-jpg",
       "resize-image",
       "compress-image",
       "heic-to-jpg",
@@ -1265,6 +1270,12 @@ export function ToolProcessor({
       formData.append("output_format", fmt);
     }
 
+    // Image format conversion tools (jpg-to-png, png-to-jpg)
+    if (toolSlug === "jpg-to-png" || toolSlug === "png-to-jpg") {
+      const fmt = toolSlug === "jpg-to-png" ? "png" : "jpg";
+      formData.append("target_format", fmt);
+    }
+
     if (toolSlug === "convert-image" || toolSlug === "heic-to-jpg") {
       // Default to jpg if generic, though UI sets it.
       // Reuse extractFormat for simplicity or creation of new state would be better.
@@ -1433,8 +1444,8 @@ export function ToolProcessor({
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      // Set timeout - longer for intensive operations (table extraction, compression)
-      const isLongRunningOperation = toolSlug === "extract-tables" || toolSlug === "pdf-to-csv" || toolSlug === "pdf-to-excel" || toolSlug === "compress-pdf";
+      // Set timeout - longer for intensive operations (table extraction, compression, AI upscaling)
+      const isLongRunningOperation = toolSlug === "extract-tables" || toolSlug === "pdf-to-csv" || toolSlug === "pdf-to-excel" || toolSlug === "compress-pdf" || toolSlug === "upscale-image";
       const timeoutDuration = isLongRunningOperation ? 300000 : 120000; // 5 minutes for intensive ops, 2 minutes for others
       const timeoutId = setTimeout(() => {
         if (abortControllerRef.current) {

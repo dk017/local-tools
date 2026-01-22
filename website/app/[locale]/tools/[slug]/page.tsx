@@ -37,6 +37,8 @@ function getApiEndpoint(slug: string) {
     case "remove-image-background":
       return "/api/image/remove_bg";
     case "convert-image":
+    case "jpg-to-png":
+    case "png-to-jpg":
       return "/api/image/convert";
     case "resize-image":
       return "/api/image/resize";
@@ -114,6 +116,27 @@ function getApiEndpoint(slug: string) {
     case "remove-image-metadata":
       return "/api/image/remove_metadata";
 
+    case "pdf-to-jpg":
+      return "/api/pdf/pdf_to_images";
+    case "pdf-to-png":
+      return "/api/pdf/pdf_to_images";
+    case "pdf-to-csv":
+      return "/api/pdf/extract_tables";
+    case "pdf-to-excel":
+      return "/api/pdf/extract_tables";
+    case "csv-to-pdf":
+      return "/api/pdf/csv_to_pdf";
+    case "txt-to-pdf":
+      return "/api/pdf/txt_to_pdf";
+    case "tiff-to-pdf":
+      return "/api/pdf/tiff_to_pdf";
+    case "rtf-to-pdf":
+      return "/api/pdf/rtf_to_pdf";
+    case "xml-to-pdf":
+      return "/api/pdf/xml_to_pdf";
+    case "ppt-to-pdf":
+      return "/api/pdf/powerpoint_to_pdf";
+
     default:
       return `/api/pdf/${slug.replace("-pdf", "")}`;
   }
@@ -177,6 +200,10 @@ export default async function ToolPage({
   } else if (
     slug === "extract-images-from-pdf" ||
     slug === "pdf-to-images" ||
+    slug === "pdf-to-jpg" ||
+    slug === "pdf-to-png" ||
+    slug === "pdf-to-csv" ||
+    slug === "pdf-to-excel" ||
     slug === "ocr-pdf" ||
     slug === "pdf-to-pdfa"
   ) {
@@ -200,6 +227,21 @@ export default async function ToolPage({
     };
   } else if (slug === "html-to-pdf") {
     acceptedTypes = { "text/html": [".html", ".htm"] };
+  } else if (slug === "csv-to-pdf") {
+    acceptedTypes = { "text/csv": [".csv"] };
+  } else if (slug === "txt-to-pdf") {
+    acceptedTypes = { "text/plain": [".txt"] };
+  } else if (slug === "tiff-to-pdf") {
+    acceptedTypes = { "image/tiff": [".tiff", ".tif"] };
+  } else if (slug === "rtf-to-pdf") {
+    acceptedTypes = { "application/rtf": [".rtf"] };
+  } else if (slug === "xml-to-pdf") {
+    acceptedTypes = { "application/xml": [".xml"] };
+  } else if (slug === "ppt-to-pdf") {
+    acceptedTypes = {
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+        [".pptx", ".ppt"],
+    };
   } else if (
     (slug.includes("image") &&
       slug !== "pdf-to-images" &&

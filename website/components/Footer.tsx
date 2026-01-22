@@ -26,8 +26,8 @@ const imageTools = [
   { slug: "heic-to-jpg", name: "HEIC to JPG" },
   { slug: "remove-image-background", name: "Remove Background" },
   { slug: "upscale-image", name: "Upscale Image" },
-  { slug: "add-watermark", name: "Add Watermark" },
-  { slug: "passport-photo-maker", name: "Passport Photo" },
+  { slug: "watermark-image", name: "Add Watermark" },
+  { slug: "passport-photo", name: "Passport Photo" },
 ];
 
 export function Footer() {
@@ -89,7 +89,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
                 <Link
-                  href="#features"
+                  href="/#features"
                   className="hover:text-primary transition-colors"
                 >
                   {t("features")}
@@ -97,7 +97,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="#pricing"
+                  href="/#pricing"
                   className="hover:text-primary transition-colors"
                 >
                   {t("pricing")}
@@ -105,7 +105,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="#download"
+                  href="/#download"
                   className="hover:text-primary transition-colors"
                 >
                   {t("download")}

@@ -39,6 +39,8 @@ export const TOOL_SLUGS = [
     // Image Tools
     'remove-image-background',
     'convert-image',
+    'jpg-to-png',
+    'png-to-jpg',
     'resize-image',
     'upscale-image',
     'compress-image',
