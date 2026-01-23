@@ -13,9 +13,9 @@
     },
     "Hero": {
         "badge": "Desktop-First PDF & Image Suite",
-        "title": "Process client files without the privacy roulette.",
-        "subtitle": "50+ pro tools running entirely on your machine. No cloud, no tracking, and no \"we may use your data\" fine print. Just fast, offline workflows that keep you compliant.",
-        "cta_primary": "Get LocalTools – $59/year",
+        "title": "A secure, offline desktop tool for handling PDFs and images — built for privacy.",
+        "subtitle": "Run 50+ powerful file tools directly on your computer. No cloud dependency, no telemetry, no data sharing. Designed for professionals who can’t afford privacy risks.",
+        "cta_primary": "🔐 Get the Desktop App",
         "cta_secondary": "See All Tools",
         "cta_secondary_link": "Or try free online tools",
         "stat_offline": "100% Offline Processing",
