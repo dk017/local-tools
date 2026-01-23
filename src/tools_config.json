@@ -224,5 +224,94 @@
         "mode": "remove_bg",
         "title": "Remove Background",
         "description": "AI-powered background removal for images."
+    },
+    {
+        "slug": "pdf-to-jpg",
+        "tool": "pdf",
+        "mode": "pdf_to_images",
+        "format": "jpg",
+        "title": "Convert PDF to JPG Free Online",
+        "description": "Convert PDF pages to high-quality JPG images instantly. Free, secure, no watermarks."
+    },
+    {
+        "slug": "pdf-to-png",
+        "tool": "pdf",
+        "mode": "pdf_to_images",
+        "format": "png",
+        "title": "Convert PDF to PNG Online Free",
+        "description": "Convert PDF pages to PNG images with transparency support. 100% free and private."
+    },
+    {
+        "slug": "pdf-to-csv",
+        "tool": "pdf",
+        "mode": "extract_tables",
+        "format": "csv",
+        "title": "PDF to CSV Converter Online Free",
+        "description": "Extract tables from PDF and convert to CSV format. Perfect for data extraction."
+    },
+    {
+        "slug": "pdf-to-excel",
+        "tool": "pdf",
+        "mode": "extract_tables",
+        "format": "xlsx",
+        "title": "Free Online PDF to Excel Converter",
+        "description": "Convert PDF tables to Excel spreadsheets. Extract data from PDF to XLS/XLSX."
+    },
+    {
+        "slug": "pdf-to-xls",
+        "tool": "pdf",
+        "mode": "extract_tables",
+        "format": "xlsx",
+        "title": "PDF to XLS Converter Free Online",
+        "description": "Convert PDF to XLS spreadsheet format. Extract tables and data from PDF files."
+    },
+    {
+        "slug": "csv-to-pdf",
+        "tool": "pdf",
+        "mode": "csv_to_pdf",
+        "title": "CSV to PDF Converter Online",
+        "description": "Convert CSV files to beautifully formatted PDF documents. Free and easy to use."
+    },
+    {
+        "slug": "txt-to-pdf",
+        "tool": "pdf",
+        "mode": "txt_to_pdf",
+        "title": "Convert TXT to PDF Free Online",
+        "description": "Convert plain text files to PDF documents. Simple, fast, and free."
+    },
+    {
+        "slug": "tiff-to-pdf",
+        "tool": "pdf",
+        "mode": "tiff_to_pdf",
+        "title": "Convert TIFF to PDF Online Free",
+        "description": "Convert TIFF images to PDF documents. Supports multi-page TIFF files."
+    },
+    {
+        "slug": "rtf-to-pdf",
+        "tool": "pdf",
+        "mode": "rtf_to_pdf",
+        "title": "Convert RTF to PDF Free Online",
+        "description": "Convert Rich Text Format files to PDF documents while preserving formatting."
+    },
+    {
+        "slug": "xml-to-pdf",
+        "tool": "pdf",
+        "mode": "xml_to_pdf",
+        "title": "XML to PDF Converter Online",
+        "description": "Convert XML files to readable PDF documents. Structure your XML data beautifully."
+    },
+    {
+        "slug": "images-to-pdf",
+        "tool": "pdf",
+        "mode": "images_to_pdf",
+        "title": "Convert Images to PDF Online Free",
+        "description": "Combine multiple images (JPG, PNG, WebP) into a single PDF document."
+    },
+    {
+        "slug": "ppt-to-pdf",
+        "tool": "pdf",
+        "mode": "powerpoint_to_pdf",
+        "title": "PPT to PDF - Convert PowerPoint to PDF Free",
+        "description": "Convert PPT and PPTX presentations to PDF format online. Fast and free."
     }
 ]

@@ -61,6 +61,12 @@ const getMaxFiles = (mode: string): number => {
     'heic_to_jpg',
     'design',
     'grid',
+    // File to PDF converters
+    'csv_to_pdf',
+    'txt_to_pdf',
+    'tiff_to_pdf',
+    'rtf_to_pdf',
+    'xml_to_pdf',
   ];
   
   return singleFileTools.includes(mode) ? 1 : 10;
@@ -70,6 +76,12 @@ const getMaxFiles = (mode: string): number => {
  * Get the expected file type name for error messages
  */
 const getFileTypeName = (mode: string): string => {
+  // Shared modes that work for both PDF and images
+  const sharedModes = ['compress', 'crop', 'watermark', 'remove_metadata'];
+  if (sharedModes.includes(mode)) {
+    return 'PDF or image';
+  }
+
   if (mode.includes('word') || mode === 'word_to_pdf') {
     return 'Word document';
   } else if (mode.includes('powerpoint') || mode === 'powerpoint_to_pdf') {
@@ -82,6 +94,16 @@ const getFileTypeName = (mode: string): string => {
     return 'HEIC image';
   } else if (mode === 'images_to_pdf') {
     return 'image';
+  } else if (mode === 'csv_to_pdf') {
+    return 'CSV file';
+  } else if (mode === 'txt_to_pdf') {
+    return 'text file';
+  } else if (mode === 'tiff_to_pdf') {
+    return 'TIFF image';
+  } else if (mode === 'rtf_to_pdf') {
+    return 'RTF file';
+  } else if (mode === 'xml_to_pdf') {
+    return 'XML file';
   } else if (mode.includes('pdf') || mode === 'diff') {
     return 'PDF';
   } else {
@@ -91,92 +113,82 @@ const getFileTypeName = (mode: string): string => {
 
 /**
  * Validate file type by extension
+ *
+ * Strategy: Check file type FIRST, then verify if the mode supports that file type.
+ * This handles shared modes (compress, crop, watermark, remove_metadata) that work
+ * for both PDF and Image tools.
  */
 const validateFileType = (file: FileAsset, mode: string): boolean => {
   const extension = getFileExtension(file.name);
-  
-  // PDF tools
-  const isPdfTool = mode.includes('pdf') || 
-                    mode === 'diff' ||
-                    mode === 'extract_tables' ||
-                    mode === 'extract_text' ||
-                    mode === 'extract_images_from_pdf' ||
-                    mode === 'remove_metadata' ||
-                    mode === 'flatten' ||
-                    mode === 'organize' ||
-                    mode === 'delete_pages' ||
-                    mode === 'page_numbers' ||
-                    mode === 'rotate' ||
-                    mode === 'watermark' ||
-                    mode === 'grayscale' ||
-                    mode === 'repair' ||
-                    mode === 'scrub' ||
-                    mode === 'redact' ||
-                    mode === 'sign' ||
-                    mode === 'optimize' ||
-                    mode === 'protect' ||
-                    mode === 'unlock' ||
-                    mode === 'compress' ||
-                    mode === 'split' ||
-                    mode === 'crop' ||
-                    mode === 'ocr_pdf' ||
-                    mode === 'pdf_to_pdfa' ||
-                    mode === 'pdf_to_word' ||
-                    mode === 'pdf_to_images';
-  
-  // Image tools
-  const isImageTool = mode === 'convert' ||
-                     mode === 'resize' ||
-                     mode === 'compress' ||
-                     mode === 'passport' ||
-                     mode === 'watermark' ||
-                     mode === 'icon' ||
-                     mode === 'palette' ||
-                     mode === 'crop' ||
-                     mode === 'remove_bg' ||
-                     mode === 'design' ||
-                     mode === 'metadata' ||
-                     mode === 'grid';
-  
-  // Office tools
-  const isWordTool = mode === 'word_to_pdf';
-  const isPowerPointTool = mode === 'powerpoint_to_pdf';
-  const isExcelTool = mode === 'excel_to_pdf';
-  const isHtmlTool = mode === 'html_to_pdf';
-  const isHeicTool = mode === 'heic_to_jpg';
-  
-  if (isPdfTool) {
-    return extension === 'pdf';
-  }
-  
-  if (isImageTool) {
-    return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(extension);
-  }
-  
-  if (isWordTool) {
+  const isPdf = extension === 'pdf';
+  const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(extension);
+  const isHeic = ['heic', 'heif'].includes(extension);
+
+  // === CONVERSION TOOLS (specific input types) ===
+
+  // Office to PDF tools
+  if (mode === 'word_to_pdf') {
     return ['docx', 'doc'].includes(extension);
   }
-  
-  if (isPowerPointTool) {
+  if (mode === 'powerpoint_to_pdf') {
     return ['pptx', 'ppt'].includes(extension);
   }
-  
-  if (isExcelTool) {
+  if (mode === 'excel_to_pdf') {
     return ['xlsx', 'xls'].includes(extension);
   }
-  
-  if (isHtmlTool) {
+  if (mode === 'html_to_pdf') {
     return ['html', 'htm'].includes(extension);
   }
-  
-  if (isHeicTool) {
-    return ['heic', 'heif'].includes(extension);
+
+  // File to PDF converters
+  if (mode === 'csv_to_pdf') return extension === 'csv';
+  if (mode === 'txt_to_pdf') return extension === 'txt';
+  if (mode === 'tiff_to_pdf') return ['tiff', 'tif'].includes(extension);
+  if (mode === 'rtf_to_pdf') return extension === 'rtf';
+  if (mode === 'xml_to_pdf') return extension === 'xml';
+
+  // Images to PDF - accepts images only
+  if (mode === 'images_to_pdf') return isImage;
+
+  // HEIC converter - accepts HEIC only
+  if (mode === 'heic_to_jpg') return isHeic;
+
+  // === SHARED MODES (work for both PDF and Image) ===
+  // These modes exist in both PDF tools and Image tools
+  const sharedModes = ['compress', 'crop', 'watermark', 'remove_metadata'];
+
+  if (sharedModes.includes(mode)) {
+    // Accept either PDF or image files for shared modes
+    return isPdf || isImage;
   }
-  
-  if (mode === 'images_to_pdf') {
-    return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(extension);
+
+  // === PDF-ONLY TOOLS ===
+  const pdfOnlyModes = [
+    'merge', 'split', 'diff', 'extract_tables', 'extract_text',
+    'extract_images_from_pdf', 'flatten', 'organize', 'delete_pages',
+    'page_numbers', 'rotate', 'grayscale', 'repair', 'scrub', 'redact',
+    'sign', 'optimize', 'protect', 'unlock', 'ocr_pdf', 'pdf_to_pdfa',
+    'pdf_to_word', 'pdf_to_images', 'booklet', 'reorder'
+  ];
+
+  // Also check for modes containing 'pdf' (like compress_pdf, etc.)
+  const isPdfOnlyMode = pdfOnlyModes.includes(mode) ||
+                        (mode.includes('pdf') && !['images_to_pdf'].includes(mode));
+
+  if (isPdfOnlyMode) {
+    return isPdf;
   }
-  
+
+  // === IMAGE-ONLY TOOLS ===
+  const imageOnlyModes = [
+    'convert', 'resize', 'passport', 'icon', 'palette', 'remove_bg',
+    'design', 'metadata', 'grid', 'upscale'
+  ];
+
+  if (imageOnlyModes.includes(mode)) {
+    return isImage;
+  }
+
   return true; // Unknown mode, allow
 };
 
@@ -191,6 +203,7 @@ export const validateFiles = (
     pageOrder?: string;
     deletePages?: string;
     redactText?: string;
+    redactTexts?: string[];
     certFile?: FileAsset | null;
     cropWidth?: number | null;
     cropHeight?: number | null;
@@ -252,81 +265,88 @@ export const validateFiles = (
     }
   }
   
-  // Tool-specific validations
-  if (mode === 'protect') {
-    if (!settings?.password || settings.password.trim().length < 3) {
-      return {
-        valid: false,
-        error: "Password is required to protect your PDF. Please enter a password (minimum 3 characters)."
-      };
+  // Tool-specific validations - ONLY run these when settings are explicitly provided
+  // This allows file uploads to succeed without requiring settings to be filled first
+  // Settings validation happens at process time, not at file upload time
+  if (settings) {
+    if (mode === 'protect') {
+      if (!settings.password || settings.password.trim().length < 3) {
+        return {
+          valid: false,
+          error: "Password is required to protect your PDF. Please enter a password (minimum 3 characters)."
+        };
+      }
     }
-  }
-  
-  if (mode === 'organize') {
-    if (!settings?.pageOrder || settings.pageOrder.trim().length === 0) {
-      return {
-        valid: false,
-        error: "Page order is required. Please enter the desired page order (e.g., '3,1,2' or '1-5,10')."
-      };
+
+    if (mode === 'organize') {
+      if (!settings.pageOrder || settings.pageOrder.trim().length === 0) {
+        return {
+          valid: false,
+          error: "Page order is required. Please enter the desired page order (e.g., '3,1,2' or '1-5,10')."
+        };
+      }
     }
-  }
-  
-  if (mode === 'delete_pages') {
-    if (!settings?.deletePages || settings.deletePages.trim().length === 0) {
-      return {
-        valid: false,
-        error: "Pages to delete are required. Please enter page numbers (e.g., '1,3-5' or '2,4,6')."
-      };
+
+    if (mode === 'delete_pages') {
+      if (!settings.deletePages || settings.deletePages.trim().length === 0) {
+        return {
+          valid: false,
+          error: "Pages to delete are required. Please enter page numbers (e.g., '1,3-5' or '2,4,6')."
+        };
+      }
     }
-  }
-  
-  if (mode === 'redact') {
-    if (!settings?.redactText || settings.redactText.trim().length === 0) {
-      return {
-        valid: false,
-        error: "Text to redact is required. Please enter the text you want to remove from the PDF."
-      };
+
+    if (mode === 'redact') {
+      // Support both single redactText and array of redactTexts
+      const hasRedactText = settings.redactText && settings.redactText.trim().length > 0;
+      const hasRedactTexts = settings.redactTexts && settings.redactTexts.some((t: string) => t.trim().length > 0);
+      if (!hasRedactText && !hasRedactTexts) {
+        return {
+          valid: false,
+          error: "Text to redact is required. Please enter the text you want to remove from the PDF."
+        };
+      }
     }
-  }
-  
-  if (mode === 'sign') {
-    if (!settings?.certFile) {
-      return {
-        valid: false,
-        error: "Certificate file is required. Please select a certificate file (.pfx or .p12)."
-      };
+
+    if (mode === 'sign') {
+      if (!settings.certFile) {
+        return {
+          valid: false,
+          error: "Certificate file is required. Please select a certificate file (.pfx or .p12)."
+        };
+      }
+      if (!settings.password || settings.password.trim().length === 0) {
+        return {
+          valid: false,
+          error: "Certificate password is required. Please enter the password for your certificate."
+        };
+      }
     }
-    if (!settings?.password || settings.password.trim().length === 0) {
-      return {
-        valid: false,
-        error: "Certificate password is required. Please enter the password for your certificate."
-      };
+
+    // PDF crop validation - visual crop interface auto-initializes dimensions
+    // Validation only kicks in if values are somehow invalid
+    if (mode === 'crop' && settings.cropWidth !== undefined && settings.cropHeight !== undefined) {
+      if (settings.cropWidth === null || settings.cropHeight === null) {
+        return {
+          valid: false,
+          error: "Please use the visual crop box to define the crop area, or wait for the preview to load."
+        };
+      }
+      if (settings.cropWidth <= 0 || settings.cropHeight <= 0) {
+        return {
+          valid: false,
+          error: "Crop area is too small. Please drag the corners to resize the crop box."
+        };
+      }
     }
-  }
-  
-  // PDF crop validation (image crop is interactive, no dimension validation needed)
-  // Only validate if cropWidth and cropHeight are explicitly provided (PDF crop)
-  if (mode === 'crop' && settings?.cropWidth !== undefined && settings?.cropHeight !== undefined) {
-    if (settings.cropWidth === null || settings.cropHeight === null) {
-      return {
-        valid: false,
-        error: "Crop dimensions are required. Please enter width and height values."
-      };
-    }
-    if (settings.cropWidth <= 0 || settings.cropHeight <= 0) {
-      return {
-        valid: false,
-        error: "Crop dimensions must be greater than 0. Please enter valid width and height values."
-      };
-    }
-  }
-  
-  if (mode === 'split' && settings?.splitMode === 'range') {
-    if (!settings?.splitRange || settings.splitRange.trim().length === 0) {
-      return {
-        valid: false,
-        error: "Page range is required. Please enter the page range (e.g., '1-5' or '1,3,5')."
-      };
+
+    if (mode === 'split' && settings.splitMode === 'range') {
+      if (!settings.splitRange || settings.splitRange.trim().length === 0) {
+        return {
+          valid: false,
+          error: "Page range is required. Please enter the page range (e.g., '1-5' or '1,3,5')."
+        };
+      }
     }
   }
   

@@ -426,6 +426,76 @@
             "f1": "Arrastrar y soltar",
             "f2": "Eliminar páginas",
             "f3": "Privacidad sin conexión"
+        },
+        "pdf-to-jpg": {
+            "h1": "Convertir PDF a JPG",
+            "p1": "Convierte páginas PDF a imágenes JPG de alta calidad. Rápido, gratuito y 100% privado.",
+            "f1": "Alta calidad",
+            "f2": "Conversión por lotes",
+            "f3": "Privacidad primero"
+        },
+        "pdf-to-png": {
+            "h1": "Convertir PDF a PNG",
+            "p1": "Convierte páginas PDF a imágenes PNG con soporte de transparencia. Rápido y privado.",
+            "f1": "Soporte de transparencia",
+            "f2": "Alta resolución",
+            "f3": "Procesamiento privado"
+        },
+        "pdf-to-csv": {
+            "h1": "PDF a CSV",
+            "p1": "Extrae tablas de PDF y convierte a formato CSV. Perfecto para análisis de datos.",
+            "f1": "Detección de tablas",
+            "f2": "Datos limpios",
+            "f3": "Exportación fácil"
+        },
+        "pdf-to-excel": {
+            "h1": "PDF a Excel",
+            "p1": "Convierte tablas PDF a hojas de cálculo Excel. Extrae datos con precisión.",
+            "f1": "Detección inteligente",
+            "f2": "Formato Excel",
+            "f3": "Extracción de datos"
+        },
+        "csv-to-pdf": {
+            "h1": "CSV a PDF",
+            "p1": "Convierte archivos CSV a tablas PDF bellamente formateadas.",
+            "f1": "Tablas limpias",
+            "f2": "Aspecto profesional",
+            "f3": "Fácil de compartir"
+        },
+        "txt-to-pdf": {
+            "h1": "TXT a PDF",
+            "p1": "Convierte archivos de texto plano a documentos PDF. Simple y rápido.",
+            "f1": "Formato limpio",
+            "f2": "Conversión rápida",
+            "f3": "Privacidad primero"
+        },
+        "tiff-to-pdf": {
+            "h1": "TIFF a PDF",
+            "p1": "Convierte imágenes TIFF a documentos PDF. Soporta archivos TIFF multipágina.",
+            "f1": "Soporte multipágina",
+            "f2": "Alta calidad",
+            "f3": "Conversión fácil"
+        },
+        "rtf-to-pdf": {
+            "h1": "RTF a PDF",
+            "p1": "Convierte archivos de formato de texto enriquecido a documentos PDF preservando el formato.",
+            "f1": "Formato preservado",
+            "f2": "Salida limpia",
+            "f3": "Procesamiento rápido"
+        },
+        "xml-to-pdf": {
+            "h1": "XML a PDF",
+            "p1": "Convierte archivos XML a documentos PDF legibles. Estructurado y organizado.",
+            "f1": "Vista estructurada",
+            "f2": "Formato legible",
+            "f3": "Salida profesional"
+        },
+        "ppt-to-pdf": {
+            "h1": "PPT a PDF",
+            "p1": "Convierte presentaciones de PowerPoint a formato PDF. Mantén tus diapositivas perfectas.",
+            "f1": "Diseño preservado",
+            "f2": "Todas las diapositivas",
+            "f3": "Conversión rápida"
         }
     },
     "Tools": {
