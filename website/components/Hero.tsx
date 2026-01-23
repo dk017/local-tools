@@ -23,7 +23,7 @@ export function Hero() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-6xl md:text-8xl font-bold tracking-tighter mb-8 leading-tight"
+                        className="text-4xl md:text-6xl font-bold tracking-tighter mb-8 leading-tight"
                     >
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary animate-gradient-x bg-[length:200%_auto]">
                             {t('title')}
