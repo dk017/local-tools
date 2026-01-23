@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePython } from '../hooks/usePython';
-import { Upload, FileImage, CheckCircle, AlertCircle, Loader2, X, Maximize2, Minimize2, FileOutput, Stamp, AppWindow, Palette, Crop, ImagePlus, Type, Trash2 } from 'lucide-react';
+import { Upload, FileImage, CheckCircle, AlertCircle, Loader2, X, Maximize2, Minimize2, FileOutput, Stamp, AppWindow, Palette, Crop, ImagePlus, Type, Trash2, ArrowRight } from 'lucide-react';
 import { pickFiles, FileAsset, readFileAsset } from '../lib/file-picker';
 import { validateFiles } from '../lib/file-validation';
 import Cropper from 'react-easy-crop';
@@ -9,8 +9,9 @@ import { UserSquare2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { IS_TAURI } from '../config';
-import { ToolInfo } from '../components/ToolInfo';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 
 
 import StudioCanvas, { StudioLayerData } from '../components/Studio/StudioCanvas';
@@ -31,7 +32,7 @@ const COUNTRIES = [
     { code: 'CA', label: 'Canada (50x70mm)', aspect: 50 / 70 },
 ];
 
-export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode }) => {
+export const ImageConverter: React.FC<{ initialMode?: string, initialFormat?: string }> = ({ initialMode, initialFormat }) => {
     const { t } = useTranslation();
     const { execute } = usePython();
     const navigate = useNavigate();
@@ -48,8 +49,14 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
         }
     }, [initialMode]);
 
+    React.useEffect(() => {
+        if (initialFormat) {
+            setFormat(initialFormat);
+        }
+    }, [initialFormat]);
+
     // Settings
-    const [format, setFormat] = useState('png');
+    const [format, setFormat] = useState(initialFormat || 'png');
     const [resizeConfig, setResizeConfig] = useState({ width: 1920, height: 1080, percentage: 50, type: 'dimensions' as 'dimensions' | 'percentage', maintainAspect: true });
     const [compressQuality, setCompressQuality] = useState(80);
     const [compressMode, setCompressMode] = useState<'quality' | 'size'>('quality');
@@ -63,14 +70,22 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
-    // New Tool Settings
+    // Watermark Settings
     const [watermarkText, setWatermarkText] = useState('Confidential');
     const [watermarkOpacity, setWatermarkOpacity] = useState(128);
     const [watermarkSize, setWatermarkSize] = useState(20);
     const [watermarkType, setWatermarkType] = useState<'text' | 'image'>('text');
+    const [watermarkColor, setWatermarkColor] = useState('#FFFFFF');
+    const [watermarkFont, setWatermarkFont] = useState('arial');
 
     const [watermarkFile, setWatermarkFile] = useState<FileAsset | null>(null);
     const [watermarkPreviewSrc, setWatermarkPreviewSrc] = useState<string | null>(null);
+
+    // Dragging state for watermark
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState<{ x: number, y: number } | null>(null);
+    const watermarkRef = React.useRef<HTMLDivElement>(null);
+    const previewWrapperRef = React.useRef<HTMLDivElement>(null);
 
     const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
     // const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
@@ -83,11 +98,20 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
     const [gridRows, setGridRows] = useState(2);
     const [gridCols, setGridCols] = useState(2);
     const [paletteCount, setPaletteCount] = useState(5);
-    const [watermarkPos, setWatermarkPos] = useState<{ x: number, y: number } | null>(null);
+    // Watermark position as percentage (0-1) for responsive positioning
+    const [watermarkPos, setWatermarkPos] = useState<{ x: number, y: number }>({ x: 0.5, y: 0.5 });
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
     const [imageLoadError, setImageLoadError] = useState<string | null>(null);
+
+    // Remove BG model status
+    const [modelStatus, setModelStatus] = useState<{
+        checked: boolean;
+        exists: boolean;
+        downloading: boolean;
+        error?: string;
+    }>({ checked: false, exists: false, downloading: false });
 
     // Studio / Layout State
     const [imgNaturalDim, setImgNaturalDim] = useState<{ w: number, h: number } | null>(null);
@@ -303,12 +327,12 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
         if (assets.length > 0) {
             // Validate files before adding
             const validation = validateFiles(mode, assets);
-            
+
             if (!validation.valid) {
                 setError(validation.error || "Invalid files selected.");
                 return;
             }
-            
+
             // Clear previous errors if validation passes
             setError(null);
             setFiles(assets);
@@ -351,7 +375,7 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
         // Note: For image crop, we don't validate dimensions as it's interactive
         // Only validate for PDF crop which uses explicit width/height
         const validation = validateFiles(mode, files);
-        
+
         if (!validation.valid) {
             setError(validation.error || "Validation failed. Please check your inputs.");
             return;
@@ -421,8 +445,13 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
             } else if (mode === 'watermark') {
                 action = 'watermark';
                 payload.text = watermarkText;
-                payload.opacity = watermarkOpacity;
+                payload.opacity = watermarkOpacity / 255; // Convert to 0-1 range for backend
                 payload.size = watermarkSize;
+                payload.color = watermarkColor;
+                payload.font = watermarkFont;
+                payload.position = 'custom'; // Always use custom position from drag
+                payload.x = watermarkPos.x;
+                payload.y = watermarkPos.y;
                 if (watermarkType === 'image' && watermarkFile) {
                     if (IS_TAURI) {
                         payload.watermark_file = watermarkFile.path;
@@ -430,10 +459,6 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                         // Web: need to upload watermark too
                         payload.watermark_file_obj = watermarkFile.file;
                     }
-                }
-                if (watermarkPos) {
-                    payload.x = watermarkPos.x;
-                    payload.y = watermarkPos.y;
                 }
             } else if (mode === 'grid') {
                 action = 'grid_split';
@@ -458,7 +483,41 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                 }
             } else if (mode === 'remove_bg') {
                 action = 'remove_bg';
-                payload.model = 'u2net'; // could add UI selector for this later
+                payload.model = 'u2net';
+
+                // First check if model exists (only on first run or if not checked)
+                if (!modelStatus.checked || !modelStatus.exists) {
+                    setModelStatus(prev => ({ ...prev, downloading: true }));
+                    toast.info("Checking AI Model", {
+                        description: "Verifying AI model availability...",
+                    });
+
+                    try {
+                        const checkResult = await execute('image_tools', 'remove_bg', {
+                            check_model_only: true,
+                            model: 'u2net'
+                        });
+
+                        if (checkResult.model_status) {
+                            const status = checkResult.model_status;
+                            setModelStatus({
+                                checked: true,
+                                exists: status.exists,
+                                downloading: false
+                            });
+
+                            if (!status.exists) {
+                                toast.info("Downloading AI Model", {
+                                    description: "First-time setup: Downloading AI model (~170MB). This may take a few minutes...",
+                                    duration: 10000,
+                                });
+                            }
+                        }
+                    } catch (checkErr) {
+                        console.error("Model check failed:", checkErr);
+                        // Continue anyway - the actual processing will show the real error
+                    }
+                }
             } else if (mode === 'heic_to_jpg') {
                 action = 'heic_to_jpg';
                 payload.quality = 95;
@@ -467,13 +526,71 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
             const res = await execute('image_tools', action, payload);
             setResult(res);
 
+            // Update model status if we got info back (for remove_bg)
+            if (mode === 'remove_bg') {
+                setModelStatus(prev => ({ ...prev, downloading: false }));
+
+                if (res.error_type) {
+                    // Model-related error
+                    setModelStatus(prev => ({
+                        ...prev,
+                        checked: true,
+                        exists: false,
+                        error: res.errors?.[0] || 'Model error occurred'
+                    }));
+                } else if (res.processed_files?.length > 0) {
+                    // Success - model must exist
+                    setModelStatus(prev => ({
+                        ...prev,
+                        checked: true,
+                        exists: true,
+                        error: undefined
+                    }));
+                }
+            }
+
             if (res.errors && res.errors.length > 0) {
-                setError(`Processed ${res.processed_files.length} files, but ${res.errors.length} failed.`);
+                // Extract actual error messages for debugging
+                const errorDetails = res.errors.map((err: any) => {
+                    if (typeof err === 'string') return err;
+                    if (err.error) return err.error;
+                    return JSON.stringify(err);
+                }).join('; ');
+
+                const errorMsg = `Processed ${res.processed_files?.length || 0} files, but ${res.errors.length} failed: ${errorDetails}`;
+                setError(errorMsg);
+                console.error("Processing errors:", res.errors);
+
+                // Show specific toast based on error type
+                if (res.error_type === 'network') {
+                    toast.error("Network Error", {
+                        description: "Failed to download AI model. Please check your internet connection.",
+                        duration: 8000,
+                    });
+                } else if (res.error_type === 'permission') {
+                    toast.error("Permission Error", {
+                        description: "Cannot access model files. Try running as administrator.",
+                        duration: 8000,
+                    });
+                } else {
+                    toast.warning("Processing Issue", {
+                        description: errorDetails.length > 100 ? errorDetails.substring(0, 100) + '...' : errorDetails,
+                    });
+                }
+            } else {
+                const fileCount = res.processed_files?.length || 1;
+                toast.success("Processing Complete", {
+                    description: `${fileCount} file${fileCount > 1 ? "s" : ""} processed successfully.`,
+                });
             }
 
         } catch (err: any) {
             console.error("Processing Error:", err);
-            setError(typeof err === 'string' ? err : (err.message || JSON.stringify(err) || "Operation failed"));
+            const errorMsg = typeof err === 'string' ? err : (err.message || JSON.stringify(err) || "Operation failed");
+            setError(errorMsg);
+            toast.error("Processing Error", {
+                description: errorMsg,
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -594,25 +711,66 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                                 <div className="relative w-full h-full flex items-center justify-center p-4">
                                     <div className="relative w-full max-w-4xl h-full max-h-[80vh] bg-black/80 rounded-xl overflow-hidden shadow-2xl border border-border">
                                         {mode === 'watermark' ? (
-                                            <div className="relative w-full h-full flex items-center justify-center overflow-hidden" id="preview-wrapper">
+                                            <div
+                                                ref={previewWrapperRef}
+                                                className="relative w-full h-full flex items-center justify-center overflow-hidden"
+                                                onMouseMove={(e) => {
+                                                    if (!isDragging || !previewWrapperRef.current || !dragStart) return;
+                                                    const rect = previewWrapperRef.current.getBoundingClientRect();
+                                                    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                                                    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+                                                    setWatermarkPos({ x, y });
+                                                }}
+                                                onMouseUp={() => {
+                                                    setIsDragging(false);
+                                                    setDragStart(null);
+                                                }}
+                                                onMouseLeave={() => {
+                                                    setIsDragging(false);
+                                                    setDragStart(null);
+                                                }}
+                                            >
                                                 <img
                                                     src={imageSrc}
-                                                    className="max-w-full max-h-full object-contain shadow-lg"
+                                                    className="max-w-full max-h-full object-contain shadow-lg pointer-events-none"
                                                     onLoad={(e) => setImgNaturalDim({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
                                                 />
                                                 <div
-                                                    className="absolute cursor-move select-none z-10 border border-white/20 p-1 rounded hover:border-blue-500/50 transition-colors"
-                                                    onDragEnd={(_) => {
-                                                        setWatermarkPos({ x: 0, y: 0 }); // Placeholder
+                                                    ref={watermarkRef}
+                                                    className={cn(
+                                                        "absolute cursor-move select-none z-10 p-2 rounded transition-colors",
+                                                        isDragging ? "border-2 border-blue-500 bg-blue-500/10" : "border border-white/30 hover:border-blue-500/50"
+                                                    )}
+                                                    style={{
+                                                        left: `${watermarkPos.x * 100}%`,
+                                                        top: `${watermarkPos.y * 100}%`,
+                                                        transform: 'translate(-50%, -50%)'
+                                                    }}
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        setIsDragging(true);
+                                                        setDragStart({ x: e.clientX, y: e.clientY });
                                                     }}
                                                 >
                                                     {watermarkType === 'text' ? (
-                                                        <span className="font-bold text-white drop-shadow-md whitespace-nowrap" style={{ fontSize: `${Math.max(12, watermarkSize * 2)}px`, opacity: watermarkOpacity / 255 }}>
+                                                        <span
+                                                            className="font-bold drop-shadow-md whitespace-nowrap"
+                                                            style={{
+                                                                fontSize: `${Math.max(12, watermarkSize * 2)}px`,
+                                                                opacity: watermarkOpacity / 255,
+                                                                color: watermarkColor,
+                                                                fontFamily: watermarkFont,
+                                                                textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+                                                            }}
+                                                        >
                                                             {watermarkText || 'Watermark'}
                                                         </span>
                                                     ) : (
                                                         watermarkPreviewSrc && <img src={watermarkPreviewSrc} className="object-contain drop-shadow-md" style={{ height: `${Math.max(20, watermarkSize * 3)}px`, opacity: watermarkOpacity / 255 }} />
                                                     )}
+                                                </div>
+                                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none">
+                                                    Drag to position watermark
                                                 </div>
                                                 {imageLoadError && <div className="absolute inset-0 bg-black/80 flex items-center justify-center text-red-500 text-xs p-4 text-center">{imageLoadError}</div>}
                                             </div>
@@ -625,6 +783,9 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                                                 onCropChange={setCrop}
                                                 onCropComplete={(_, croppedAreaPixels) => setCroppedAreaPixels(croppedAreaPixels)}
                                                 onZoomChange={setZoom}
+                                                minZoom={0.5}
+                                                maxZoom={3}
+                                                restrictPosition={false}
                                                 objectFit="contain"
                                             />
                                         )}
@@ -674,11 +835,41 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
 
                                     {/* Success/Error Messages Inline */}
                                     {result && (
-                                        <div className="max-w-xl mx-auto mt-8 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3">
-                                            <CheckCircle className="w-5 h-5 text-green-400" />
-                                            <div className="text-sm text-green-400">
-                                                Processed {result.processed_files?.length} files successfully.
+                                        <div className="max-w-xl mx-auto mt-8 p-6 bg-green-500/10 border border-green-500/20 rounded-xl">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <CheckCircle className="w-5 h-5 text-green-400" />
+                                                <div className="text-sm text-green-400 font-medium">
+                                                    Processed {result.processed_files?.length} files successfully.
+                                                </div>
                                             </div>
+                                            {IS_TAURI && result.processed_files?.length > 0 && (
+                                                <div className="pl-8 space-y-2">
+                                                    {result.processed_files.map((f: string) => (
+                                                        <div
+                                                            key={f}
+                                                            className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/10"
+                                                        >
+                                                            <div className="flex-1 truncate font-mono text-xs text-muted-foreground" title={f}>
+                                                                {f}
+                                                            </div>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        await revealItemInDir(f);
+                                                                    } catch (e) {
+                                                                        console.error("Failed to reveal file", e);
+                                                                        toast.error("Could not open file location");
+                                                                    }
+                                                                }}
+                                                                className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary text-xs rounded-md transition-colors font-medium shrink-0 flex items-center gap-1"
+                                                            >
+                                                                <ArrowRight className="w-3 h-3" />
+                                                                Show in Folder
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     {error && (
@@ -686,8 +877,8 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                                             <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                                             <div className="flex-1">
                                                 <h4 className="font-semibold text-destructive mb-1">
-                                                    {error.includes("This tool only accepts") || 
-                                                     error.includes("Invalid file type")
+                                                    {error.includes("This tool only accepts") ||
+                                                        error.includes("Invalid file type")
                                                         ? "Validation Error"
                                                         : "Processing Error"}
                                                 </h4>
@@ -701,20 +892,6 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                             )}
                         </div>
                     )}
-                    {/* Programmatic SEO Content Section */}
-                    <div className="mt-12 mb-20">
-                        <ToolInfo slug={
-                            mode === 'convert' ? (format === 'png' ? 'jpg-to-png' : (format === 'jpg' ? 'png-to-jpg' : 'convert-image')) :
-                                mode === 'resize' ? 'resize-image' :
-                                    mode === 'compress' ? 'compress-image' :
-                                        mode === 'remove_bg' ? 'remove-background' :
-                                            mode === 'crop' ? 'crop-image' :
-                                                mode === 'passport' ? 'passport-photo-maker' :
-                                                    mode === 'watermark' ? 'add-watermark' :
-                                                        mode === 'palette' ? 'image-color-palette' :
-                                                            undefined
-                        } />
-                    </div>
                 </div>
 
                 {/* Right Fixed Sidebar (Settings & Navigation) */}
@@ -841,9 +1018,46 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                                     <button onClick={() => setWatermarkType('image')} className={cn("flex-1 text-xs font-medium py-1.5 rounded-md transition-all", watermarkType === 'image' ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground")}>Image</button>
                                 </div>
                                 {watermarkType === 'text' ? (
-                                    <div>
-                                        <label className="text-xs text-muted-foreground mb-1 block">Text</label>
-                                        <input type="text" value={watermarkText} onChange={(e) => setWatermarkText(e.target.value)} className="w-full bg-secondary rounded-md px-3 py-2 text-sm outline-none" placeholder="Confidential" />
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Text</label>
+                                            <input type="text" value={watermarkText} onChange={(e) => setWatermarkText(e.target.value)} className="w-full bg-secondary rounded-md px-3 py-2 text-sm outline-none" placeholder="Confidential" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Color</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="color"
+                                                    value={watermarkColor}
+                                                    onChange={(e) => setWatermarkColor(e.target.value)}
+                                                    className="w-10 h-10 rounded border border-border cursor-pointer bg-transparent"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={watermarkColor}
+                                                    onChange={(e) => setWatermarkColor(e.target.value)}
+                                                    className="flex-1 bg-secondary rounded-md px-3 py-2 text-sm outline-none font-mono uppercase"
+                                                    placeholder="#FFFFFF"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Font</label>
+                                            <select
+                                                value={watermarkFont}
+                                                onChange={(e) => setWatermarkFont(e.target.value)}
+                                                className="w-full bg-secondary rounded-md px-3 py-2 text-sm outline-none cursor-pointer"
+                                            >
+                                                <option value="arial">Arial</option>
+                                                <option value="times">Times New Roman</option>
+                                                <option value="georgia">Georgia</option>
+                                                <option value="verdana">Verdana</option>
+                                                <option value="trebuchet">Trebuchet MS</option>
+                                                <option value="impact">Impact</option>
+                                                <option value="courier">Courier New</option>
+                                                <option value="comic">Comic Sans MS</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div>
@@ -896,6 +1110,53 @@ export const ImageConverter: React.FC<{ initialMode?: string }> = ({ initialMode
                         {mode === 'icon' && (
                             <div className="text-xs text-muted-foreground p-4 bg-secondary/20 rounded-lg">
                                 Generates standard favicon sizes (16, 32, 64, 192, 512).
+                            </div>
+                        )}
+
+                        {mode === 'remove_bg' && (
+                            <div className="space-y-3">
+                                <div className="text-xs text-muted-foreground p-4 bg-secondary/20 rounded-lg">
+                                    Removes the background from images using AI. Works best with photos of people, products, and objects with clear subjects.
+                                </div>
+
+                                {/* Model Status Indicator */}
+                                {modelStatus.checked && modelStatus.exists ? (
+                                    <div className="text-xs p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4 text-green-500" />
+                                            <span className="text-green-500">AI model ready</span>
+                                        </div>
+                                    </div>
+                                ) : modelStatus.downloading ? (
+                                    <div className="text-xs p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                                            <span className="text-blue-500">Checking/downloading AI model...</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-xs p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                        <div className="flex items-start gap-2">
+                                            <span className="text-amber-500 mt-0.5">⚠</span>
+                                            <div>
+                                                <p className="font-medium text-amber-500 mb-1">First-time setup required</p>
+                                                <p className="text-amber-500/80">The AI model (~170MB) will be downloaded automatically on first use. This requires an internet connection and may take a few minutes.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {modelStatus.error && (
+                                    <div className="text-xs p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                        <div className="flex items-start gap-2">
+                                            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-red-500 mb-1">Model Error</p>
+                                                <p className="text-red-500/80">{modelStatus.error}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 

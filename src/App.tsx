@@ -10,6 +10,7 @@ import { StudioPage } from "./pages/StudioPage";
 import PdfEditorPage from "./pages/PdfEditorPage";
 import ActivationWrapper from "./components/ActivationWrapper";
 import { PdfEditorProvider } from "./contexts/PdfEditorContext";
+import { Toaster } from "sonner";
 
 // Tool Route Handler
 function ToolHandler() {
@@ -23,7 +24,7 @@ function ToolHandler() {
   if (config.tool === 'pdf') {
     return <PdfTools initialMode={config.mode} />;
   } else if (config.tool === 'image') {
-    return <ImageConverter initialMode={config.mode} />;
+    return <ImageConverter initialMode={config.mode} initialFormat={config.format} />;
   }
 
   return <Navigate to="/" replace />;
@@ -54,6 +55,20 @@ function App() {
               <Route path="/tool/:slug" element={<ToolHandler />} />
             </Routes>
           </main>
+
+          {/* Toast Notifications */}
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              style: {
+                background: 'hsl(var(--card))',
+                color: 'hsl(var(--foreground))',
+                border: '1px solid hsl(var(--border))',
+              },
+            }}
+            richColors
+            closeButton
+          />
         </div>
       </ActivationWrapper>
     </PdfEditorProvider>

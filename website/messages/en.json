@@ -557,6 +557,20 @@
             "f1": "Layout Preserved",
             "f2": "All Slides",
             "f3": "Fast Conversion"
+        },
+        "jpg-to-png": {
+            "h1": "Convert JPG to PNG",
+            "p1": "Convert JPG images to PNG format with transparency support. Fast, offline, and secure.",
+            "f1": "Transparency Support",
+            "f2": "Batch Conversion",
+            "f3": "Privacy First"
+        },
+        "png-to-jpg": {
+            "h1": "Convert PNG to JPG",
+            "p1": "Convert PNG images to JPG format for smaller file sizes. Fast, offline, and secure.",
+            "f1": "High Quality",
+            "f2": "Batch Conversion",
+            "f3": "Privacy First"
         }
     },
     "Tools": {

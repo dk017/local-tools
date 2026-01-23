@@ -253,8 +253,11 @@ export default async function ToolPage({
     slug === "design-studio" ||
     slug === "generate-icons" ||
     slug === "photo-studio" ||
+    slug === "photo-studio" ||
     slug === "grid-split" ||
-    slug === "remove-image-metadata"
+    slug === "remove-image-metadata" ||
+    slug === "jpg-to-png" ||
+    slug === "png-to-jpg"
   ) {
     acceptedTypes = { "image/*": [".png", ".jpg", ".jpeg", ".webp"] };
   }

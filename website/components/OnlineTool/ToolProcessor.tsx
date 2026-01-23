@@ -1995,8 +1995,8 @@ export function ToolProcessor({
                 <button
                   onClick={() => setWatermarkType("text")}
                   className={`flex-1 py-2 rounded-md font-medium transition-all ${watermarkType === "text"
-                      ? "bg-primary text-black"
-                      : "text-white/60 hover:text-white"
+                    ? "bg-primary text-black"
+                    : "text-white/60 hover:text-white"
                     }`}
                 >
                   <Type className="inline w-4 h-4 mr-2" />
@@ -2005,8 +2005,8 @@ export function ToolProcessor({
                 <button
                   onClick={() => setWatermarkType("image")}
                   className={`flex-1 py-2 rounded-md font-medium transition-all ${watermarkType === "image"
-                      ? "bg-primary text-black"
-                      : "text-white/60 hover:text-white"
+                    ? "bg-primary text-black"
+                    : "text-white/60 hover:text-white"
                     }`}
                 >
                   <LucideImage className="inline w-4 h-4 mr-2" />
@@ -2654,8 +2654,8 @@ export function ToolProcessor({
                             <div
                               key={table.id}
                               className={`p-3 rounded-lg border transition-all cursor-pointer ${selectedTables.has(table.id)
-                                  ? 'bg-primary/10 border-primary/50'
-                                  : 'bg-black/20 border-white/10 hover:border-white/20'
+                                ? 'bg-primary/10 border-primary/50'
+                                : 'bg-black/20 border-white/10 hover:border-white/20'
                                 }`}
                               onClick={() => {
                                 const newSelected = new Set(selectedTables);
@@ -2687,9 +2687,9 @@ export function ToolProcessor({
                                     <span
                                       key={idx}
                                       className={`text-xs px-1.5 py-0.5 rounded ${type === 'numeric' ? 'bg-blue-500/20 text-blue-400' :
-                                          type === 'date' ? 'bg-purple-500/20 text-purple-400' :
-                                            type === 'text' ? 'bg-green-500/20 text-green-400' :
-                                              'bg-gray-500/20 text-gray-400'
+                                        type === 'date' ? 'bg-purple-500/20 text-purple-400' :
+                                          type === 'text' ? 'bg-green-500/20 text-green-400' :
+                                            'bg-gray-500/20 text-gray-400'
                                         }`}
                                     >
                                       {type}
@@ -3579,8 +3579,8 @@ export function ToolProcessor({
                               }
                             }}
                             className={`px-3 py-2 text-xs rounded-lg transition-all border ${cropAspect === r
-                                ? "bg-primary/20 border-primary text-primary font-medium"
-                                : "bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
+                              ? "bg-primary/20 border-primary text-primary font-medium"
+                              : "bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
                               }`}
                           >
                             {r === 1 ? "1:1" : r === 4 / 3 ? "4:3" : "16:9"}
@@ -3589,8 +3589,8 @@ export function ToolProcessor({
                         <button
                           onClick={() => setCropAspect(undefined)}
                           className={`px-3 py-2 text-xs rounded-lg transition-all border ${cropAspect === undefined
-                              ? "bg-primary/20 border-primary text-primary font-medium"
-                              : "bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
+                            ? "bg-primary/20 border-primary text-primary font-medium"
+                            : "bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white"
                             }`}
                         >
                           Free
@@ -3861,8 +3861,8 @@ export function ToolProcessor({
                         <button
                           onClick={() => setUpscaleFactor(2)}
                           className={`flex-1 py-3 rounded-lg border transition-all font-medium ${upscaleFactor === 2
-                              ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,243,255,0.2)]"
-                              : "border-white/20 text-muted-foreground hover:bg-white/5 hover:border-white/40"
+                            ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,243,255,0.2)]"
+                            : "border-white/20 text-muted-foreground hover:bg-white/5 hover:border-white/40"
                             }`}
                         >
                           2x
@@ -3870,8 +3870,8 @@ export function ToolProcessor({
                         <button
                           onClick={() => setUpscaleFactor(4)}
                           className={`flex-1 py-3 rounded-lg border transition-all font-medium ${upscaleFactor === 4
-                              ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,243,255,0.2)]"
-                              : "border-white/20 text-muted-foreground hover:bg-white/5 hover:border-white/40"
+                            ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(0,243,255,0.2)]"
+                            : "border-white/20 text-muted-foreground hover:bg-white/5 hover:border-white/40"
                             }`}
                         >
                           4x
