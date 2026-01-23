@@ -33,6 +33,8 @@ import {
   Book,
   GitCompare,
   Crop,
+  Plus,
+  X,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 // import { motion, AnimatePresence } from 'framer-motion';
@@ -52,7 +54,7 @@ import {
   useSensors,
   DragEndEvent,
 } from "@dnd-kit/core";
-import { invoke } from "@tauri-apps/api/core";
+// invoke removed - using revealItemInDir from plugin-opener instead
 import {
   arrayMove,
   SortableContext,
@@ -61,6 +63,8 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { toast } from "sonner";
+import { revealItemInDir, openPath } from "@tauri-apps/plugin-opener";
 
 interface SortableFileCardProps {
   file: FileAsset;
@@ -168,7 +172,12 @@ type PdfMode =
   | "ocr_pdf"
   | "pdf_to_pdfa"
   | "crop"
-  | "organize";
+  | "organize"
+  | "csv_to_pdf"
+  | "txt_to_pdf"
+  | "tiff_to_pdf"
+  | "rtf_to_pdf"
+  | "xml_to_pdf";
 
 import { ToolInfo } from "../components/ToolInfo";
 
@@ -502,6 +511,11 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
               setPreviewSrc(imageSrc);
             }
           });
+
+          // Store PDF page dimensions for coordinate conversion (crop tool)
+          if (res.page_width && res.page_height) {
+            setPdfPageDimensions({ width: res.page_width, height: res.page_height });
+          }
         } else if (res.errors && res.errors.length > 0) {
           console.error("Preview error:", res.errors);
         }
@@ -580,15 +594,67 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
   // Settings
   const [splitMode, setSplitMode] = useState<"all" | "range">("all");
   const [splitRange, setSplitRange] = useState("");
-  const [compressLevel, setCompressLevel] = useState(2); // 0-4
+  const [compressLevel, setCompressLevel] = useState(2); // 0-3
+  const [compressionEstimates, setCompressionEstimates] = useState<any[]>([]);
+  const [isEstimating, setIsEstimating] = useState(false);
   const [imageFormat, setImageFormat] = useState("png");
+
+  // Fetch compression estimates
+  React.useEffect(() => {
+    if (mode === "compress" && files.length > 0) {
+      const getEstimates = async () => {
+        setIsEstimating(true);
+        try {
+          const res = await execute("pdf_tools", "compress", {
+            files: files.map(f => f.path),
+            estimate_only: true
+          });
+          if (res.estimates) {
+            setCompressionEstimates(res.estimates);
+          }
+        } catch (err) {
+          console.error("Failed to get estimates", err);
+        } finally {
+          setIsEstimating(false);
+        }
+      };
+      getEstimates();
+    } else {
+      setCompressionEstimates([]);
+    }
+  }, [files, mode, execute]);
+
+  const formatSize = (bytes: number) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const getProbableSize = () => {
+    if (compressionEstimates.length === 0) return null;
+    // For simplicity, sum up estimates if multiple files
+    const total = compressionEstimates.reduce((acc, est) => {
+        const levelData = est.estimates.levels[compressLevel];
+        return acc + (levelData || 0);
+    }, 0);
+    return formatSize(total);
+  };
   const [imageDpi, setImageDpi] = useState(150);
 
   // Privacy Settings
   const [password, setPassword] = useState("");
   const [rotationAngle, setRotationAngle] = useState(90);
+
+  // Watermark Settings (enhanced to match web version)
+  const [watermarkType, setWatermarkType] = useState<"text" | "image">("text");
   const [watermarkText, setWatermarkText] = useState("CONFIDENTIAL");
-  const [watermarkOpacity, setWatermarkOpacity] = useState(30); // %
+  const [watermarkOpacity, setWatermarkOpacity] = useState(50); // %
+  const [watermarkColor, setWatermarkColor] = useState("#808080");
+  const [watermarkFontSize, setWatermarkFontSize] = useState(72);
+  const [watermarkPosition, setWatermarkPosition] = useState({ x: 0.5, y: 0.5 }); // 0-1 range
+  const [watermarkFile, setWatermarkFile] = useState<FileAsset | null>(null);
 
   // Page Num Settings
   const [pageNumPos, setPageNumPos] = useState("bottom-right");
@@ -600,18 +666,22 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
   const [extractFormat, setExtractFormat] = useState("csv");
 
   // Redact/Sign Settings
-  const [redactText, setRedactText] = useState("");
+  const [redactTexts, setRedactTexts] = useState<string[]>([""]);
   const [certFile, setCertFile] = useState<FileAsset | null>(null);
 
   // OCR Settings
   const [ocrLanguage, setOcrLanguage] = useState("eng");
 
-  // Crop Settings
+  // Crop Settings - Visual crop box (pixel coordinates on preview)
   const [cropX, setCropX] = useState(0);
   const [cropY, setCropY] = useState(0);
   const [cropWidth, setCropWidth] = useState<number | null>(null);
   const [cropHeight, setCropHeight] = useState<number | null>(null);
   const [cropPages, setCropPages] = useState("");
+  const [isDraggingCrop, setIsDraggingCrop] = useState(false);
+  const [isResizingCrop, setIsResizingCrop] = useState(false);
+  const [pdfPageDimensions, setPdfPageDimensions] = useState<{ width: number; height: number } | null>(null);
+  const cropPreviewRef = React.useRef<HTMLImageElement>(null);
 
   // Organize Settings
   const [pageOrder, setPageOrder] = useState("");
@@ -633,7 +703,26 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
         // For rotate, we fetch preview when angle changes, but skip cache to ensure fresh preview
         fetchPreview({ angle: rotationAngle }, 0, true);
       } else if (mode === "crop") {
-        fetchPreview({ x: cropX, y: cropY, width: cropWidth, height: cropHeight }, 0);
+        // For visual crop editor, always fetch full page preview (not clipped)
+        // The crop box is overlaid on the full page preview
+        const target = files[0];
+        const actualPayload = {
+          file: IS_TAURI ? target.path : target.file,
+          page: 0,
+          action: "preview",  // Use basic preview, not crop action
+        };
+
+        execute("pdf_tools", "preview", actualPayload)
+          .then((res: any) => {
+            if (res.image) {
+              setPreviewSrc(res.image);
+            }
+            // Store PDF dimensions for coordinate conversion
+            if (res.page_width && res.page_height) {
+              setPdfPageDimensions({ width: res.page_width, height: res.page_height });
+            }
+          })
+          .catch((err: any) => console.error("Preview failed", err));
       } else {
         // Default preview for watermark and page_numbers
         const target = files[0];
@@ -658,7 +747,8 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       }
       setPreviewSrc(null);
     }
-  }, [mode, files, rotationAngle, cropX, cropY, cropWidth, cropHeight, fetchPreview, execute]);
+  // Note: crop mode no longer depends on cropX/Y/Width/Height since preview always shows full page
+  }, [mode, files, rotationAngle, fetchPreview, execute]);
 
   const tools = [
     {
@@ -760,6 +850,7 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       icon: FileType2,
       desc: t("tools.word_to_pdf_desc"),
       cat: t("common.categories.convert"),
+      beta: true,
     },
     {
       id: "powerpoint_to_pdf",
@@ -767,6 +858,7 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       icon: FileType2,
       desc: t("tools.powerpoint_to_pdf_desc"),
       cat: t("common.categories.convert"),
+      beta: true,
     },
     {
       id: "excel_to_pdf",
@@ -774,12 +866,48 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       icon: FileType2,
       desc: t("tools.excel_to_pdf_desc"),
       cat: t("common.categories.convert"),
+      beta: true,
     },
     {
       id: "html_to_pdf",
       label: t("tools.html_to_pdf"),
       icon: FileType2,
       desc: t("tools.html_to_pdf_desc"),
+      cat: t("common.categories.convert"),
+    },
+    {
+      id: "csv_to_pdf",
+      label: t("tools.csv_to_pdf"),
+      icon: FileType2,
+      desc: t("tools.csv_to_pdf_desc"),
+      cat: t("common.categories.convert"),
+    },
+    {
+      id: "txt_to_pdf",
+      label: t("tools.txt_to_pdf"),
+      icon: FileType2,
+      desc: t("tools.txt_to_pdf_desc"),
+      cat: t("common.categories.convert"),
+    },
+    {
+      id: "tiff_to_pdf",
+      label: t("tools.tiff_to_pdf"),
+      icon: ImageIcon,
+      desc: t("tools.tiff_to_pdf_desc"),
+      cat: t("common.categories.convert"),
+    },
+    {
+      id: "rtf_to_pdf",
+      label: t("tools.rtf_to_pdf"),
+      icon: FileType2,
+      desc: t("tools.rtf_to_pdf_desc"),
+      cat: t("common.categories.convert"),
+    },
+    {
+      id: "xml_to_pdf",
+      label: t("tools.xml_to_pdf"),
+      icon: FileType2,
+      desc: t("tools.xml_to_pdf_desc"),
       cat: t("common.categories.convert"),
     },
     {
@@ -922,6 +1050,21 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
     } else if (mode === "html_to_pdf") {
       acceptTypes = ["html", "htm"];
       description = "HTML Files";
+    } else if (mode === "csv_to_pdf") {
+      acceptTypes = ["csv"];
+      description = "CSV Files";
+    } else if (mode === "txt_to_pdf") {
+      acceptTypes = ["txt"];
+      description = "Text Files";
+    } else if (mode === "tiff_to_pdf") {
+      acceptTypes = ["tiff", "tif"];
+      description = "TIFF Images";
+    } else if (mode === "rtf_to_pdf") {
+      acceptTypes = ["rtf"];
+      description = "RTF Files";
+    } else if (mode === "xml_to_pdf") {
+      acceptTypes = ["xml"];
+      description = "XML Files";
     }
 
     const newAssets = await pickFiles({
@@ -979,7 +1122,8 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       case "delete_pages":
         return `Are you sure you want to permanently delete pages "${deletePages}" from the PDF? This action cannot be undone.`;
       case "redact":
-        return `Are you sure you want to permanently redact all occurrences of "${redactText}"? This will black out the text and cannot be undone.`;
+        const textsToShow = redactTexts.filter(t => t.trim().length > 0).join('", "');
+        return `Are you sure you want to permanently redact all occurrences of "${textsToShow}"? This will black out the text and cannot be undone.`;
       case "scrub":
         return "Are you sure you want to scrub all metadata, hidden data, and embedded content from the PDF? This action cannot be undone.";
       case "remove_metadata":
@@ -1019,7 +1163,7 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       password,
       pageOrder,
       deletePages,
-      redactText,
+      redactTexts,
       certFile,
       cropWidth,
       cropHeight,
@@ -1067,11 +1211,15 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       } else if (mode === "rotate") {
         payload.angle = rotationAngle;
       } else if (mode === "watermark") {
+        payload.watermark_type = watermarkType;
         payload.text = watermarkText;
         payload.opacity = watermarkOpacity / 100.0;
-        if (files[0]) {
-          // Watermark mode typically operates on the first file for preview, but batch for process?
-          // Backend usually iterates over 'files'
+        payload.color = watermarkColor;
+        payload.font_size = watermarkFontSize;
+        payload.x = watermarkPosition.x;
+        payload.y = watermarkPosition.y;
+        if (watermarkType === "image" && watermarkFile) {
+          payload.watermark_file = IS_TAURI ? watermarkFile.path : watermarkFile.file;
         }
       } else if (mode === "page_numbers") {
         payload.position = pageNumPos;
@@ -1080,7 +1228,8 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       } else if (mode === "extract_tables") {
         payload.output_format = extractFormat;
       } else if (mode === "redact") {
-        payload.text = redactText;
+        // Send all non-empty redaction texts as JSON array
+        payload.texts = JSON.stringify(redactTexts.filter(t => t.trim().length > 0));
       } else if (mode === "sign") {
         payload.password = password;
         if (certFile) {
@@ -1089,10 +1238,24 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
       } else if (mode === "ocr_pdf") {
         payload.language = ocrLanguage;
       } else if (mode === "crop") {
-        payload.x = cropX;
-        payload.y = cropY;
-        payload.width = cropWidth;
-        payload.height = cropHeight;
+        // Convert pixel coordinates from visual crop to PDF points
+        // The visual crop uses pixels on the preview image, but backend expects PDF points
+        if (cropPreviewRef.current && pdfPageDimensions && cropWidth && cropHeight) {
+          const imgRect = cropPreviewRef.current.getBoundingClientRect();
+          const scaleX = pdfPageDimensions.width / imgRect.width;
+          const scaleY = pdfPageDimensions.height / imgRect.height;
+
+          payload.x = Math.round(cropX * scaleX);
+          payload.y = Math.round(cropY * scaleY);
+          payload.width = Math.round(cropWidth * scaleX);
+          payload.height = Math.round(cropHeight * scaleY);
+        } else {
+          // Fallback if no conversion data available
+          payload.x = cropX;
+          payload.y = cropY;
+          payload.width = cropWidth;
+          payload.height = cropHeight;
+        }
         if (cropPages) {
           payload.pages = cropPages;
         }
@@ -1111,13 +1274,28 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
       if (res.errors && res.errors.length > 0) {
         setError(`Partial success. ${res.errors.length} errors occurred.`);
+        toast.warning("Partial Success", {
+          description: `${res.errors.length} file(s) had errors during processing.`,
+        });
       } else if (res.error) {
         setError(res.error);
         setResult(null); // Do not show success if top-level error
+        toast.error("Processing Failed", {
+          description: res.error,
+        });
+      } else {
+        // Success - show toast with file count
+        const fileCount = res.processed_files?.length || 1;
+        toast.success("Processing Complete", {
+          description: `${fileCount} file${fileCount > 1 ? "s" : ""} processed successfully.`,
+        });
       }
     } catch (err: any) {
       console.error("Processing Error:", err);
       setError(err.message || String(err));
+      toast.error("Processing Error", {
+        description: err.message || String(err),
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -1144,8 +1322,13 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
             <ActiveIcon className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-bold text-foreground leading-none">
+            <h2 className="font-bold text-foreground leading-none flex items-center gap-2">
               {currentTool.label}
+              {(currentTool as any).beta && (
+                <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-500/20 text-amber-600 rounded-md uppercase tracking-wider">
+                  Beta
+                </span>
+              )}
             </h2>
             <p className="text-[10px] text-muted-foreground mt-1">
               {currentTool.desc}
@@ -1178,16 +1361,19 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
               (mode === "split" && splitMode === "range" && !splitRange) ||
               (mode === "protect" && !password) ||
               (mode === "delete_pages" && !deletePages) ||
-              (mode === "redact" && !redactText)
+              (mode === "redact" && redactTexts.filter(t => t.trim().length > 0).length === 0) ||
+              (mode === "diff" && files.length !== 2)
             }
             className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2 disabled:opacity-50 disabled:shadow-none"
           >
             {isProcessing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
+            ) : mode === "diff" ? (
+              <GitCompare className="w-4 h-4" />
             ) : (
               <ArrowRight className="w-4 h-4" />
             )}
-            {t("common.process")}
+            {mode === "diff" ? "Compare PDFs" : t("common.process")}
           </button>
         </div>
       </div>
@@ -1214,35 +1400,386 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
             </div>
           ) : (
             <div className="max-w-4xl mx-auto">
+              {/* Beta Tool Notice */}
+              {(currentTool as any).beta && (
+                <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-amber-600 text-sm">Beta Feature</h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This conversion tool is in beta. For best results, complex documents with images,
+                      charts, or advanced formatting may require LibreOffice installed on your system.
+                      Basic text and tables are supported without LibreOffice.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Preview Area for Crop - Visual Drag-to-Crop Interface */}
+              {mode === "crop" && previewSrc && files.length > 0 && (
+                <div className="mb-8 bg-card/50 rounded-xl border border-border flex flex-col items-center relative p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Crop className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold text-foreground">Crop PDF Pages</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Drag the crop box to position it, drag corners to resize
+                  </p>
+
+                  {/* Preview with Draggable Crop Box */}
+                  <div className="relative bg-black/20 rounded-lg p-4 flex items-center justify-center min-h-[450px] w-full max-w-3xl overflow-hidden">
+                    {isLoadingPreview ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Loading preview...</span>
+                      </div>
+                    ) : (
+                      <div className="relative inline-block">
+                        <img
+                          ref={cropPreviewRef}
+                          src={previewSrc}
+                          alt="PDF Preview"
+                          className="max-w-full max-h-[500px] object-contain select-none rounded-lg shadow-lg"
+                          draggable={false}
+                          onLoad={(e) => {
+                            const img = e.currentTarget;
+                            const imgRect = img.getBoundingClientRect();
+                            // Initialize crop box to center 60% of the image if not set
+                            if (cropWidth === null || cropHeight === null) {
+                              const defaultWidth = Math.round(imgRect.width * 0.6);
+                              const defaultHeight = Math.round(imgRect.height * 0.6);
+                              const defaultX = Math.round((imgRect.width - defaultWidth) / 2);
+                              const defaultY = Math.round((imgRect.height - defaultHeight) / 2);
+                              setCropX(defaultX);
+                              setCropY(defaultY);
+                              setCropWidth(defaultWidth);
+                              setCropHeight(defaultHeight);
+                            }
+                          }}
+                        />
+
+                        {/* Draggable & Resizable Crop Box */}
+                        {cropWidth !== null && cropHeight !== null && (
+                          <div
+                            className={cn(
+                              "absolute border-2 border-primary bg-primary/20 cursor-move group transition-colors",
+                              isDraggingCrop && "border-primary/80",
+                              isResizingCrop && "border-primary/80"
+                            )}
+                            style={{
+                              left: `${cropX}px`,
+                              top: `${cropY}px`,
+                              width: `${cropWidth}px`,
+                              height: `${cropHeight}px`,
+                            }}
+                            onMouseDown={(e) => {
+                              if ((e.target as HTMLElement).classList.contains("resize-handle")) return;
+
+                              e.preventDefault();
+                              setIsDraggingCrop(true);
+                              const imgRect = cropPreviewRef.current?.getBoundingClientRect();
+                              if (!imgRect) return;
+
+                              const startX = e.clientX;
+                              const startY = e.clientY;
+                              const startCropX = cropX;
+                              const startCropY = cropY;
+
+                              const onMove = (moveEvent: MouseEvent) => {
+                                const dx = moveEvent.clientX - startX;
+                                const dy = moveEvent.clientY - startY;
+                                const newX = Math.max(0, Math.min(imgRect.width - (cropWidth || 0), startCropX + dx));
+                                const newY = Math.max(0, Math.min(imgRect.height - (cropHeight || 0), startCropY + dy));
+                                setCropX(Math.round(newX));
+                                setCropY(Math.round(newY));
+                              };
+
+                              const onUp = () => {
+                                setIsDraggingCrop(false);
+                                window.removeEventListener("mousemove", onMove);
+                                window.removeEventListener("mouseup", onUp);
+                              };
+
+                              window.addEventListener("mousemove", onMove);
+                              window.addEventListener("mouseup", onUp);
+                            }}
+                          >
+                            {/* Resize Handle - Bottom Right */}
+                            <div
+                              className="resize-handle absolute bottom-0 right-0 w-4 h-4 bg-primary border-2 border-white cursor-nwse-resize opacity-60 group-hover:opacity-100 transition-opacity rounded-sm"
+                              style={{ transform: "translate(50%, 50%)" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsResizingCrop(true);
+
+                                const imgRect = cropPreviewRef.current?.getBoundingClientRect();
+                                if (!imgRect) return;
+
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startWidth = cropWidth || 0;
+                                const startHeight = cropHeight || 0;
+
+                                const onMove = (moveEvent: MouseEvent) => {
+                                  const dx = moveEvent.clientX - startX;
+                                  const dy = moveEvent.clientY - startY;
+                                  const newWidth = Math.max(50, Math.min(imgRect.width - cropX, startWidth + dx));
+                                  const newHeight = Math.max(50, Math.min(imgRect.height - cropY, startHeight + dy));
+                                  setCropWidth(Math.round(newWidth));
+                                  setCropHeight(Math.round(newHeight));
+                                };
+
+                                const onUp = () => {
+                                  setIsResizingCrop(false);
+                                  window.removeEventListener("mousemove", onMove);
+                                  window.removeEventListener("mouseup", onUp);
+                                };
+
+                                window.addEventListener("mousemove", onMove);
+                                window.addEventListener("mouseup", onUp);
+                              }}
+                            />
+
+                            {/* Resize Handle - Top Left */}
+                            <div
+                              className="resize-handle absolute top-0 left-0 w-4 h-4 bg-primary border-2 border-white cursor-nwse-resize opacity-60 group-hover:opacity-100 transition-opacity rounded-sm"
+                              style={{ transform: "translate(-50%, -50%)" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsResizingCrop(true);
+
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startCropX = cropX;
+                                const startCropY = cropY;
+                                const startWidth = cropWidth || 0;
+                                const startHeight = cropHeight || 0;
+
+                                const onMove = (moveEvent: MouseEvent) => {
+                                  const dx = moveEvent.clientX - startX;
+                                  const dy = moveEvent.clientY - startY;
+                                  const newX = Math.max(0, startCropX + dx);
+                                  const newY = Math.max(0, startCropY + dy);
+                                  const newWidth = Math.max(50, startWidth - dx);
+                                  const newHeight = Math.max(50, startHeight - dy);
+
+                                  setCropX(Math.round(newX));
+                                  setCropY(Math.round(newY));
+                                  setCropWidth(Math.round(newWidth));
+                                  setCropHeight(Math.round(newHeight));
+                                };
+
+                                const onUp = () => {
+                                  setIsResizingCrop(false);
+                                  window.removeEventListener("mousemove", onMove);
+                                  window.removeEventListener("mouseup", onUp);
+                                };
+
+                                window.addEventListener("mousemove", onMove);
+                                window.addEventListener("mouseup", onUp);
+                              }}
+                            />
+
+                            {/* Resize Handle - Top Right */}
+                            <div
+                              className="resize-handle absolute top-0 right-0 w-4 h-4 bg-primary border-2 border-white cursor-nesw-resize opacity-60 group-hover:opacity-100 transition-opacity rounded-sm"
+                              style={{ transform: "translate(50%, -50%)" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsResizingCrop(true);
+
+                                const imgRect = cropPreviewRef.current?.getBoundingClientRect();
+                                if (!imgRect) return;
+
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startCropY = cropY;
+                                const startWidth = cropWidth || 0;
+                                const startHeight = cropHeight || 0;
+
+                                const onMove = (moveEvent: MouseEvent) => {
+                                  const dx = moveEvent.clientX - startX;
+                                  const dy = moveEvent.clientY - startY;
+                                  const newY = Math.max(0, startCropY + dy);
+                                  const newWidth = Math.max(50, Math.min(imgRect.width - cropX, startWidth + dx));
+                                  const newHeight = Math.max(50, startHeight - dy);
+
+                                  setCropY(Math.round(newY));
+                                  setCropWidth(Math.round(newWidth));
+                                  setCropHeight(Math.round(newHeight));
+                                };
+
+                                const onUp = () => {
+                                  setIsResizingCrop(false);
+                                  window.removeEventListener("mousemove", onMove);
+                                  window.removeEventListener("mouseup", onUp);
+                                };
+
+                                window.addEventListener("mousemove", onMove);
+                                window.addEventListener("mouseup", onUp);
+                              }}
+                            />
+
+                            {/* Resize Handle - Bottom Left */}
+                            <div
+                              className="resize-handle absolute bottom-0 left-0 w-4 h-4 bg-primary border-2 border-white cursor-nesw-resize opacity-60 group-hover:opacity-100 transition-opacity rounded-sm"
+                              style={{ transform: "translate(-50%, 50%)" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsResizingCrop(true);
+
+                                const imgRect = cropPreviewRef.current?.getBoundingClientRect();
+                                if (!imgRect) return;
+
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const startCropX = cropX;
+                                const startWidth = cropWidth || 0;
+                                const startHeight = cropHeight || 0;
+
+                                const onMove = (moveEvent: MouseEvent) => {
+                                  const dx = moveEvent.clientX - startX;
+                                  const dy = moveEvent.clientY - startY;
+                                  const newX = Math.max(0, startCropX + dx);
+                                  const newWidth = Math.max(50, startWidth - dx);
+                                  const newHeight = Math.max(50, Math.min(imgRect.height - cropY, startHeight + dy));
+
+                                  setCropX(Math.round(newX));
+                                  setCropWidth(Math.round(newWidth));
+                                  setCropHeight(Math.round(newHeight));
+                                };
+
+                                const onUp = () => {
+                                  setIsResizingCrop(false);
+                                  window.removeEventListener("mousemove", onMove);
+                                  window.removeEventListener("mouseup", onUp);
+                                };
+
+                                window.addEventListener("mousemove", onMove);
+                                window.addEventListener("mouseup", onUp);
+                              }}
+                            />
+
+                            {/* Size Display */}
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white text-xs px-3 py-1.5 rounded pointer-events-none font-mono">
+                              {cropWidth} × {cropHeight}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Instructions Overlay */}
+                        <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1.5 rounded flex flex-col gap-0.5 pointer-events-none">
+                          <div className="flex items-center gap-1">
+                            <span>✋</span> <span>Drag to move</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span>↔️</span> <span>Drag corners to resize</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pages Selection */}
+                  <div className="mt-6 w-full max-w-md">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      Pages to Crop (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={cropPages}
+                      onChange={(e) => setCropPages(e.target.value)}
+                      placeholder="e.g., 1-5 or 1,3,5 (leave empty for all pages)"
+                      className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Leave empty to apply crop to all pages
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Preview Area (Watermark/Page Numbers) */}
               {previewSrc &&
                 (mode === "watermark" || mode === "page_numbers") && (
                   <div className="mb-8 bg-card/50 rounded-xl border border-border flex flex-col items-center relative">
                     <p className="text-xs text-muted-foreground mb-4 font-medium uppercase tracking-wider p-4">
-                      Preview (First Page)
+                      Preview (First Page) - {mode === "watermark" ? "Drag watermark to position" : ""}
                     </p>
-                    <div className="relative shadow-2xl rounded-lg overflow-hidden border border-border/50 bg-white inline-block">
+                    <div
+                      className="relative shadow-2xl rounded-lg overflow-hidden border border-border/50 bg-white inline-block"
+                      id="watermark-preview-container"
+                    >
                       <img
                         src={previewSrc}
                         className="max-w-full max-h-[60vh] object-contain block"
                         draggable={false}
+                        id="watermark-preview-image"
                       />
 
-                      {/* Watermark Overlay Preview (Client Side Visual) */}
+                      {/* Watermark Overlay Preview (Client Side Visual) - Draggable */}
                       {mode === "watermark" && (
                         <div
-                          className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
-                          style={{ opacity: watermarkOpacity / 100 }}
+                          className="absolute cursor-move border-2 border-dashed border-primary/40 hover:border-primary bg-primary/5 transition-colors rounded p-2"
+                          style={{
+                            left: `${watermarkPosition.x * 100}%`,
+                            top: `${watermarkPosition.y * 100}%`,
+                            transform: "translate(-50%, -50%)",
+                            opacity: watermarkOpacity / 100,
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            const container = document.getElementById("watermark-preview-container");
+                            if (!container) return;
+                            const rect = container.getBoundingClientRect();
+                            const startX = e.clientX;
+                            const startY = e.clientY;
+                            const startPosX = watermarkPosition.x;
+                            const startPosY = watermarkPosition.y;
+
+                            const onMove = (moveEvent: MouseEvent) => {
+                              const dx = moveEvent.clientX - startX;
+                              const dy = moveEvent.clientY - startY;
+                              const newX = Math.max(0, Math.min(1, startPosX + dx / rect.width));
+                              const newY = Math.max(0, Math.min(1, startPosY + dy / rect.height));
+                              setWatermarkPosition({ x: newX, y: newY });
+                            };
+
+                            const onUp = () => {
+                              window.removeEventListener("mousemove", onMove);
+                              window.removeEventListener("mouseup", onUp);
+                            };
+
+                            window.addEventListener("mousemove", onMove);
+                            window.addEventListener("mouseup", onUp);
+                          }}
                         >
-                          <span
-                            className="text-gray-500 font-bold whitespace-nowrap select-none"
-                            style={{
-                              fontSize: "4vw",
-                              transform: "rotate(-45deg)",
-                            }}
-                          >
-                            {watermarkText}
-                          </span>
+                          {watermarkType === "text" ? (
+                            <span
+                              className="font-bold whitespace-nowrap select-none"
+                              style={{
+                                fontSize: `${Math.max(12, watermarkFontSize / 4)}px`,
+                                color: watermarkColor,
+                              }}
+                            >
+                              {watermarkText}
+                            </span>
+                          ) : watermarkFile ? (
+                            <img
+                              src={watermarkFile.preview || ""}
+                              alt="Watermark"
+                              className="max-h-20 object-contain pointer-events-none"
+                              draggable={false}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground text-sm">
+                              No image selected
+                            </span>
+                          )}
                         </div>
                       )}
 
@@ -1386,45 +1923,90 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                   <div className="flex items-center gap-3 mb-2">
                     <CheckCircle className="w-5 h-5 text-green-500" />
                     <h3 className="font-semibold text-green-500">
-                      Processing Complete
+                      {mode === "diff" ? "Comparison Complete" : "Processing Complete"}
                     </h3>
                   </div>
-                  <div className="pl-8 text-sm text-muted-foreground space-y-2">
-                    {result.processed_files?.map((f: string) => (
-                      <div
-                        key={f}
-                        className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/10"
-                      >
-                        <div
-                          className="flex-1 truncate font-mono text-xs"
-                          title={f}
-                        >
-                          {f}
-                        </div>
+
+                  {/* Special view for diff mode */}
+                  {mode === "diff" && result.processed_files?.[0] && (
+                    <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <GitCompare className="w-5 h-5 text-primary" />
+                        <span className="font-medium text-primary">PDF Comparison Generated</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        A side-by-side comparison PDF has been created with differences highlighted in colored boxes.
+                      </p>
+                      <div className="flex gap-3">
                         {IS_TAURI && (
-                          <button
-                            onClick={async () => {
-                              try {
-                                await invoke("plugin:opener|open", { path: f });
-                              } catch (e) {
-                                console.error("Failed to open file", e);
-                                // Fallback try open_path if open fails (common v2 ambiguity without docs)
+                          <>
+                            <button
+                              onClick={async () => {
                                 try {
-                                  await invoke("plugin:opener|open_path", {
-                                    path: f,
-                                  });
-                                } catch (ignored) {}
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary text-xs rounded-md transition-colors font-medium shrink-0 flex items-center gap-1"
-                          >
-                            <ArrowRight className="w-3 h-3" />
-                            Open
-                          </button>
+                                  await openPath(result.processed_files[0]);
+                                } catch (e) {
+                                  console.error("Failed to open file", e);
+                                  toast.error("Could not open file");
+                                }
+                              }}
+                              className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                            >
+                              <FileText className="w-4 h-4" />
+                              Open Comparison PDF
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await revealItemInDir(result.processed_files[0]);
+                                } catch (e) {
+                                  console.error("Failed to reveal file", e);
+                                  toast.error("Could not open file location");
+                                }
+                              }}
+                              className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                            >
+                              Show in Folder
+                            </button>
+                          </>
                         )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Standard result view for other modes */}
+                  {mode !== "diff" && (
+                    <div className="pl-8 text-sm text-muted-foreground space-y-2">
+                      {result.processed_files?.map((f: string) => (
+                        <div
+                          key={f}
+                          className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/10"
+                        >
+                          <div
+                            className="flex-1 truncate font-mono text-xs"
+                            title={f}
+                          >
+                            {f}
+                          </div>
+                          {IS_TAURI && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await revealItemInDir(f);
+                                } catch (e) {
+                                  console.error("Failed to reveal file", e);
+                                  toast.error("Could not open file location");
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary text-xs rounded-md transition-colors font-medium shrink-0 flex items-center gap-1"
+                            >
+                              <ArrowRight className="w-3 h-3" />
+                              Show in Folder
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1588,17 +2170,139 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
             {mode === "watermark" && (
               <div className="space-y-4">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Watermark Text
-                  </label>
-                  <input
-                    type="text"
-                    value={watermarkText}
-                    onChange={(e) => setWatermarkText(e.target.value)}
-                    className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
-                  />
+                {/* Type Selection */}
+                <div className="flex bg-secondary rounded-lg p-1">
+                  <button
+                    onClick={() => setWatermarkType("text")}
+                    className={cn(
+                      "flex-1 py-2 rounded-md font-medium transition-all text-sm",
+                      watermarkType === "text"
+                        ? "bg-background text-foreground shadow"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Type className="w-4 h-4 inline mr-1" />
+                    Text
+                  </button>
+                  <button
+                    onClick={() => setWatermarkType("image")}
+                    className={cn(
+                      "flex-1 py-2 rounded-md font-medium transition-all text-sm",
+                      watermarkType === "image"
+                        ? "bg-background text-foreground shadow"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <ImageIcon className="w-4 h-4 inline mr-1" />
+                    Image
+                  </button>
                 </div>
+
+                {/* Text Watermark Settings */}
+                {watermarkType === "text" && (
+                  <>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Watermark Text
+                      </label>
+                      <input
+                        type="text"
+                        value={watermarkText}
+                        onChange={(e) => setWatermarkText(e.target.value)}
+                        className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
+                        placeholder="Enter watermark text"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Font Size: {watermarkFontSize}px
+                        </label>
+                        <input
+                          type="range"
+                          min="10"
+                          max="200"
+                          step="5"
+                          value={watermarkFontSize}
+                          onChange={(e) =>
+                            setWatermarkFontSize(parseInt(e.target.value))
+                          }
+                          className="w-full accent-primary h-2 bg-secondary rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Color
+                        </label>
+                        <input
+                          type="color"
+                          value={watermarkColor}
+                          onChange={(e) => setWatermarkColor(e.target.value)}
+                          className="w-full h-9 bg-secondary rounded cursor-pointer border border-border"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Image Watermark Settings */}
+                {watermarkType === "image" && (
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      Watermark Image
+                    </label>
+                    <button
+                      onClick={async () => {
+                        const imgs = await pickFiles({
+                          multiple: false,
+                          accept: ["png", "jpg", "jpeg", "webp"],
+                          description: "Watermark Image",
+                        });
+                        if (imgs.length > 0) {
+                          const img = imgs[0];
+                          // Create preview URL for desktop mode
+                          if (IS_TAURI && img.path) {
+                            try {
+                              const bytes = await readFileAsset(img);
+                              const blob = new Blob([bytes], { type: "image/png" });
+                              img.preview = URL.createObjectURL(blob);
+                            } catch (e) {
+                              console.error("Failed to read watermark image", e);
+                            }
+                          }
+                          setWatermarkFile(img);
+                        }
+                      }}
+                      className="w-full bg-secondary hover:bg-secondary/80 rounded py-2 px-3 text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FileUp className="w-4 h-4" />
+                      {watermarkFile ? watermarkFile.name : "Select Image"}
+                    </button>
+                    {watermarkFile && (
+                      <div className="mt-2 p-2 bg-secondary/50 rounded-lg flex items-center gap-2">
+                        {watermarkFile.preview && (
+                          <img
+                            src={watermarkFile.preview}
+                            alt="Preview"
+                            className="w-10 h-10 object-contain rounded"
+                          />
+                        )}
+                        <span className="text-xs text-muted-foreground truncate flex-1">
+                          {watermarkFile.name}
+                        </span>
+                        <button
+                          onClick={() => setWatermarkFile(null)}
+                          className="text-destructive hover:text-destructive/80"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Opacity (for both text and image) */}
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block flex justify-between">
                     <span>Opacity</span> <span>{watermarkOpacity}%</span>
@@ -1613,6 +2317,12 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                     }
                     className="w-full accent-primary h-2 bg-secondary rounded-lg"
                   />
+                </div>
+
+                {/* Position Info */}
+                <div className="text-xs text-muted-foreground p-3 bg-secondary/30 rounded-lg">
+                  <p className="font-medium mb-1">Position</p>
+                  <p>Drag the watermark on the preview to position it. Current: {Math.round(watermarkPosition.x * 100)}%, {Math.round(watermarkPosition.y * 100)}%</p>
                 </div>
               </div>
             )}
@@ -1643,21 +2353,40 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
             {mode === "compress" && (
               <div className="space-y-4">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Low Comp.</span>
-                  <span>High Comp.</span>
+                <div className="flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+                  <span>Low</span>
+                  <span>Medium</span>
+                  <span>High</span>
+                  <span>Extreme</span>
                 </div>
                 <input
                   type="range"
                   min="0"
-                  max="4"
+                  max="3"
+                  step="1"
                   value={compressLevel}
                   onChange={(e) => setCompressLevel(parseInt(e.target.value))}
-                  className="w-full accent-primary h-2 bg-secondary rounded-lg"
+                  className="w-full accent-primary h-1.5 bg-secondary rounded-lg cursor-pointer"
                 />
-                <p className="text-xs text-center text-muted-foreground font-mono">
-                  Level: {compressLevel}
-                </p>
+                
+                <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Probable Size:</span>
+                    <span className="text-sm font-bold text-primary font-mono">
+                      {isEstimating ? (
+                        <span className="animate-pulse">Estimating...</span>
+                      ) : (
+                        getProbableSize() || "---"
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                    {compressLevel === 0 && "Minimal compression, preserves highest quality."}
+                    {compressLevel === 1 && "Balanced compression for documents with text."}
+                    {compressLevel === 2 && "Good compression for image-heavy documents."}
+                    {compressLevel === 3 && "Maximum compression (significant quality loss)."}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -1726,15 +2455,45 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
             {mode === "redact" && (
               <div className="space-y-4">
                 <label className="text-xs text-muted-foreground mb-1 block">
-                  Text to Redact
+                  Text to Redact (Permanently Remove)
                 </label>
-                <input
-                  type="text"
-                  value={redactText}
-                  onChange={(e) => setRedactText(e.target.value)}
-                  placeholder="Confidential"
-                  className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
-                />
+                <div className="space-y-2">
+                  {redactTexts.map((text, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={text}
+                        onChange={(e) => {
+                          const newTexts = [...redactTexts];
+                          newTexts[index] = e.target.value;
+                          setRedactTexts(newTexts);
+                        }}
+                        placeholder={index === 0 ? "e.g. Confidential" : "e.g. Secret, SSN, etc."}
+                        className="flex-1 bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
+                      />
+                      {redactTexts.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const newTexts = redactTexts.filter((_, i) => i !== index);
+                            setRedactTexts(newTexts);
+                          }}
+                          className="px-2 rounded border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setRedactTexts([...redactTexts, ""])}
+                  className="w-full py-2 rounded border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 text-xs"
+                >
+                  <Plus size={14} /> Add Another Text
+                </button>
+                <p className="text-[10px] text-muted-foreground">
+                  All occurrences will be permanently blacked out.
+                </p>
               </div>
             )}
 
@@ -1774,8 +2533,50 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
             )}
 
             {mode === "diff" && (
-              <div className="p-4 bg-secondary/20 rounded-lg text-xs text-muted-foreground">
-                Select exactly 2 PDF files to compare.
+              <div className="space-y-4">
+                <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <GitCompare className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">PDF Comparison</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Select exactly 2 PDF files to compare. The tool will generate a side-by-side comparison highlighting all differences.
+                  </p>
+                  <div className="space-y-2">
+                    <div className={cn(
+                      "flex items-center gap-2 p-2 rounded border text-xs",
+                      files.length >= 1
+                        ? "bg-green-500/10 border-green-500/30 text-green-500"
+                        : "bg-secondary/30 border-border text-muted-foreground"
+                    )}>
+                      <div className={cn(
+                        "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                        files.length >= 1 ? "bg-green-500 text-white" : "bg-secondary text-muted-foreground"
+                      )}>1</div>
+                      <span>{files.length >= 1 ? files[0].name : "Original PDF (File 1)"}</span>
+                      {files.length >= 1 && <CheckCircle className="w-3 h-3 ml-auto" />}
+                    </div>
+                    <div className={cn(
+                      "flex items-center gap-2 p-2 rounded border text-xs",
+                      files.length >= 2
+                        ? "bg-green-500/10 border-green-500/30 text-green-500"
+                        : "bg-secondary/30 border-border text-muted-foreground"
+                    )}>
+                      <div className={cn(
+                        "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                        files.length >= 2 ? "bg-green-500 text-white" : "bg-secondary text-muted-foreground"
+                      )}>2</div>
+                      <span>{files.length >= 2 ? files[1].name : "Comparison PDF (File 2)"}</span>
+                      {files.length >= 2 && <CheckCircle className="w-3 h-3 ml-auto" />}
+                    </div>
+                  </div>
+                </div>
+                {files.length === 2 && (
+                  <div className="text-xs text-green-500 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Ready to compare! Click "Compare PDFs" to generate the comparison.
+                  </div>
+                )}
               </div>
             )}
 
@@ -1832,24 +2633,6 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
 
             {mode === "crop" && (
               <div className="space-y-4">
-                {/* Preview Display */}
-                {previewSrc && files.length > 0 && (
-                  <div className="mb-6 relative bg-secondary/50 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
-                    {isLoadingPreview ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <span className="text-sm text-muted-foreground">Updating preview...</span>
-                      </div>
-                    ) : (
-                      <img
-                        src={previewSrc}
-                        alt="PDF Preview"
-                        className="max-w-full max-h-[300px] object-contain rounded-lg shadow-lg"
-                      />
-                    )}
-                  </div>
-                )}
-
                 <div className="flex items-center gap-2 mb-2">
                   <Crop size={16} />
                   <label className="text-sm font-medium text-foreground">
@@ -1857,88 +2640,29 @@ export const PdfTools: React.FC<{ initialMode?: string }> = ({
                   </label>
                 </div>
 
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    X (Left Margin)
-                  </label>
-                  <input
-                    type="number"
-                    value={cropX}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      setCropX(val);
-                      fetchPreview({ x: val, y: cropY, width: cropWidth, height: cropHeight });
-                    }}
-                    placeholder="0"
-                    min="0"
-                    className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Y (Top Margin)
-                  </label>
-                  <input
-                    type="number"
-                    value={cropY}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      setCropY(val);
-                      fetchPreview({ x: cropX, y: val, width: cropWidth, height: cropHeight });
-                    }}
-                    placeholder="0"
-                    min="0"
-                    className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Width *
-                  </label>
-                  <input
-                    type="number"
-                    value={cropWidth || ""}
-                    onChange={(e) => {
-                      const val = e.target.value ? parseFloat(e.target.value) : null;
-                      setCropWidth(val);
-                      fetchPreview({ x: cropX, y: cropY, width: val, height: cropHeight });
-                    }}
-                    placeholder="Required"
-                    min="1"
-                    className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Height *
-                  </label>
-                  <input
-                    type="number"
-                    value={cropHeight || ""}
-                    onChange={(e) => {
-                      const val = e.target.value ? parseFloat(e.target.value) : null;
-                      setCropHeight(val);
-                      fetchPreview({ x: cropX, y: cropY, width: cropWidth, height: val });
-                    }}
-                    placeholder="Required"
-                    min="1"
-                    className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Pages (Optional)
-                  </label>
-                  <input
-                    value={cropPages}
-                    onChange={(e) => setCropPages(e.target.value)}
-                    placeholder="1-5 or 1,3,5 (leave empty for all)"
-                    className="w-full bg-secondary rounded py-2 px-3 text-sm outline-none focus:ring-1 ring-primary"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Comma separated or ranges.
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                  <p className="text-xs text-foreground mb-2 font-medium">
+                    Visual Crop Editor
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    Use the interactive crop box in the preview area:
+                  </p>
+                  <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
+                    <li>Drag the box to reposition</li>
+                    <li>Drag corners to resize</li>
+                    <li>The area inside the box will be kept</li>
+                  </ul>
                 </div>
+
+                {pdfPageDimensions && cropWidth && cropHeight && (
+                  <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground mb-1">Current Selection</p>
+                    <p>PDF Size: {Math.round(pdfPageDimensions.width)} × {Math.round(pdfPageDimensions.height)} pts</p>
+                    {cropPreviewRef.current && (
+                      <p>Crop Area: {Math.round(cropX * pdfPageDimensions.width / cropPreviewRef.current.getBoundingClientRect().width)} × {Math.round(cropY * pdfPageDimensions.height / cropPreviewRef.current.getBoundingClientRect().height)} to {Math.round((cropX + cropWidth) * pdfPageDimensions.width / cropPreviewRef.current.getBoundingClientRect().width)} × {Math.round((cropY + cropHeight) * pdfPageDimensions.height / cropPreviewRef.current.getBoundingClientRect().height)} pts</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

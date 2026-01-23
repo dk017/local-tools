@@ -59,24 +59,27 @@ impl PythonBridge {
             while let Some(event) = rx.recv().await {
                 match event {
                     CommandEvent::Stdout(line_bytes) => {
-                        let line = String::from_utf8_lossy(&line_bytes);
-                        // The line might contain multiple JSON objects if they came in fast, 
-                        // or partial lines. But for now assuming line-delimited JSON.
-                        // In a robust app we might need a buffer.
-                        // For this MVP, let's assume the Python side flushes correctly per line.
+                        let data = String::from_utf8_lossy(&line_bytes);
                         
-                        // Python sidecar output might have newlines, so we trim
-                        let clean_line = line.trim();
-                        if clean_line.is_empty() { continue; }
+                        // Split by newlines as a single buffer might contain multiple lines
+                        for line in data.lines() {
+                            let clean_line = line.trim();
+                            if clean_line.is_empty() { continue; }
 
-                        match serde_json::from_str::<PythonResponse>(clean_line) {
-                            Ok(response) => {
-                                // Emit event to frontend
-                                // Event name: "python-event"
-                                let _ = app_handle.emit("python-event", &response);
-                            }
-                            Err(e) => {
-                                eprintln!("Failed to parse Python output: {} | Line: {}", e, clean_line);
+                            // Only attempt to parse if it looks like a JSON object
+                            if clean_line.starts_with('{') {
+                                match serde_json::from_str::<PythonResponse>(clean_line) {
+                                    Ok(response) => {
+                                        // Emit event to frontend
+                                        let _ = app_handle.emit("python-event", &response);
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Failed to parse Python JSON: {} | Line: {}", e, clean_line);
+                                    }
+                                }
+                            } else {
+                                // This is likely a log message that accidentally went to stdout
+                                eprintln!("PYTHON STDOUT LOG: {}", clean_line);
                             }
                         }
                     }

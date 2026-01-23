@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "bundle:tesseract:win": "powershell -ExecutionPolicy Bypass -File scripts/bundle_tesseract.ps1",
     "bundle:tesseract:unix": "bash scripts/bundle_tesseract.sh",
-    "tauri:build": "npm run bundle:tesseract:win && tauri build",
+    "build:python": "powershell -ExecutionPolicy Bypass -File scripts/build-python.ps1",
+    "tauri:build": "npm run build:python && npm run bundle:tesseract:win && tauri build",
     "tauri:build:production": "powershell -ExecutionPolicy Bypass -File scripts/build-with-env.ps1",
     "tauri:build:production:unix": "bash scripts/build-with-env.sh"
   },
@@ -36,6 +37,7 @@
     "react-i18next": "^16.4.0",
     "react-konva": "^19.2.1",
     "react-router-dom": "^7.10.1",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "use-image": "^1.1.4",
     "uuid": "^13.0.0"

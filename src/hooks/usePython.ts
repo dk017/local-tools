@@ -88,12 +88,13 @@ export const usePython = () => {
                         });
                     }, 100);
 
-                    // Timeout after 60 seconds (increased for heavy tasks like PDF/Image processing)
+                    // Timeout - 5 minutes for heavy tasks (model downloads, large file processing)
+                    // Actions like remove_bg may need to download ~170MB model on first use
+                    const timeoutMs = 300000; // 5 minutes
                     timeoutId = setTimeout(() => {
                         clearInterval(checkInterval);
-                        // Clean up response listener placeholder if needed (optional)
-                        reject(new Error("Backend request timed out (60s). Sidecar may be offline or busy."));
-                    }, 60000);
+                        reject(new Error(`Backend request timed out (${timeoutMs/1000}s). The operation may still be running - check if a model is downloading.`));
+                    }, timeoutMs);
                 });
 
             } catch (e) {

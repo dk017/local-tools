@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
-import { ArrowRight, Layers, FileImage, Files, Scissors, Minimize2, FileText, Lock, LockOpen, RotateCw, Palette, Stamp, Wrench, ImageMinus, Workflow, BoxSelect, SquareUser, Grid3x3, Crop, FileSpreadsheet, GitCompare, Book, ShieldAlert, Eraser, PenTool, Zap, FileSearch, ArrowUpDown, Search, Maximize2 } from 'lucide-react';
+import { ArrowRight, Layers, FileImage, Files, Scissors, Minimize2, FileText, Lock, LockOpen, RotateCw, Palette, Stamp, Wrench, ImageMinus, Workflow, BoxSelect, SquareUser, Grid3x3, Crop, FileSpreadsheet, GitCompare, Book, ShieldAlert, Eraser, PenTool, Zap, FileSearch, ArrowUpDown, Search, Maximize2, FileType, FileCode, Image, ScanText, Archive, FileOutput, Table, FileJson, Presentation, Globe, Hash, XCircle, Type } from 'lucide-react';
 
 export function ToolCatalog() {
     const t = useTranslations('Tools');
@@ -16,29 +16,63 @@ export function ToolCatalog() {
         {
             title: t('cat_pdf'),
             tools: [
+                // Core PDF Tools
                 { slug: 'merge-pdf', icon: Layers, title: t('merge-pdf.title'), desc: t('merge-pdf.desc'), color: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
                 { slug: 'split-pdf', icon: Scissors, title: t('split-pdf.title'), desc: t('split-pdf.desc'), color: 'text-purple-400 bg-purple-400/10 border-purple-400/20' },
                 { slug: 'compress-pdf', icon: Minimize2, title: t('compress-pdf.title'), desc: t('compress-pdf.desc'), color: 'text-green-400 bg-green-400/10 border-green-400/20' },
+                { slug: 'rotate-pdf', icon: RotateCw, title: t('rotate-pdf.title'), desc: t('rotate-pdf.desc'), color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' },
+                { slug: 'crop-pdf', icon: Crop, title: 'Crop PDF', desc: 'Trim PDF pages to specific dimensions', color: 'text-teal-400 bg-teal-400/10 border-teal-400/20' },
+                { slug: 'organize-pdf', icon: ArrowUpDown, title: 'Organize PDF', desc: 'Reorder and organize PDF pages', color: 'text-violet-400 bg-violet-400/10 border-violet-400/20' },
+
+                // PDF Conversion - From PDF
                 { slug: 'pdf-to-word', icon: FileText, title: t('pdf-to-word.title'), desc: t('pdf-to-word.desc'), color: 'text-orange-400 bg-orange-400/10 border-orange-400/20' },
-                { slug: 'pdf-to-images', icon: FileImage, title: t('pdf-to-images.title'), desc: t('pdf-to-images.desc'), color: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20' },
+                { slug: 'pdf-to-jpg', icon: Image, title: 'PDF to JPG', desc: 'Convert PDF pages to JPG images', color: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20' },
+                { slug: 'pdf-to-png', icon: Image, title: 'PDF to PNG', desc: 'Convert PDF pages to PNG images', color: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20' },
+                { slug: 'pdf-to-csv', icon: Table, title: 'PDF to CSV', desc: 'Extract tables from PDF to CSV format', color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
+                { slug: 'pdf-to-excel', icon: FileSpreadsheet, title: 'PDF to Excel', desc: 'Convert PDF tables to Excel spreadsheets', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
+
+                // PDF Conversion - To PDF
                 { slug: 'images-to-pdf', icon: Files, title: t('images-to-pdf.title'), desc: t('images-to-pdf.desc'), color: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20' },
+                { slug: 'word-to-pdf', icon: FileText, title: 'Word to PDF', desc: 'Convert Word documents to PDF', color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
+                { slug: 'powerpoint-to-pdf', icon: Presentation, title: 'PowerPoint to PDF', desc: 'Convert presentations to PDF', color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
+                { slug: 'excel-to-pdf', icon: FileSpreadsheet, title: 'Excel to PDF', desc: 'Convert spreadsheets to PDF', color: 'text-green-600 bg-green-600/10 border-green-600/20' },
+                { slug: 'html-to-pdf', icon: Globe, title: 'HTML to PDF', desc: 'Convert HTML files to PDF', color: 'text-sky-500 bg-sky-500/10 border-sky-500/20' },
+                { slug: 'csv-to-pdf', icon: Table, title: 'CSV to PDF', desc: 'Convert CSV files to formatted PDF tables', color: 'text-lime-500 bg-lime-500/10 border-lime-500/20' },
+                { slug: 'txt-to-pdf', icon: FileType, title: 'TXT to PDF', desc: 'Convert plain text files to PDF', color: 'text-gray-400 bg-gray-400/10 border-gray-400/20' },
+                { slug: 'tiff-to-pdf', icon: Image, title: 'TIFF to PDF', desc: 'Convert TIFF images to PDF', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
+                { slug: 'rtf-to-pdf', icon: FileText, title: 'RTF to PDF', desc: 'Convert Rich Text Format to PDF', color: 'text-rose-400 bg-rose-400/10 border-rose-400/20' },
+                { slug: 'xml-to-pdf', icon: FileCode, title: 'XML to PDF', desc: 'Convert XML files to readable PDF', color: 'text-fuchsia-500 bg-fuchsia-500/10 border-fuchsia-500/20' },
+
+                // PDF Security & Privacy
                 { slug: 'protect-pdf', icon: Lock, title: t('protect-pdf.title'), desc: t('protect-pdf.desc'), color: 'text-red-400 bg-red-400/10 border-red-400/20' },
                 { slug: 'unlock-pdf', icon: LockOpen, title: t('unlock-pdf.title'), desc: t('unlock-pdf.desc'), color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
-                { slug: 'rotate-pdf', icon: RotateCw, title: t('rotate-pdf.title'), desc: t('rotate-pdf.desc'), color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' },
-                { slug: 'grayscale-pdf', icon: Palette, title: t('grayscale-pdf.title'), desc: t('grayscale-pdf.desc'), color: 'text-gray-400 bg-gray-400/10 border-gray-400/20' },
-                { slug: 'watermark-pdf', icon: Stamp, title: t('watermark-pdf.title'), desc: t('watermark-pdf.desc'), color: 'text-teal-400 bg-teal-400/10 border-teal-400/20' },
-                { slug: 'repair-pdf', icon: Wrench, title: t('repair-pdf.title'), desc: t('repair-pdf.desc'), color: 'text-pink-400 bg-pink-400/10 border-pink-400/20' },
-                { slug: 'extract-images-from-pdf', icon: FileImage, title: t('extract-images-from-pdf.title'), desc: t('extract-images-from-pdf.desc'), color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' },
-                { slug: 'extract-tables', icon: FileSpreadsheet, title: t('extract-tables.title'), desc: t('extract-tables.desc'), color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
-                { slug: 'pdf-diff', icon: GitCompare, title: t('pdf-diff.title'), desc: t('pdf-diff.desc'), color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
-                { slug: 'booklet-maker', icon: Book, title: t('booklet-maker.title'), desc: t('booklet-maker.desc'), color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
                 { slug: 'pdf-scrubber', icon: ShieldAlert, title: t('pdf-scrubber.title'), desc: t('pdf-scrubber.desc'), color: 'text-red-500 bg-red-500/10 border-red-500/20' },
                 { slug: 'pdf-redactor', icon: Eraser, title: t('pdf-redactor.title'), desc: t('pdf-redactor.desc'), color: 'text-gray-500 bg-gray-500/10 border-gray-500/20' },
                 { slug: 'pdf-signer', icon: PenTool, title: t('pdf-signer.title'), desc: t('pdf-signer.desc'), color: 'text-blue-600 bg-blue-600/10 border-blue-600/20' },
+
+                // PDF Enhancement
+                { slug: 'watermark-pdf', icon: Stamp, title: t('watermark-pdf.title'), desc: t('watermark-pdf.desc'), color: 'text-teal-400 bg-teal-400/10 border-teal-400/20' },
+                { slug: 'page-numbers', icon: Hash, title: t('page-numbers.title'), desc: t('page-numbers.desc'), color: 'text-sky-400 bg-sky-400/10 border-sky-400/20' },
+                { slug: 'grayscale-pdf', icon: Palette, title: t('grayscale-pdf.title'), desc: t('grayscale-pdf.desc'), color: 'text-gray-400 bg-gray-400/10 border-gray-400/20' },
+                { slug: 'repair-pdf', icon: Wrench, title: t('repair-pdf.title'), desc: t('repair-pdf.desc'), color: 'text-pink-400 bg-pink-400/10 border-pink-400/20' },
                 { slug: 'pdf-web-optimize', icon: Zap, title: t('pdf-web-optimize.title'), desc: t('pdf-web-optimize.desc'), color: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20' },
+                { slug: 'ocr-pdf', icon: ScanText, title: t('ocr-pdf.title'), desc: t('ocr-pdf.desc'), color: 'text-violet-500 bg-violet-500/10 border-violet-500/20' },
+                { slug: 'pdf-to-pdfa', icon: Archive, title: t('pdf-to-pdfa.title'), desc: t('pdf-to-pdfa.desc'), color: 'text-amber-600 bg-amber-600/10 border-amber-600/20' },
+                { slug: 'flatten-pdf', icon: Layers, title: t('flatten-pdf.title'), desc: t('flatten-pdf.desc'), color: 'text-cyan-600 bg-cyan-600/10 border-cyan-600/20' },
+
+                // PDF Extraction
+                { slug: 'extract-images-from-pdf', icon: FileImage, title: t('extract-images-from-pdf.title'), desc: t('extract-images-from-pdf.desc'), color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' },
+                { slug: 'extract-text', icon: Type, title: t('extract-text.title'), desc: t('extract-text.desc'), color: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
+                { slug: 'extract-tables', icon: FileSpreadsheet, title: t('extract-tables.title'), desc: t('extract-tables.desc'), color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
                 { slug: 'extract-metadata', icon: FileSearch, title: t('extract-metadata.title'), desc: t('extract-metadata.desc'), color: 'text-cyan-600 bg-cyan-600/10 border-cyan-600/20' },
                 { slug: 'extract-form-data', icon: FileSpreadsheet, title: t('extract-form-data.title'), desc: t('extract-form-data.desc'), color: 'text-emerald-600 bg-emerald-600/10 border-emerald-600/20' },
+
+                // PDF Advanced
+                { slug: 'pdf-diff', icon: GitCompare, title: t('pdf-diff.title'), desc: t('pdf-diff.desc'), color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
+                { slug: 'booklet-maker', icon: Book, title: t('booklet-maker.title'), desc: t('booklet-maker.desc'), color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
+                { slug: 'delete-pages', icon: XCircle, title: t('delete-pages.title'), desc: t('delete-pages.desc'), color: 'text-red-500 bg-red-500/10 border-red-500/20' },
                 { slug: 'reorder-pages', icon: ArrowUpDown, title: t('reorder-pages.title'), desc: t('reorder-pages.desc'), color: 'text-violet-600 bg-violet-600/10 border-violet-600/20' },
+                { slug: 'remove-metadata', icon: ShieldAlert, title: t('remove-metadata.title'), desc: t('remove-metadata.desc'), color: 'text-gray-400 bg-gray-400/10 border-gray-400/20' },
             ]
         },
         {
@@ -55,6 +89,9 @@ export function ToolCatalog() {
                 { slug: 'crop-image', icon: Crop, title: t('crop-image.title'), desc: t('crop-image.desc'), color: 'text-green-500 bg-green-500/10 border-green-500/20' },
                 { slug: 'watermark-image', icon: Stamp, title: t('watermark-image.title'), desc: t('watermark-image.desc'), color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
                 { slug: 'heic-to-jpg', icon: Files, title: t('heic-to-jpg.title'), desc: t('heic-to-jpg.desc'), color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
+                { slug: 'grid-split', icon: Grid3x3, title: t('grid-split.title'), desc: t('grid-split.desc'), color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
+                { slug: 'remove-image-metadata', icon: ShieldAlert, title: t('remove-image-metadata.title'), desc: t('remove-image-metadata.desc'), color: 'text-red-500 bg-red-500/10 border-red-500/20' },
+                { slug: 'photo-studio', icon: Palette, title: 'Photo Studio', desc: 'Advanced photo editor with layers and text', color: 'text-fuchsia-500 bg-fuchsia-500/10 border-fuchsia-500/20' },
             ]
         }
     ];
