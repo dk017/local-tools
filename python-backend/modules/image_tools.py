@@ -682,8 +682,8 @@ def watermark_images(payload):
 
 def grid_split(payload):
     files = payload.get("files", [])
-    rows = payload.get("rows", 3)
-    cols = payload.get("cols", 3)
+    rows = payload.get("rows") or 3  # Default to 3 if None or missing
+    cols = payload.get("cols") or 3  # Default to 3 if None or missing
     
     processed_files = []
     errors = []

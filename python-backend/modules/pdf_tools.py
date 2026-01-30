@@ -789,8 +789,18 @@ def watermark_pdf(payload):
                         else:
                             base_color = (0.5, 0.5, 0.5)
 
-                        # Calculate position from percentages
-                        point = fitz.Point(rect.width * x_percent, rect.height * y_percent)
+                        # Calculate text dimensions for centering
+                        text_width = fitz.get_text_length(text, fontsize=font_size)
+                        text_height = font_size  # Approximate height as font size
+
+                        # Calculate position from percentages, centering the text
+                        # The frontend uses translate(-50%, -50%) to center at the position
+                        center_x = rect.width * x_percent
+                        center_y = rect.height * y_percent
+                        point = fitz.Point(
+                            center_x - text_width / 2,
+                            center_y + text_height / 2  # fitz text y is baseline, so add half height
+                        )
 
                         # Use Shape for text with opacity support
                         shape = page.new_shape()
