@@ -54,9 +54,9 @@
     "Pricing": {
         "title": "一度の支払い。無限の安心。",
         "subtitle": "追加費用なし。年間所有。",
-        "badge": "年間ライセンス",
-        "price": "$59",
-        "old_price": "$120",
+        "badge": "発売記念価格",
+        "price": "$27",
+        "old_price": "$49",
         "desc": "Windows用オフラインAIツールキットへの完全アクセス。",
         "cta": "今すぐ購入",
         "f1": "無制限のPDF処理",
@@ -158,11 +158,11 @@
             "f3": "Web対応"
         },
         "passport-photo": {
-            "h1": "証明写真作成",
-            "p1": "生体認証対応の証明写真を作成します。",
-            "f1": "自動切り抜き",
-            "f2": "標準サイズ",
-            "f3": "印刷対応"
+            "h1": "証明写真作成 - 21カ国対応",
+            "p1": "日本、アメリカ、イギリス、EU、中国、韓国、インド、カナダ、ブラジル、ドイツ、フランス、イタリア、スペインなど21カ国の規格に対応。公式仕様に自動調整。",
+            "f1": "21カ国対応",
+            "f2": "公式寸法",
+            "f3": "印刷対応（300 DPI）"
         },
         "grayscale-pdf": {
             "h1": "PDFグレースケール",
@@ -239,60 +239,102 @@
         "screenshot_alt": "{tool} インターフェースのスクリーンショット",
         "privacy_badge": "プライバシー優先 {tool}",
         "extract-tables": {
-            "h1": "Extract Tables from PDF",
-            "p1": "Automatically identify and export tables from PDF documents into Excel or CSV.",
-            "f1": "Accurate Detection",
-            "f2": "Excel & CSV Support",
-            "f3": "Batch Processing"
+            "h1": "PDFから表を抽出",
+            "p1": "PDF文書から表を自動的に識別し、ExcelまたはCSVにエクスポートします。",
+            "f1": "正確な検出",
+            "f2": "Excel・CSV対応",
+            "f3": "一括処理"
         },
         "heic-to-jpg": {
-            "h1": "HEIC to JPG Converter",
-            "p1": "Convert iPhone photos (.heic) to standard JPG format instantly.",
-            "f1": "Maintain Metadata",
-            "f2": "High Quality",
-            "f3": "Batch Support"
+            "h1": "HEIC→JPG変換",
+            "p1": "iPhone写真(.heic)を標準JPG形式に瞬時に変換します。",
+            "f1": "メタデータ保持",
+            "f2": "高品質",
+            "f3": "一括対応"
         },
         "pdf-diff": {
-            "h1": "Visual PDF Comparison",
-            "p1": "Visually compare two PDF documents to spot differences.",
-            "f1": "Side-by-Side Diff",
-            "f2": "Highlight Changes",
-            "f3": "Pixel Perfect"
+            "h1": "PDF視覚的比較",
+            "p1": "2つのPDF文書を視覚的に比較して差分を確認します。",
+            "f1": "並列表示比較",
+            "f2": "変更箇所をハイライト",
+            "f3": "ピクセル単位の精度"
         },
         "booklet-maker": {
-            "h1": "Create Booklet",
-            "p1": "Reorder pages for 2-up saddle-stitch printing.",
-            "f1": "Print Ready",
-            "f2": "Auto Pagination",
-            "f3": "Fold & Staple"
+            "h1": "小冊子を作成",
+            "p1": "中綴じ印刷用にページを並べ替えます。",
+            "f1": "印刷準備完了",
+            "f2": "自動ページ割り付け",
+            "f3": "折りたたみ・ホチキス"
         },
         "pdf-scrubber": {
-            "h1": "Privacy Scrubber",
-            "p1": "Deep clean your PDF metadata and revision history.",
-            "f1": "Remove Metadata",
-            "f2": "Drop Editing History",
-            "f3": "Linearize"
+            "h1": "プライバシークリーナー",
+            "p1": "PDFメタデータと改訂履歴を徹底的に削除します。",
+            "f1": "メタデータ削除",
+            "f2": "編集履歴削除",
+            "f3": "リニアライズ"
         },
         "pdf-redactor": {
-            "h1": "Secure Redaction",
-            "p1": "Permanently remove sensitive text from your documents.",
-            "f1": "Search & Destroy",
-            "f2": "Permanent Removal",
-            "f3": "Sanitize Content"
+            "h1": "安全な墨消し",
+            "p1": "文書から機密テキストを永久に削除します。",
+            "f1": "検索して削除",
+            "f2": "永久削除",
+            "f3": "コンテンツの無害化"
         },
         "pdf-signer": {
-            "h1": "Digital Signer",
-            "p1": "Sign PDFs securely with your digital certificate (.pfx).",
-            "f1": "PAdES Standard",
-            "f2": "Certificate Support",
-            "f3": "Cryptographic Seal"
+            "h1": "デジタル署名",
+            "p1": "デジタル証明書(.pfx)でPDFに安全に署名します。",
+            "f1": "PAdES標準",
+            "f2": "証明書対応",
+            "f3": "暗号化シール"
         },
         "pdf-web-optimize": {
-            "h1": "Optimize for Web",
-            "p1": "Linearize PDF for fast streaming and web viewing.",
-            "f1": "Fast Web View",
-            "f2": "Byte Serving",
-            "f3": "Instant Load"
+            "h1": "Web用に最適化",
+            "p1": "高速ストリーミングとWeb閲覧用にPDFをリニアライズします。",
+            "f1": "高速Web表示",
+            "f2": "バイトサービング",
+            "f3": "瞬時読み込み"
+        },
+        "jpg-to-png": {
+            "h1": "JPGをPNGに変換",
+            "p1": "JPG画像を透過対応のPNG形式に変換。高速、オフライン、安全。",
+            "f1": "透過対応",
+            "f2": "一括変換",
+            "f3": "プライバシー優先"
+        },
+        "png-to-jpg": {
+            "h1": "PNGをJPGに変換",
+            "p1": "PNG画像をより小さいJPG形式に変換。高速、オフライン、安全。",
+            "f1": "高品質",
+            "f2": "一括変換",
+            "f3": "プライバシー優先"
+        },
+        "passport-photo-maker": {
+            "h1": "証明写真メーカー - 21カ国対応",
+            "p1": "日本、アメリカ、イギリス、EU、中国、韓国、インド、カナダ、ブラジル、ドイツ、フランス、イタリア、スペインなど21カ国の規格に対応。公式仕様に自動調整。",
+            "f1": "21カ国対応",
+            "f2": "公式寸法",
+            "f3": "印刷対応（300 DPI）"
+        },
+        "add-watermark": {
+            "h1": "画像に透かしを追加",
+            "p1": "写真にテキストまたはロゴの透かしを追加します。",
+            "f1": "カスタムテキスト",
+            "f2": "ロゴ対応",
+            "f3": "透明度"
+        },
+        "image-color-palette": {
+            "h1": "画像からカラーパレット抽出",
+            "p1": "任意の画像からドミナントカラーを取得します。",
+            "f1": "Hexコード",
+            "f2": "ドミナントカラー",
+            "f3": "デザイン準備完了"
+        },
+        "studio": {
+            "h1": "フォトスタジオ",
+            "p1": "レイヤー、テキスト、デザインツールを備えた高度な写真編集。",
+            "f1": "レイヤーサポート",
+            "f2": "テキストツール",
+            "f3": "デザイン要素"
         },
         "word-to-pdf": {
             "h1": "Word to PDF",
@@ -580,8 +622,8 @@
             "desc": "サイズ削減。"
         },
         "passport-photo": {
-            "title": "証明写真",
-            "desc": "ID写真作成。"
+            "title": "証明写真 (21カ国)",
+            "desc": "21カ国対応。"
         },
         "generate-icons": {
             "title": "アイコン生成",
@@ -702,6 +744,30 @@
         "remove-image-metadata": {
             "title": "画像メタデータ削除",
             "desc": "EXIFデータをクリーンアップ。"
+        },
+        "jpg-to-png": {
+            "title": "JPG→PNG",
+            "desc": "PNGに変換。"
+        },
+        "png-to-jpg": {
+            "title": "PNG→JPG",
+            "desc": "JPGに変換。"
+        },
+        "passport-photo-maker": {
+            "title": "証明写真 21カ国",
+            "desc": "公式ID写真作成。"
+        },
+        "add-watermark": {
+            "title": "画像透かし",
+            "desc": "スタンプを追加。"
+        },
+        "image-color-palette": {
+            "title": "パレット抽出",
+            "desc": "色を取得。"
+        },
+        "studio": {
+            "title": "フォトスタジオ",
+            "desc": "レイヤーで編集。"
         }
     },
     "Common": {
@@ -714,83 +780,352 @@
         "terms": "利用規約",
         "download": "ダウンロード",
         "download_app_short": "アプリをダウンロード",
-        "support": "サポート"
+        "support": "サポート",
+        "add_more": "追加する",
+        "replace_all": "すべて置換"
     },
     "ToolProcessor": {
-        "status_uploading": "Uploading to Server...",
-        "status_processing": "Processing on safe server...",
-        "status_complete": "Processing Complete!",
-        "status_error": "Processing Failed",
-        "wait_upload": "Please wait while we upload your files.",
-        "wait_process": "Your files are being processed securely.",
-        "download": "Download File",
-        "download_zip": "Download All (ZIP)",
-        "try_again": "Try Another File",
-        "convert_now": "Convert Now",
-        "process_image": "Process Image",
-        "process_files": "Process Files",
-        "change_file": "Change File",
-        "selected": "Selected",
-        "watermark_settings": "Watermark Settings",
-        "wm_type_text": "Text Watermark",
-        "wm_type_image": "Image/Logo",
-        "wm_text_label": "Watermark Text",
-        "wm_opacity": "Opacity",
-        "wm_color": "Text Color",
-        "wm_size": "Font Size",
-        "wm_position": "Position",
-        "wm_upload_logo": "Upload Logo",
-        "pos_center": "Center",
-        "pos_tl": "Top Left",
-        "pos_tr": "Top Right",
-        "pos_bl": "Bottom Left",
-        "pos_br": "Bottom Right",
-        "pos_custom": "Custom (Drag Preview)",
-        "crop_options": "Crop Options",
-        "crop_btn": "Crop & Save",
-        "passport_country": "Passport Country",
-        "compression_level": "Compression Level",
-        "comp_low": "Low (High Quality)",
-        "comp_med": "Medium (Balanced)",
-        "comp_high": "High (Small Size)",
-        "resize_settings": "Resize Settings",
-        "resize_px": "Pixels",
-        "resize_pct": "Percentage",
-        "resize_width": "Width (px)",
-        "resize_height": "Height (px)",
-        "resize_percent": "Scale (%)",
-        "redact_settings": "Redaction Settings",
-        "redact_label": "Text to Redact (Case Sensitive)",
-        "sign_settings": "Digital Signature",
-        "sign_cert": "Certificate File (.pfx / .p12)",
-        "sign_pass": "Certificate Password",
-        "protect_settings": "Security Settings",
-        "protect_pass_label": "Set Password",
-        "protect_btn": "Protect PDF",
-        "unlock_pass_label": "PDF Password",
-        "unlock_btn": "Unlock PDF",
-        "heic_quality": "Quality",
-        "extract_palette": "Extracted Palette",
-        "copied": "Copied!",
-        "settings": "Settings",
-        "output_format": "Output Format",
-        "quality": "Quality",
-        "privacy_badge": "Want privacy?",
-        "desktop_app_promo": "Download the desktop app for 100% offline privacy.",
-        "cancel_op": "Cancel Operation"
+        "status_uploading": "サーバーにアップロード中...",
+        "status_processing": "安全なサーバーで処理中...",
+        "status_complete": "処理完了！",
+        "status_error": "処理に失敗しました",
+        "wait_upload": "ファイルのアップロードをお待ちください。",
+        "wait_process": "ファイルを安全に処理しています。",
+        "download": "ファイルをダウンロード",
+        "download_zip": "すべてダウンロード (ZIP)",
+        "try_again": "別のファイルを試す",
+        "convert_now": "今すぐ変換",
+        "process_image": "画像を処理",
+        "process_files": "ファイルを処理",
+        "change_file": "ファイルを変更",
+        "selected": "選択済み",
+        "watermark_settings": "透かし設定",
+        "wm_type_text": "テキスト透かし",
+        "wm_type_image": "画像/ロゴ",
+        "wm_text_label": "透かしテキスト",
+        "wm_opacity": "透明度",
+        "wm_color": "テキスト色",
+        "wm_size": "フォントサイズ",
+        "wm_position": "位置",
+        "wm_upload_logo": "ロゴをアップロード",
+        "pos_center": "中央",
+        "pos_tl": "左上",
+        "pos_tr": "右上",
+        "pos_bl": "左下",
+        "pos_br": "右下",
+        "pos_custom": "カスタム（ドラッグでプレビュー）",
+        "crop_options": "切り抜きオプション",
+        "crop_btn": "切り抜いて保存",
+        "passport_country": "パスポートの国",
+        "compression_level": "圧縮レベル",
+        "comp_low": "低（高品質）",
+        "comp_med": "中（バランス）",
+        "comp_high": "高（小サイズ）",
+        "resize_settings": "リサイズ設定",
+        "resize_px": "ピクセル",
+        "resize_pct": "パーセント",
+        "resize_width": "幅 (px)",
+        "resize_height": "高さ (px)",
+        "resize_percent": "スケール (%)",
+        "redact_settings": "墨消し設定",
+        "redact_label": "墨消しするテキスト（大文字小文字区別）",
+        "sign_settings": "デジタル署名",
+        "sign_cert": "証明書ファイル (.pfx / .p12)",
+        "sign_pass": "証明書パスワード",
+        "protect_settings": "セキュリティ設定",
+        "protect_pass_label": "パスワードを設定",
+        "protect_btn": "PDFを保護",
+        "unlock_pass_label": "PDFパスワード",
+        "unlock_btn": "PDFのロックを解除",
+        "heic_quality": "品質",
+        "extract_palette": "抽出されたパレット",
+        "copied": "コピーしました！",
+        "settings": "設定",
+        "output_format": "出力形式",
+        "quality": "品質",
+        "privacy_badge": "プライバシーが必要ですか？",
+        "desktop_app_promo": "100%オフラインプライバシーのためにデスクトップアプリをダウンロード。",
+        "cancel_op": "操作をキャンセル"
     },
     "FileUploader": {
-        "drop_active": "Drop files here",
-        "drop_idle": "Click to upload or drag & drop",
-        "supports": "Supports PDF, PNG, JPG",
-        "limit": "Up to {count} files",
-        "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+        "drop_active": "ここにファイルをドロップ",
+        "drop_idle": "クリックしてアップロードまたはドラッグ＆ドロップ",
+        "supports": "PDF、PNG、JPGに対応",
+        "limit": "最大{count}ファイル",
+        "file_too_large": "ファイルがWeb版の制限を超えています（上限：{limit}）。デスクトップアプリで無制限に処理。"
     },
     "Validation": {
-        "single_file_required": "This tool only accepts one file. Please select a single {type} file.",
-        "exactly_two_files_required": "This tool requires exactly 2 PDF files for comparison. Please select exactly 2 files.",
-        "too_many_files": "This tool accepts up to {max} files. You selected {count} files. Please select fewer files.",
-        "invalid_file_type": "Invalid file type. This tool only accepts {type} files.",
-        "file_too_large_web": "File \"{filename}\" is too large ({size}MB). Maximum size for web version is {limit}MB. Please use the desktop app for larger files."
+        "single_file_required": "このツールは1つのファイルのみ受け付けます。{type}ファイルを1つ選択してください。",
+        "exactly_two_files_required": "このツールは比較のために正確に2つのPDFファイルが必要です。2つのファイルを選択してください。",
+        "too_many_files": "このツールは最大{max}ファイルまで対応しています。{count}ファイルを選択しました。より少ないファイルを選択してください。",
+        "invalid_file_type": "無効なファイル形式です。このツールは{type}ファイルのみ受け付けます。",
+        "file_too_large_web": "ファイル「{filename}」が大きすぎます（{size}MB）。Web版の最大サイズは{limit}MBです。より大きなファイルにはデスクトップアプリをご利用ください。"
+    },
+    "EmailCapture": {
+        "title": "ローンチ価格から20%オフを獲得",
+        "subtitle": "オフラインで機密文書を処理するプロフェッショナルに参加。限定割引+無料PDFワークフローガイドをゲット。",
+        "benefit1": "一般公開前に新ツールへの早期アクセス",
+        "benefit2": "50ページの無料PDFワークフロー最適化ガイド（$29相当）",
+        "benefit3": "20%割引クーポンコード（初年度$5の節約）",
+        "email_placeholder": "メールアドレスを入力",
+        "submit_button": "20%割引コードを取得",
+        "submitting": "送信中...",
+        "privacy_note": "プライバシーを尊重します。いつでも解除可能。スパムは一切送りません。",
+        "success_title": "メールをご確認ください！",
+        "success_message": "20%割引コードと無料PDFガイドを受信トレイにお送りしました。"
+    },
+    "seo": {
+        "merge-pdf": {
+            "title": "PDF結合 - 無料・安全なオンラインツール",
+            "description": "複数のPDFファイルを1つの文書に瞬時に結合。100%オフライン処理も可能。"
+        },
+        "split-pdf": {
+            "title": "PDF分割 - ページ抽出無料ツール",
+            "description": "PDFファイルから特定のページを安全に抽出。デスクトップアプリでアップロード不要。"
+        },
+        "compress-pdf": {
+            "title": "PDF圧縮 - ファイルサイズ削減",
+            "description": "メールやアップロード制限に対応するためPDFファイルサイズを削減。オフライン圧縮も可能。"
+        },
+        "protect-pdf": {
+            "title": "PDF保護 - パスワード暗号化",
+            "description": "AES-256暗号化でPDF文書を保護。オフラインでパスワード保護。"
+        },
+        "unlock-pdf": {
+            "title": "PDF保護解除 - パスワード削除",
+            "description": "PDFファイルのパスワード制限を安全に解除。100%オフライン処理。"
+        },
+        "repair-pdf": {
+            "title": "PDF修復 - 破損ファイルを修正",
+            "description": "破損したPDF文書を回復・修復。ファイルへのアクセスを復元。"
+        },
+        "grayscale-pdf": {
+            "title": "PDFをグレースケールに変換",
+            "description": "カラーPDFを印刷用グレースケールに変換。インク節約。"
+        },
+        "pdf-to-word": {
+            "title": "PDF→Word変換 - 無料オンライン",
+            "description": "PDFファイルを編集可能なWord文書に変換。OCRでフォーマット保持。"
+        },
+        "ocr-pdf": {
+            "title": "OCR PDF - スキャンPDFを検索可能に",
+            "description": "OCR技術でスキャンPDFからテキストを抽出。"
+        },
+        "pdf-redactor": {
+            "title": "PDF墨消し - 機密テキストを削除",
+            "description": "PDF文書から機密情報を永久に削除。"
+        },
+        "pdf-signer": {
+            "title": "PDFデジタル署名 - 文書に署名",
+            "description": "デジタル証明書でPDFに署名。PAdES準拠。"
+        },
+        "watermark-pdf": {
+            "title": "PDF透かし追加",
+            "description": "PDF文書にテキストまたはロゴの透かしを適用。"
+        },
+        "passport-photo": {
+            "title": "証明写真メーカー - 21カ国対応（日本、米国、EU）",
+            "description": "日本、米国、EU、英国、中国、韓国、インドなど21カ国対応の証明写真。公式寸法、300 DPI。"
+        },
+        "remove-image-background": {
+            "title": "画像背景削除 - AI搭載",
+            "description": "AIで写真の背景を瞬時に削除。100%オフライン処理。"
+        },
+        "upscale-image": {
+            "title": "AI画像アップスケール - 解像度向上",
+            "description": "AIで画像解像度を向上。2倍または4倍に拡大。"
+        },
+        "compress-image": {
+            "title": "画像圧縮 - サイズ削減",
+            "description": "品質を落とさずに画像ファイルサイズを削減。"
+        },
+        "generate-icons": {
+            "title": "アプリアイコン生成 - 全サイズ対応",
+            "description": "1枚の画像からiOS、Android、macOS、Windows、Webファビコン用の全サイズアイコンを生成。"
+        },
+        "organize-pdf": {
+            "title": "PDFページ整理 - 並べ替え",
+            "description": "PDFページを自由な順序で整理・並べ替え。ドラッグ＆ドロップ対応。"
+        },
+        "rotate-pdf": {
+            "title": "PDF回転 - ページを回転",
+            "description": "PDFページを90度、180度、270度回転。スキャン文書の向きを修正。"
+        },
+        "crop-pdf": {
+            "title": "PDFトリミング - 余白調整",
+            "description": "PDFページを指定サイズにトリミング。不要な余白を削除。"
+        },
+        "pdf-to-images": {
+            "title": "PDF→画像変換 - JPG/PNG出力",
+            "description": "PDFページを高品質画像に変換。JPGまたはPNG形式で出力。"
+        },
+        "images-to-pdf": {
+            "title": "画像→PDF変換 - 写真を結合",
+            "description": "複数の画像を1つのPDFドキュメントに結合。JPG、PNG、WebP対応。"
+        },
+        "extract-tables": {
+            "title": "PDFから表を抽出 - Excel出力",
+            "description": "PDFドキュメントから表をExcelやCSVに抽出。表構造を保持。"
+        },
+        "convert-image": {
+            "title": "画像フォーマット変換 - 無料",
+            "description": "画像をフォーマット間で変換。JPG、PNG、WebP、GIF等対応。"
+        },
+        "jpg-to-png": {
+            "title": "JPG→PNG変換 - 無料オンライン",
+            "description": "JPG画像を透明対応のPNG形式に変換。高品質変換。"
+        },
+        "png-to-jpg": {
+            "title": "PNG→JPG変換 - 無料オンライン",
+            "description": "PNG画像をJPG形式に変換。品質を保ちながらサイズ削減。"
+        },
+        "resize-image": {
+            "title": "画像リサイズ - サイズ変更",
+            "description": "画像を指定サイズまたはパーセントでリサイズ。アスペクト比維持オプション。"
+        },
+        "crop-image": {
+            "title": "画像トリミング - 無料オンライン",
+            "description": "画像を正確なサイズにトリミング。シンプルなドラッグ＆ドロップ操作。"
+        },
+        "watermark-image": {
+            "title": "画像に透かしを追加",
+            "description": "写真にテキストやロゴの透かしを追加。画像を不正使用から保護。"
+        },
+        "extract-palette": {
+            "title": "画像からカラーパレット抽出",
+            "description": "画像から主要な色を抽出。デザイン用のHEXコードを取得。"
+        },
+        "heic-to-jpg": {
+            "title": "HEIC→JPG変換 - iPhone写真",
+            "description": "iPhoneのHEIC写真を標準JPG形式に変換。一括変換対応。"
+        },
+        "pdf-diff": {
+            "title": "PDF比較 - 差分可視化",
+            "description": "2つのPDFを視覚的に比較して違いを発見。変更箇所をハイライト。"
+        },
+        "booklet-maker": {
+            "title": "PDF小冊子作成 - 印刷対応",
+            "description": "PDFから印刷可能な小冊子を作成。中綴じ製本用にページを並べ替え。"
+        },
+        "pdf-scrubber": {
+            "title": "PDFプライバシークリーナー",
+            "description": "PDFから隠れたメタデータや編集履歴を削除。プライバシーを保護。"
+        },
+        "pdf-web-optimize": {
+            "title": "PDF Web最適化",
+            "description": "高速Web表示用にPDFを線形化。オンライン配布向けに最適化。"
+        },
+        "word-to-pdf": {
+            "title": "Word→PDF変換 - DOCX対応",
+            "description": "Word文書をPDF形式に変換。フォーマットとレイアウトを保持。"
+        },
+        "powerpoint-to-pdf": {
+            "title": "PowerPoint→PDF変換 - PPTX対応",
+            "description": "PowerPointプレゼンテーションをPDFに変換。スライドを完全保持。"
+        },
+        "excel-to-pdf": {
+            "title": "Excel→PDF変換 - XLSX対応",
+            "description": "Excelスプレッドシートをpdf形式に変換。フォーマットを維持。"
+        },
+        "html-to-pdf": {
+            "title": "HTML→PDF変換 - Webページ対応",
+            "description": "HTMLファイルやWebページをPDFドキュメントに変換。スタイルを保持。"
+        },
+        "pdf-to-pdfa": {
+            "title": "PDF→PDF/A変換 - アーカイブ形式",
+            "description": "PDFをPDF/Aアーカイブ形式に変換。長期保存とコンプライアンス対応。"
+        },
+        "delete-pages": {
+            "title": "PDFページ削除 - ページを除去",
+            "description": "PDFドキュメントから特定のページを削除。簡単・迅速なページ削除。"
+        },
+        "page-numbers": {
+            "title": "PDFにページ番号を追加",
+            "description": "PDFドキュメントにページ番号を追加。位置とフォーマットをカスタマイズ。"
+        },
+        "extract-text": {
+            "title": "PDFからテキスト抽出 - テキストコピー",
+            "description": "PDFファイルから全テキストを抽出。編集や分析用にテキストをコピー。"
+        },
+        "remove-metadata": {
+            "title": "PDFメタデータ削除 - プライバシー",
+            "description": "PDFファイルからメタデータや隠し情報を削除。機密データを保護。"
+        },
+        "extract-metadata": {
+            "title": "PDFメタデータ抽出 - 情報表示",
+            "description": "PDFメタデータを抽出・表示。タイトル、著者、作成日などを確認。"
+        },
+        "extract-form-data": {
+            "title": "PDFフォームデータ抽出",
+            "description": "PDFフォームからフィールドデータを抽出。CSVやExcelにエクスポート。"
+        },
+        "reorder-pages": {
+            "title": "PDFページ並べ替え - ドラッグ＆ドロップ",
+            "description": "ドラッグ＆ドロップでPDFページを並べ替え。ドキュメントを簡単に再編成。"
+        },
+        "flatten-pdf": {
+            "title": "PDFフラット化 - レイヤー統合",
+            "description": "PDFドキュメントのフォームフィールドと注釈をフラット化。編集不可コピーを作成。"
+        },
+        "photo-studio": {
+            "title": "フォトスタジオ - オンラインエディター",
+            "description": "レイヤー、フィルター、テキスト機能付き高度な写真エディター。プロ仕様の編集。"
+        },
+        "grid-split": {
+            "title": "画像をグリッド分割",
+            "description": "画像を小さな画像のグリッドに分割。Instagramやソーシャルメディアに最適。"
+        },
+        "remove-image-metadata": {
+            "title": "画像メタデータ削除 - EXIF削除",
+            "description": "画像からEXIFやその他のメタデータを削除。写真共有時のプライバシーを保護。"
+        },
+        "pdf-to-jpg": {
+            "title": "PDF→JPG変換 - 無料オンライン",
+            "description": "PDFページを高品質JPG画像に変換。高速で安全な変換。"
+        },
+        "pdf-to-png": {
+            "title": "PDF→PNG変換 - 無料オンライン",
+            "description": "PDFページを透明対応のPNG画像に変換。高解像度出力。"
+        },
+        "pdf-to-csv": {
+            "title": "PDF→CSV変換 - データ抽出",
+            "description": "PDFから表を抽出しCSV形式に変換。データ分析に最適。"
+        },
+        "pdf-to-excel": {
+            "title": "PDF→Excel変換 - 無料オンライン",
+            "description": "PDF表をExcelスプレッドシートに変換。表構造とフォーマットを保持。"
+        },
+        "csv-to-pdf": {
+            "title": "CSV→PDF変換 - レポート作成",
+            "description": "CSVファイルをフォーマット済みPDFドキュメントに変換。プロ仕様のレポート作成。"
+        },
+        "txt-to-pdf": {
+            "title": "TXT→PDF変換 - テキストをPDFに",
+            "description": "プレーンテキストファイルをPDFドキュメントに変換。シンプルで高速な変換。"
+        },
+        "tiff-to-pdf": {
+            "title": "TIFF→PDF変換 - マルチページ対応",
+            "description": "TIFF画像をPDFドキュメントに変換。マルチページTIFFファイル対応。"
+        },
+        "rtf-to-pdf": {
+            "title": "RTF→PDF変換 - リッチテキスト対応",
+            "description": "リッチテキストフォーマットファイルをPDFに変換。フォーマットとスタイルを保持。"
+        },
+        "xml-to-pdf": {
+            "title": "XML→PDF変換 - データフォーマット",
+            "description": "XMLファイルを読みやすいPDFドキュメントに変換。データを美しく構造化。"
+        },
+        "ppt-to-pdf": {
+            "title": "PPT→PDF変換 - 無料オンライン",
+            "description": "PowerPoint PPTおよびPPTXをPDF形式に変換。高速で安全。"
+        },
+        "extract-images-from-pdf": {
+            "title": "PDFから画像抽出 - 全画像保存",
+            "description": "PDFファイルから全ての画像を抽出。元の品質で画像を保存。"
+        },
+        "pdf-to-xls": {
+            "title": "PDF→XLS変換 - 無料オンライン",
+            "description": "PDF表をXLSスプレッドシート形式に変換。PDFファイルからデータを抽出。"
+        }
     }
 }

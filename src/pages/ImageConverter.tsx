@@ -22,14 +22,30 @@ import StudioCanvas, { StudioLayerData } from '../components/Studio/StudioCanvas
 type ToolMode = 'convert' | 'resize' | 'compress' | 'passport' | 'metadata' | 'watermark' | 'grid' | 'icon' | 'palette' | 'crop' | 'design' | 'remove_bg' | 'heic_to_jpg';
 
 const COUNTRIES = [
+    // Americas
     { code: 'US', label: 'United States (2x2 inch)', aspect: 1 },
+    { code: 'CA', label: 'Canada (50x70mm)', aspect: 50 / 70 },
+    { code: 'MX', label: 'Mexico (35x45mm)', aspect: 35 / 45 },
+    { code: 'BR', label: 'Brazil (50x70mm)', aspect: 50 / 70 },
+    // Europe
     { code: 'UK', label: 'United Kingdom (35x45mm)', aspect: 35 / 45 },
     { code: 'EU', label: 'Europe (35x45mm)', aspect: 35 / 45 },
+    { code: 'DE', label: 'Germany (35x45mm)', aspect: 35 / 45 },
+    { code: 'FR', label: 'France (35x45mm)', aspect: 35 / 45 },
+    { code: 'IT', label: 'Italy (35x45mm)', aspect: 35 / 45 },
+    { code: 'ES', label: 'Spain (30x40mm)', aspect: 30 / 40 },
+    { code: 'RU', label: 'Russia (35x45mm)', aspect: 35 / 45 },
+    // Asia-Pacific
     { code: 'AU', label: 'Australia (35x45mm)', aspect: 35 / 45 },
     { code: 'JP', label: 'Japan (35x45mm)', aspect: 35 / 45 },
     { code: 'CN', label: 'China (33x48mm)', aspect: 33 / 48 },
     { code: 'IN', label: 'India (35x45mm)', aspect: 35 / 45 },
-    { code: 'CA', label: 'Canada (50x70mm)', aspect: 50 / 70 },
+    { code: 'KR', label: 'South Korea (35x45mm)', aspect: 35 / 45 },
+    { code: 'SG', label: 'Singapore (35x45mm)', aspect: 35 / 45 },
+    { code: 'ID', label: 'Indonesia (30x40mm)', aspect: 30 / 40 },
+    { code: 'TH', label: 'Thailand (35x45mm)', aspect: 35 / 45 },
+    { code: 'VN', label: 'Vietnam (40x60mm)', aspect: 40 / 60 },
+    { code: 'PH', label: 'Philippines (35x45mm)', aspect: 35 / 45 },
 ];
 
 export const ImageConverter: React.FC<{ initialMode?: string, initialFormat?: string }> = ({ initialMode, initialFormat }) => {

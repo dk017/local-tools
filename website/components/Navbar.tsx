@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Shield, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ToolsDropdown } from './ToolsDropdown';
@@ -25,9 +26,13 @@ export function Navbar() {
         >
             <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2 group">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/50 transition-colors">
-                        <Shield className="w-5 h-5 text-primary" />
-                    </div>
+                    <Image
+                        src="/logo.png"
+                        alt="Local Tools"
+                        width={32}
+                        height={32}
+                        className="rounded-lg"
+                    />
                     <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
                         Local Tools
                     </span>

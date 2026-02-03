@@ -313,5 +313,33 @@
         "mode": "powerpoint_to_pdf",
         "title": "PPT to PDF - Convert PowerPoint to PDF Free",
         "description": "Convert PPT and PPTX presentations to PDF format online. Fast and free."
+    },
+    {
+        "slug": "protect-pdf",
+        "tool": "pdf",
+        "mode": "protect",
+        "title": "Protect PDF - Password Encrypt PDF Files",
+        "description": "Secure your PDF documents with AES-256 encryption. Add password protection offline."
+    },
+    {
+        "slug": "unlock-pdf",
+        "tool": "pdf",
+        "mode": "unlock",
+        "title": "Unlock PDF - Remove Password Protection",
+        "description": "Remove password restrictions from PDF files securely. 100% offline processing."
+    },
+    {
+        "slug": "repair-pdf",
+        "tool": "pdf",
+        "mode": "repair",
+        "title": "Repair PDF - Fix Corrupted PDF Files",
+        "description": "Recover and repair damaged or corrupted PDF documents. Restore access to your files."
+    },
+    {
+        "slug": "grayscale-pdf",
+        "tool": "pdf",
+        "mode": "grayscale",
+        "title": "Convert PDF to Grayscale - Black & White PDF",
+        "description": "Convert colored PDFs to grayscale for printing. Save ink and reduce file size."
     }
 ]

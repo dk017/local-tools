@@ -23,6 +23,58 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// Detect license provider based on key format
+function detectProvider(licenseKey: string): 'polar' | 'lemonsqueezy' {
+  if (licenseKey.startsWith('polar_') || licenseKey.startsWith('pol_')) {
+    return 'polar';
+  }
+  return 'lemonsqueezy';
+}
+
+async function validateWithPolar(licenseKey: string, instanceId?: string) {
+  const apiKey = process.env.POLAR_ACCESS_TOKEN;
+  if (!apiKey) {
+    throw new Error('POLAR_ACCESS_TOKEN not configured');
+  }
+
+  const response = await fetch('https://api.polar.sh/v1/licenses/validate', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      key: licenseKey,
+      activation_id: instanceId || undefined,
+    }),
+  });
+
+  return response;
+}
+
+async function validateWithLemonSqueezy(licenseKey: string, instanceId?: string) {
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY;
+  if (!apiKey) {
+    throw new Error('LEMONSQUEEZY_API_KEY not configured');
+  }
+
+  const response = await fetch('https://api.lemonsqueezy.com/v1/licenses/validate', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      license_key: licenseKey,
+      instance_id: instanceId || undefined,
+    }),
+  });
+
+  return response;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
@@ -38,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     const body = await request.json();
-    const { license_key, instance_id } = body;
+    const { license_key, instance_id, provider: explicitProvider } = body;
 
     if (!license_key || typeof license_key !== 'string') {
       return NextResponse.json(
@@ -47,33 +99,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate with LemonSqueezy
-    const apiKey = process.env.LEMONSQUEEZY_API_KEY;
-    if (!apiKey) {
-      console.error('LEMONSQUEEZY_API_KEY not configured');
+    // Determine provider (explicit or auto-detect)
+    const provider = explicitProvider || detectProvider(license_key);
+
+    let response: Response;
+
+    try {
+      if (provider === 'polar') {
+        response = await validateWithPolar(license_key, instance_id);
+      } else {
+        response = await validateWithLemonSqueezy(license_key, instance_id);
+      }
+    } catch (configError) {
+      console.error('License service config error:', configError);
       return NextResponse.json(
         { success: false, error: 'License service temporarily unavailable' },
         { status: 503 }
       );
     }
 
-    const response = await fetch('https://api.lemonsqueezy.com/v1/licenses/validate', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        license_key,
-        instance_id: instance_id || undefined,
-      }),
-    });
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
       return NextResponse.json(
-        { success: false, error: errorData.error || 'License validation failed' },
+        { success: false, error: errorData.error || errorData.message || 'License validation failed' },
         { status: response.status }
       );
     }
@@ -84,23 +132,25 @@ export async function POST(request: NextRequest) {
     console.log({
       timestamp: new Date().toISOString(),
       action: 'validate',
+      provider,
       ip: ip,
-      success: data.valid,
-      license_status: data.license_key?.status,
+      success: data.valid ?? data.success,
+      license_status: data.license_key?.status ?? data.status,
     });
 
-    // Return sanitized response (don't leak API key or sensitive info)
+    // Return normalized response (don't leak API key or sensitive info)
     return NextResponse.json({
       success: true,
-      valid: data.valid,
+      valid: data.valid ?? data.success ?? true,
+      provider,
       license_key: {
-        status: data.license_key?.status,
-        status_formatted: data.license_key?.status_formatted,
-        activation_usage: data.license_key?.activation_usage,
-        activation_limit: data.license_key?.activation_limit,
-        expires_at: data.license_key?.expires_at,
+        status: data.license_key?.status ?? data.status ?? 'active',
+        status_formatted: data.license_key?.status_formatted ?? data.status,
+        activation_usage: data.license_key?.activation_usage ?? data.activations_count,
+        activation_limit: data.license_key?.activation_limit ?? data.activations_limit,
+        expires_at: data.license_key?.expires_at ?? data.expires_at,
       },
-      instance: data.instance,
+      instance: data.instance ?? data.activation,
       meta: data.meta,
     });
 

@@ -54,9 +54,9 @@
     "Pricing": {
         "title": "Un Paiement. Confidentialité Infinie.",
         "subtitle": "Payez une fois, possédez pour toujours.",
-        "badge": "LICENCE ANNUELLE",
-        "price": "$59",
-        "old_price": "$120",
+        "badge": "PRIX DE LANCEMENT",
+        "price": "$27",
+        "old_price": "$49",
         "desc": "Accès complet à la boîte à outils neuronale hors ligne.",
         "cta": "Obtenir Licence Annuelle",
         "f1": "Traitement PDF Illimité",
@@ -158,11 +158,11 @@
             "f3": "Prêt pour le Web"
         },
         "passport-photo": {
-            "h1": "Photo Passeport",
-            "p1": "Créez des photos de passeport biométriques.",
-            "f1": "Recadrage Auto",
-            "f2": "Tailles Standards",
-            "f3": "Prêt à Imprimer"
+            "h1": "Photo Passeport - 21 Pays",
+            "p1": "Créez des photos de passeport conformes pour France, UE, États-Unis, Royaume-Uni, Japon, Chine, Inde, Canada, Brésil, Allemagne, Italie, Espagne et plus. Ajustement automatique aux spécifications officielles.",
+            "f1": "21 Pays Supportés",
+            "f2": "Dimensions Officielles",
+            "f3": "Prêt à Imprimer (300 DPI)"
         },
         "grayscale-pdf": {
             "h1": "PDF Niveaux de Gris",
@@ -239,60 +239,102 @@
         "screenshot_alt": "Capture d'écran de l'interface {tool}",
         "privacy_badge": "{tool} Axé sur la Confidentialité",
         "extract-tables": {
-            "h1": "Extract Tables from PDF",
-            "p1": "Automatically identify and export tables from PDF documents into Excel or CSV.",
-            "f1": "Accurate Detection",
-            "f2": "Excel & CSV Support",
-            "f3": "Batch Processing"
+            "h1": "Extraire des Tableaux de PDF",
+            "p1": "Identifiez et exportez automatiquement les tableaux des documents PDF vers Excel ou CSV.",
+            "f1": "Détection Précise",
+            "f2": "Support Excel et CSV",
+            "f3": "Traitement par Lots"
         },
         "heic-to-jpg": {
-            "h1": "HEIC to JPG Converter",
-            "p1": "Convert iPhone photos (.heic) to standard JPG format instantly.",
-            "f1": "Maintain Metadata",
-            "f2": "High Quality",
-            "f3": "Batch Support"
+            "h1": "Convertisseur HEIC en JPG",
+            "p1": "Convertissez les photos iPhone (.heic) au format JPG standard instantanément.",
+            "f1": "Conserver les Métadonnées",
+            "f2": "Haute Qualité",
+            "f3": "Support par Lots"
         },
         "pdf-diff": {
-            "h1": "Visual PDF Comparison",
-            "p1": "Visually compare two PDF documents to spot differences.",
-            "f1": "Side-by-Side Diff",
-            "f2": "Highlight Changes",
-            "f3": "Pixel Perfect"
+            "h1": "Comparaison Visuelle de PDF",
+            "p1": "Comparez visuellement deux documents PDF pour repérer les différences.",
+            "f1": "Différences Côte à Côte",
+            "f2": "Surligner les Changements",
+            "f3": "Pixel Parfait"
         },
         "booklet-maker": {
-            "h1": "Create Booklet",
-            "p1": "Reorder pages for 2-up saddle-stitch printing.",
-            "f1": "Print Ready",
-            "f2": "Auto Pagination",
-            "f3": "Fold & Staple"
+            "h1": "Créer un Livret",
+            "p1": "Réorganisez les pages pour l'impression 2-up à reliure à cheval.",
+            "f1": "Prêt à Imprimer",
+            "f2": "Pagination Automatique",
+            "f3": "Plier et Agrafer"
         },
         "pdf-scrubber": {
-            "h1": "Privacy Scrubber",
-            "p1": "Deep clean your PDF metadata and revision history.",
-            "f1": "Remove Metadata",
-            "f2": "Drop Editing History",
-            "f3": "Linearize"
+            "h1": "Nettoyeur de Confidentialité",
+            "p1": "Nettoyage en profondeur des métadonnées PDF et de l'historique des révisions.",
+            "f1": "Supprimer les Métadonnées",
+            "f2": "Effacer l'Historique d'Édition",
+            "f3": "Linéariser"
         },
         "pdf-redactor": {
-            "h1": "Secure Redaction",
-            "p1": "Permanently remove sensitive text from your documents.",
-            "f1": "Search & Destroy",
-            "f2": "Permanent Removal",
-            "f3": "Sanitize Content"
+            "h1": "Biffure Sécurisée",
+            "p1": "Supprimez définitivement le texte sensible de vos documents.",
+            "f1": "Rechercher et Détruire",
+            "f2": "Suppression Permanente",
+            "f3": "Assainir le Contenu"
         },
         "pdf-signer": {
-            "h1": "Digital Signer",
-            "p1": "Sign PDFs securely with your digital certificate (.pfx).",
-            "f1": "PAdES Standard",
-            "f2": "Certificate Support",
-            "f3": "Cryptographic Seal"
+            "h1": "Signeur Numérique",
+            "p1": "Signez vos PDF en toute sécurité avec votre certificat numérique (.pfx).",
+            "f1": "Standard PAdES",
+            "f2": "Support Certificat",
+            "f3": "Sceau Cryptographique"
         },
         "pdf-web-optimize": {
-            "h1": "Optimize for Web",
-            "p1": "Linearize PDF for fast streaming and web viewing.",
-            "f1": "Fast Web View",
-            "f2": "Byte Serving",
-            "f3": "Instant Load"
+            "h1": "Optimiser pour le Web",
+            "p1": "Linéarisez le PDF pour un streaming rapide et une visualisation web.",
+            "f1": "Vue Web Rapide",
+            "f2": "Service par Octets",
+            "f3": "Chargement Instantané"
+        },
+        "jpg-to-png": {
+            "h1": "Convertir JPG en PNG",
+            "p1": "Convertissez les images JPG au format PNG avec support de la transparence. Rapide, hors ligne et sécurisé.",
+            "f1": "Support Transparence",
+            "f2": "Conversion par Lots",
+            "f3": "Confidentialité d'Abord"
+        },
+        "png-to-jpg": {
+            "h1": "Convertir PNG en JPG",
+            "p1": "Convertissez les images PNG au format JPG pour des fichiers plus petits. Rapide, hors ligne et sécurisé.",
+            "f1": "Haute Qualité",
+            "f2": "Conversion par Lots",
+            "f3": "Confidentialité d'Abord"
+        },
+        "passport-photo-maker": {
+            "h1": "Créateur Photo Passeport - 21 Pays",
+            "p1": "Créez des photos de passeport conformes pour France, UE, États-Unis, Royaume-Uni, Japon, Chine, Inde, Canada, Brésil, Allemagne, Italie, Espagne et plus. Ajustement automatique aux spécifications officielles.",
+            "f1": "21 Pays Supportés",
+            "f2": "Dimensions Officielles",
+            "f3": "Prêt à Imprimer (300 DPI)"
+        },
+        "add-watermark": {
+            "h1": "Ajouter un Filigrane aux Images",
+            "p1": "Apposez des filigranes de texte ou de logo sur vos photos.",
+            "f1": "Texte Personnalisé",
+            "f2": "Support Logo",
+            "f3": "Transparence"
+        },
+        "image-color-palette": {
+            "h1": "Extraire la Palette de Couleurs d'une Image",
+            "p1": "Obtenez les couleurs dominantes de n'importe quelle image.",
+            "f1": "Codes Hex",
+            "f2": "Couleurs Dominantes",
+            "f3": "Prêt pour le Design"
+        },
+        "studio": {
+            "h1": "Studio Photo",
+            "p1": "Éditeur photo avancé avec calques, texte et outils de design.",
+            "f1": "Support Calques",
+            "f2": "Outils Texte",
+            "f3": "Éléments Design"
         },
         "word-to-pdf": {
             "h1": "Word to PDF",
@@ -580,8 +622,8 @@
             "desc": "Réduire la taille."
         },
         "passport-photo": {
-            "title": "Photo Passeport",
-            "desc": "Créer photos ID."
+            "title": "Photo Passeport (21)",
+            "desc": "21 pays supportés."
         },
         "generate-icons": {
             "title": "Générer Icônes",
@@ -702,6 +744,30 @@
         "remove-image-metadata": {
             "title": "Supprimer les métadonnées d'image",
             "desc": "Nettoyer les données EXIF."
+        },
+        "jpg-to-png": {
+            "title": "JPG en PNG",
+            "desc": "Convertir en PNG."
+        },
+        "png-to-jpg": {
+            "title": "PNG en JPG",
+            "desc": "Convertir en JPG."
+        },
+        "passport-photo-maker": {
+            "title": "Photo Passeport 21 Pays",
+            "desc": "Photos ID officielles."
+        },
+        "add-watermark": {
+            "title": "Filigrane Image",
+            "desc": "Ajouter tampon."
+        },
+        "image-color-palette": {
+            "title": "Extraire Palette",
+            "desc": "Obtenir couleurs."
+        },
+        "studio": {
+            "title": "Studio Photo",
+            "desc": "Éditer avec calques."
         }
     },
     "Common": {
@@ -713,84 +779,353 @@
         "privacy": "Confidentialité",
         "terms": "Conditions",
         "download": "Télécharger",
-        "download_app_short": "Download App",
-        "support": "Contact"
+        "download_app_short": "Télécharger l'App",
+        "support": "Contact",
+        "add_more": "Ajouter Plus",
+        "replace_all": "Remplacer Tout"
     },
     "ToolProcessor": {
-        "status_uploading": "Uploading to Server...",
-        "status_processing": "Processing on safe server...",
-        "status_complete": "Processing Complete!",
-        "status_error": "Processing Failed",
-        "wait_upload": "Please wait while we upload your files.",
-        "wait_process": "Your files are being processed securely.",
-        "download": "Download File",
-        "download_zip": "Download All (ZIP)",
-        "try_again": "Try Another File",
-        "convert_now": "Convert Now",
-        "process_image": "Process Image",
-        "process_files": "Process Files",
-        "change_file": "Change File",
-        "selected": "Selected",
-        "watermark_settings": "Watermark Settings",
-        "wm_type_text": "Text Watermark",
+        "status_uploading": "Téléchargement vers le Serveur...",
+        "status_processing": "Traitement sur serveur sécurisé...",
+        "status_complete": "Traitement Terminé !",
+        "status_error": "Échec du Traitement",
+        "wait_upload": "Veuillez patienter pendant le téléchargement de vos fichiers.",
+        "wait_process": "Vos fichiers sont traités de manière sécurisée.",
+        "download": "Télécharger le Fichier",
+        "download_zip": "Tout Télécharger (ZIP)",
+        "try_again": "Essayer un Autre Fichier",
+        "convert_now": "Convertir Maintenant",
+        "process_image": "Traiter l'Image",
+        "process_files": "Traiter les Fichiers",
+        "change_file": "Changer de Fichier",
+        "selected": "Sélectionné",
+        "watermark_settings": "Paramètres du Filigrane",
+        "wm_type_text": "Filigrane Texte",
         "wm_type_image": "Image/Logo",
-        "wm_text_label": "Watermark Text",
-        "wm_opacity": "Opacity",
-        "wm_color": "Text Color",
-        "wm_size": "Font Size",
+        "wm_text_label": "Texte du Filigrane",
+        "wm_opacity": "Opacité",
+        "wm_color": "Couleur du Texte",
+        "wm_size": "Taille de Police",
         "wm_position": "Position",
-        "wm_upload_logo": "Upload Logo",
-        "pos_center": "Center",
-        "pos_tl": "Top Left",
-        "pos_tr": "Top Right",
-        "pos_bl": "Bottom Left",
-        "pos_br": "Bottom Right",
-        "pos_custom": "Custom (Drag Preview)",
-        "crop_options": "Crop Options",
-        "crop_btn": "Crop & Save",
-        "passport_country": "Passport Country",
-        "compression_level": "Compression Level",
-        "comp_low": "Low (High Quality)",
-        "comp_med": "Medium (Balanced)",
-        "comp_high": "High (Small Size)",
-        "resize_settings": "Resize Settings",
+        "wm_upload_logo": "Télécharger Logo",
+        "pos_center": "Centre",
+        "pos_tl": "Haut Gauche",
+        "pos_tr": "Haut Droite",
+        "pos_bl": "Bas Gauche",
+        "pos_br": "Bas Droite",
+        "pos_custom": "Personnalisé (Glisser Aperçu)",
+        "crop_options": "Options de Recadrage",
+        "crop_btn": "Recadrer et Enregistrer",
+        "passport_country": "Pays du Passeport",
+        "compression_level": "Niveau de Compression",
+        "comp_low": "Bas (Haute Qualité)",
+        "comp_med": "Moyen (Équilibré)",
+        "comp_high": "Haut (Petite Taille)",
+        "resize_settings": "Paramètres de Redimensionnement",
         "resize_px": "Pixels",
-        "resize_pct": "Percentage",
-        "resize_width": "Width (px)",
-        "resize_height": "Height (px)",
-        "resize_percent": "Scale (%)",
-        "redact_settings": "Redaction Settings",
-        "redact_label": "Text to Redact (Case Sensitive)",
-        "sign_settings": "Digital Signature",
-        "sign_cert": "Certificate File (.pfx / .p12)",
-        "sign_pass": "Certificate Password",
-        "protect_settings": "Security Settings",
-        "protect_pass_label": "Set Password",
-        "protect_btn": "Protect PDF",
-        "unlock_pass_label": "PDF Password",
-        "unlock_btn": "Unlock PDF",
-        "heic_quality": "Quality",
-        "extract_palette": "Extracted Palette",
-        "copied": "Copied!",
-        "settings": "Settings",
-        "output_format": "Output Format",
-        "quality": "Quality",
-        "privacy_badge": "Want privacy?",
-        "desktop_app_promo": "Download the desktop app for 100% offline privacy.",
-        "cancel_op": "Cancel Operation"
+        "resize_pct": "Pourcentage",
+        "resize_width": "Largeur (px)",
+        "resize_height": "Hauteur (px)",
+        "resize_percent": "Échelle (%)",
+        "redact_settings": "Paramètres de Biffure",
+        "redact_label": "Texte à Biffer (Sensible à la Casse)",
+        "sign_settings": "Signature Numérique",
+        "sign_cert": "Fichier Certificat (.pfx / .p12)",
+        "sign_pass": "Mot de Passe du Certificat",
+        "protect_settings": "Paramètres de Sécurité",
+        "protect_pass_label": "Définir le Mot de Passe",
+        "protect_btn": "Protéger le PDF",
+        "unlock_pass_label": "Mot de Passe PDF",
+        "unlock_btn": "Déverrouiller le PDF",
+        "heic_quality": "Qualité",
+        "extract_palette": "Palette Extraite",
+        "copied": "Copié !",
+        "settings": "Paramètres",
+        "output_format": "Format de Sortie",
+        "quality": "Qualité",
+        "privacy_badge": "Vous voulez la confidentialité ?",
+        "desktop_app_promo": "Téléchargez l'app de bureau pour une confidentialité 100% hors ligne.",
+        "cancel_op": "Annuler l'Opération"
     },
     "FileUploader": {
-        "drop_active": "Drop files here",
-        "drop_idle": "Click to upload or drag & drop",
-        "supports": "Supports PDF, PNG, JPG",
-        "limit": "Up to {count} files",
-        "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+        "drop_active": "Déposez les fichiers ici",
+        "drop_idle": "Cliquez pour télécharger ou glissez-déposez",
+        "supports": "Prend en charge PDF, PNG, JPG",
+        "limit": "Jusqu'à {count} fichiers",
+        "file_too_large": "Le fichier est trop volumineux pour la version Web (Limite : {limit}). Téléchargez l'App de Bureau pour des fichiers illimités."
     },
     "Validation": {
-        "single_file_required": "This tool only accepts one file. Please select a single {type} file.",
-        "exactly_two_files_required": "This tool requires exactly 2 PDF files for comparison. Please select exactly 2 files.",
-        "too_many_files": "This tool accepts up to {max} files. You selected {count} files. Please select fewer files.",
-        "invalid_file_type": "Invalid file type. This tool only accepts {type} files.",
-        "file_too_large_web": "File \"{filename}\" is too large ({size}MB). Maximum size for web version is {limit}MB. Please use the desktop app for larger files."
+        "single_file_required": "Cet outil n'accepte qu'un seul fichier. Veuillez sélectionner un seul fichier {type}.",
+        "exactly_two_files_required": "Cet outil nécessite exactement 2 fichiers PDF pour la comparaison. Veuillez sélectionner exactement 2 fichiers.",
+        "too_many_files": "Cet outil accepte jusqu'à {max} fichiers. Vous avez sélectionné {count} fichiers. Veuillez en sélectionner moins.",
+        "invalid_file_type": "Type de fichier non valide. Cet outil n'accepte que les fichiers {type}.",
+        "file_too_large_web": "Le fichier \"{filename}\" est trop volumineux ({size}Mo). La taille maximale pour la version web est de {limit}Mo. Veuillez utiliser l'app de bureau pour les fichiers plus volumineux."
+    },
+    "EmailCapture": {
+        "title": "Obtenez 20% de Réduction sur le Prix de Lancement",
+        "subtitle": "Rejoignez les professionnels qui traitent des documents sensibles hors ligne. Obtenez une remise exclusive + un guide de flux de travail PDF gratuit.",
+        "benefit1": "Accès anticipé aux nouveaux outils avant la sortie publique",
+        "benefit2": "Guide gratuit d'optimisation du flux de travail PDF de 50 pages (valeur 29$)",
+        "benefit3": "Code promo de 20% de réduction (5$ d'économies sur votre première année)",
+        "email_placeholder": "Entrez votre adresse email",
+        "submit_button": "Obtenir Mon Code de 20% de Réduction",
+        "submitting": "Envoi en cours...",
+        "privacy_note": "Nous respectons votre vie privée. Désabonnez-vous à tout moment. Jamais de spam.",
+        "success_title": "Vérifiez Votre Email !",
+        "success_message": "Nous avons envoyé votre code de réduction de 20% et le guide PDF gratuit dans votre boîte de réception."
+    },
+    "seo": {
+        "merge-pdf": {
+            "title": "Fusionner PDF en Ligne - Gratuit et Sécurisé",
+            "description": "Combinez plusieurs fichiers PDF en un seul document instantanément. Traitement 100% hors ligne disponible."
+        },
+        "split-pdf": {
+            "title": "Diviser PDF - Extraire des Pages Gratuitement",
+            "description": "Extrayez des pages spécifiques de fichiers PDF en toute sécurité. Sans téléchargement avec l'app de bureau."
+        },
+        "compress-pdf": {
+            "title": "Compresser PDF - Réduire la Taille du Fichier",
+            "description": "Réduisez la taille des fichiers PDF pour les emails et les limites de téléchargement. Compression hors ligne disponible."
+        },
+        "protect-pdf": {
+            "title": "Protéger PDF - Chiffrement par Mot de Passe",
+            "description": "Sécurisez vos documents PDF avec un chiffrement AES-256. Protection par mot de passe hors ligne."
+        },
+        "unlock-pdf": {
+            "title": "Déverrouiller PDF - Supprimer la Protection",
+            "description": "Supprimez les restrictions de mot de passe des fichiers PDF en toute sécurité. Traitement 100% hors ligne."
+        },
+        "repair-pdf": {
+            "title": "Réparer PDF - Corriger les Fichiers Endommagés",
+            "description": "Récupérez et réparez les documents PDF endommagés ou corrompus. Restaurez l'accès à vos fichiers."
+        },
+        "grayscale-pdf": {
+            "title": "Convertir PDF en Niveaux de Gris",
+            "description": "Convertissez les PDF en couleur en niveaux de gris pour l'impression. Économisez de l'encre."
+        },
+        "pdf-to-word": {
+            "title": "Convertisseur PDF en Word - En Ligne Gratuit",
+            "description": "Convertissez des fichiers PDF en documents Word modifiables. Préservez la mise en forme avec l'OCR."
+        },
+        "ocr-pdf": {
+            "title": "OCR PDF - Rendre les PDF Numérisés Recherchables",
+            "description": "Extrayez le texte des PDF numérisés avec la technologie OCR."
+        },
+        "pdf-redactor": {
+            "title": "Biffure PDF - Supprimer le Texte Sensible",
+            "description": "Supprimez définitivement les informations sensibles des documents PDF."
+        },
+        "pdf-signer": {
+            "title": "Signature Numérique PDF - Signer des Documents",
+            "description": "Signez des PDF avec des certificats numériques. Compatible PAdES."
+        },
+        "watermark-pdf": {
+            "title": "Ajouter un Filigrane au PDF",
+            "description": "Appliquez des filigranes de texte ou de logo sur les documents PDF."
+        },
+        "passport-photo": {
+            "title": "Créateur Photo Passeport - 21 Pays (France, UE, USA)",
+            "description": "Photos passeport conformes pour France, UE, USA, UK, Japon, Chine, Inde et 14 autres pays. Dimensions officielles, 300 DPI."
+        },
+        "remove-image-background": {
+            "title": "Supprimer le Fond d'Image - Propulsé par l'IA",
+            "description": "Supprimez les arrière-plans des photos avec l'IA. Traitement 100% hors ligne."
+        },
+        "upscale-image": {
+            "title": "Améliorer l'Image avec l'IA - Augmenter la Résolution",
+            "description": "Augmentez la résolution de l'image avec l'IA. Agrandissement 2x ou 4x."
+        },
+        "compress-image": {
+            "title": "Compresser les Images - Réduire la Taille",
+            "description": "Réduisez la taille du fichier image sans perte de qualité."
+        },
+        "generate-icons": {
+            "title": "Générateur d'Icônes d'App - Toutes les Tailles",
+            "description": "Générez des icônes d'application dans toutes les tailles pour iOS, Android, macOS, Windows et favicons web à partir d'une seule image."
+        },
+        "organize-pdf": {
+            "title": "Organiser les Pages PDF - Réorganiser",
+            "description": "Organisez et réorganisez les pages PDF dans n'importe quel ordre. Interface glisser-déposer."
+        },
+        "rotate-pdf": {
+            "title": "Pivoter PDF - Faire Tourner les Pages",
+            "description": "Faites pivoter les pages PDF de 90, 180 ou 270 degrés. Corrigez l'orientation des documents."
+        },
+        "crop-pdf": {
+            "title": "Rogner PDF - Ajuster les Marges",
+            "description": "Rognez les pages PDF à des dimensions spécifiques. Supprimez les marges indésirables."
+        },
+        "pdf-to-images": {
+            "title": "PDF en Images - Convertir en JPG/PNG",
+            "description": "Convertissez les pages PDF en images haute qualité. Exportez en JPG ou PNG."
+        },
+        "images-to-pdf": {
+            "title": "Images en PDF - Combiner des Photos",
+            "description": "Combinez plusieurs images en un seul document PDF. Supporte JPG, PNG, WebP."
+        },
+        "extract-tables": {
+            "title": "Extraire les Tableaux du PDF - Exporter vers Excel",
+            "description": "Extrayez les tableaux des documents PDF vers Excel ou CSV. Préservez la structure."
+        },
+        "convert-image": {
+            "title": "Convertir le Format d'Image - Gratuit",
+            "description": "Convertissez les images entre formats. Support JPG, PNG, WebP, GIF et plus."
+        },
+        "jpg-to-png": {
+            "title": "Convertisseur JPG en PNG - Gratuit",
+            "description": "Convertissez les images JPG en format PNG avec transparence. Haute qualité."
+        },
+        "png-to-jpg": {
+            "title": "Convertisseur PNG en JPG - Gratuit",
+            "description": "Convertissez les images PNG en format JPG. Réduisez la taille en gardant la qualité."
+        },
+        "resize-image": {
+            "title": "Redimensionner l'Image - Changer la Taille",
+            "description": "Redimensionnez les images à des dimensions spécifiques ou en pourcentage."
+        },
+        "crop-image": {
+            "title": "Rogner l'Image en Ligne - Gratuit",
+            "description": "Rognez les images aux dimensions exactes. Interface simple glisser-déposer."
+        },
+        "watermark-image": {
+            "title": "Ajouter un Filigrane à l'Image",
+            "description": "Ajoutez des filigranes de texte ou logo à vos photos. Protégez vos images."
+        },
+        "extract-palette": {
+            "title": "Extraire la Palette de Couleurs",
+            "description": "Extrayez les couleurs dominantes de n'importe quelle image. Obtenez les codes hex."
+        },
+        "heic-to-jpg": {
+            "title": "Convertisseur HEIC en JPG - Photos iPhone",
+            "description": "Convertissez les photos HEIC iPhone en format JPG standard. Conversion par lots."
+        },
+        "pdf-diff": {
+            "title": "Comparer PDF - Différences Visuelles",
+            "description": "Comparez deux PDFs visuellement pour repérer les différences. Mettez en surbrillance."
+        },
+        "booklet-maker": {
+            "title": "Créateur de Livret PDF - Prêt à Imprimer",
+            "description": "Créez des livrets imprimables à partir de PDF. Réorganisez les pages pour reliure."
+        },
+        "pdf-scrubber": {
+            "title": "Nettoyeur de Confidentialité PDF",
+            "description": "Supprimez les métadonnées cachées et l'historique d'édition des PDFs."
+        },
+        "pdf-web-optimize": {
+            "title": "Optimiser PDF pour le Web",
+            "description": "Linéarisez les PDFs pour une visualisation web rapide. Optimisez pour distribution."
+        },
+        "word-to-pdf": {
+            "title": "Convertisseur Word en PDF - DOCX en PDF",
+            "description": "Convertissez les documents Word en format PDF. Préservez le formatage."
+        },
+        "powerpoint-to-pdf": {
+            "title": "PowerPoint en PDF - Convertisseur PPTX",
+            "description": "Convertissez les présentations PowerPoint en PDF. Gardez les diapositives intactes."
+        },
+        "excel-to-pdf": {
+            "title": "Convertisseur Excel en PDF - XLSX en PDF",
+            "description": "Convertissez les feuilles de calcul Excel en format PDF. Maintenez le formatage."
+        },
+        "html-to-pdf": {
+            "title": "Convertisseur HTML en PDF - Web en PDF",
+            "description": "Convertissez les fichiers HTML et pages web en documents PDF. Préservez les styles."
+        },
+        "pdf-to-pdfa": {
+            "title": "Convertisseur PDF en PDF/A - Format Archive",
+            "description": "Convertissez les PDFs en format d'archive PDF/A pour préservation à long terme."
+        },
+        "delete-pages": {
+            "title": "Supprimer des Pages PDF - Enlever des Pages",
+            "description": "Supprimez des pages spécifiques des documents PDF. Suppression rapide et facile."
+        },
+        "page-numbers": {
+            "title": "Ajouter des Numéros de Page au PDF",
+            "description": "Ajoutez des numéros de page aux documents PDF. Personnalisez position et format."
+        },
+        "extract-text": {
+            "title": "Extraire le Texte du PDF - Copier le Texte",
+            "description": "Extrayez tout le contenu texte des fichiers PDF. Copiez le texte pour éditer."
+        },
+        "remove-metadata": {
+            "title": "Supprimer les Métadonnées PDF - Confidentialité",
+            "description": "Supprimez les métadonnées et informations cachées des fichiers PDF."
+        },
+        "extract-metadata": {
+            "title": "Extraire les Métadonnées PDF - Voir Info",
+            "description": "Extrayez et visualisez les métadonnées PDF incluant titre, auteur, date et plus."
+        },
+        "extract-form-data": {
+            "title": "Extraire les Données de Formulaire PDF",
+            "description": "Extrayez les données des champs de formulaires PDF. Exportez vers CSV ou Excel."
+        },
+        "reorder-pages": {
+            "title": "Réorganiser les Pages PDF - Glisser-Déposer",
+            "description": "Réorganisez les pages PDF avec glisser-déposer. Réarrangez les documents facilement."
+        },
+        "flatten-pdf": {
+            "title": "Aplatir PDF - Fusionner les Calques",
+            "description": "Aplatissez les champs de formulaire et annotations dans les documents PDF."
+        },
+        "photo-studio": {
+            "title": "Studio Photo - Éditeur en Ligne",
+            "description": "Éditeur photo avancé avec calques, filtres et texte. Éditez professionnellement."
+        },
+        "grid-split": {
+            "title": "Diviser l'Image en Grille",
+            "description": "Divisez les images en une grille d'images plus petites. Parfait pour Instagram."
+        },
+        "remove-image-metadata": {
+            "title": "Supprimer les Métadonnées d'Image - EXIF",
+            "description": "Supprimez EXIF et autres métadonnées des images. Protégez votre vie privée."
+        },
+        "pdf-to-jpg": {
+            "title": "Convertisseur PDF en JPG - Gratuit",
+            "description": "Convertissez les pages PDF en images JPG haute qualité. Conversion rapide et sécurisée."
+        },
+        "pdf-to-png": {
+            "title": "Convertisseur PDF en PNG - Gratuit",
+            "description": "Convertissez les pages PDF en images PNG avec transparence. Haute résolution."
+        },
+        "pdf-to-csv": {
+            "title": "Convertisseur PDF en CSV - Extraire Données",
+            "description": "Extrayez les tableaux du PDF et convertissez en format CSV. Parfait pour l'analyse."
+        },
+        "pdf-to-excel": {
+            "title": "Convertisseur PDF en Excel - Gratuit",
+            "description": "Convertissez les tableaux PDF en feuilles de calcul Excel. Préservez la structure."
+        },
+        "csv-to-pdf": {
+            "title": "Convertisseur CSV en PDF - Créer des Rapports",
+            "description": "Convertissez les fichiers CSV en documents PDF formatés. Créez des rapports."
+        },
+        "txt-to-pdf": {
+            "title": "Convertisseur TXT en PDF - Texte en PDF",
+            "description": "Convertissez les fichiers texte en documents PDF. Conversion simple et rapide."
+        },
+        "tiff-to-pdf": {
+            "title": "Convertisseur TIFF en PDF - Multi-pages",
+            "description": "Convertissez les images TIFF en documents PDF. Supporte les TIFF multi-pages."
+        },
+        "rtf-to-pdf": {
+            "title": "Convertisseur RTF en PDF - Texte Enrichi",
+            "description": "Convertissez les fichiers Rich Text Format en PDF. Préservez le formatage."
+        },
+        "xml-to-pdf": {
+            "title": "Convertisseur XML en PDF - Formater Données",
+            "description": "Convertissez les fichiers XML en documents PDF lisibles. Structurez vos données."
+        },
+        "ppt-to-pdf": {
+            "title": "Convertisseur PPT en PDF - Gratuit",
+            "description": "Convertissez PowerPoint PPT et PPTX en format PDF. Rapide et sécurisé."
+        },
+        "extract-images-from-pdf": {
+            "title": "Extraire les Images du PDF - Sauvegarder Tout",
+            "description": "Extrayez toutes les images des fichiers PDF. Sauvegardez en qualité originale."
+        },
+        "pdf-to-xls": {
+            "title": "Convertisseur PDF en XLS - Gratuit",
+            "description": "Convertissez les tableaux PDF en format tableur XLS. Extrayez les données des PDFs."
+        }
     }
 }

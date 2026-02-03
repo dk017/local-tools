@@ -25,7 +25,7 @@ export function Hero() {
                         transition={{ delay: 0.1 }}
                         className="text-4xl md:text-6xl font-bold tracking-tighter mb-8 leading-tight"
                     >
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary animate-gradient-x bg-[length:200%_auto]">
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-primary animate-gradient-x bg-[length:200%_auto] whitespace-pre-line">
                             {t('title')}
                         </span>
                     </motion.h1>

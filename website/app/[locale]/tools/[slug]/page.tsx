@@ -7,6 +7,14 @@ import { Footer } from "@/components/Footer";
 import { getTranslations } from "next-intl/server";
 import { ToolProcessor } from "@/components/OnlineTool/ToolProcessor";
 
+// Helper to determine schema.org application category
+function getApplicationCategory(slug: string): string {
+  if (slug.includes("image") || slug.includes("photo") || slug.includes("background") || slug.includes("upscale") || slug.includes("palette")) {
+    return "MultimediaApplication";
+  }
+  return "UtilitiesApplication";
+}
+
 function getApiEndpoint(slug: string) {
   switch (slug) {
     case "merge-pdf":
@@ -163,19 +171,80 @@ export async function generateMetadata({
   const tool = tools.find((t) => t.slug === slug);
   if (!tool) return { title: "Tool Not Found" };
 
+  const baseUrl = "https://localtools.pro";
+
+  // Initialize with English fallback (Priority 3)
+  let title = `${tool.title} - Offline & Secure`;
+  let description = tool.description;
+
   try {
-    const t = await getTranslations({ locale, namespace: "ToolsPage" });
-    const title = t(`${slug}.h1`);
-    return {
-      title: `${title} | Local Tools`,
-      description: tool.description,
-    };
+    // Priority 1: Try SEO section (best for search engines)
+    const seoT = await getTranslations({ locale, namespace: "seo" });
+    try {
+      const seoTitle = seoT(`${slug}.title`);
+      const seoDesc = seoT(`${slug}.description`);
+      // Only use if we got valid strings (not the key back)
+      if (seoTitle && !seoTitle.includes(`.title`)) {
+        title = seoTitle;
+        description = seoDesc;
+      } else {
+        throw new Error("SEO entry not found");
+      }
+    } catch {
+      // Priority 2: Try ToolsPage section (h1 + p1)
+      try {
+        const toolsPageT = await getTranslations({ locale, namespace: "ToolsPage" });
+        const h1 = toolsPageT(`${slug}.h1`);
+        const p1 = toolsPageT(`${slug}.p1`);
+        if (h1 && !h1.includes(`.h1`)) {
+          title = h1;
+          description = p1;
+        }
+      } catch {
+        // Priority 3: Keep English fallback (already set above)
+      }
+    }
   } catch {
-    return {
-      title: `${tool.title} Offline - Private & Secure | Local Tools`,
-      description: tool.description,
-    };
+    // Fallback for any translation system errors
   }
+
+  const fullTitle = `${title} | Local Tools`;
+
+  // Canonical URL: no locale prefix for English, with prefix for others
+  const canonicalUrl = locale === "en"
+    ? `${baseUrl}/tools/${slug}`
+    : `${baseUrl}/${locale}/tools/${slug}`;
+
+  // Language alternates for hreflang
+  const locales = ["en", "es", "fr", "it", "jp", "kr"];
+  const languages: Record<string, string> = {};
+  for (const loc of locales) {
+    languages[loc] = loc === "en"
+      ? `${baseUrl}/tools/${slug}`
+      : `${baseUrl}/${loc}/tools/${slug}`;
+  }
+
+  return {
+    title: fullTitle,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+      languages,
+    },
+    openGraph: {
+      title: fullTitle,
+      description,
+      url: canonicalUrl,
+      siteName: "Local Tools",
+      type: "website",
+      locale: locale === "jp" ? "ja_JP" : locale === "kr" ? "ko_KR" : `${locale}_${locale.toUpperCase()}`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: fullTitle,
+      description,
+    },
+  };
 }
 
 export default async function ToolPage({
@@ -183,7 +252,7 @@ export default async function ToolPage({
 }: {
   params: Promise<{ slug: string; locale: string }>;
 }) {
-  const { slug } = await params;
+  const { slug, locale } = await params;
   const tool = tools.find((t) => t.slug === slug);
 
   if (!tool) {
@@ -191,6 +260,53 @@ export default async function ToolPage({
   }
 
   const t = await getTranslations("ToolsPage");
+  const baseUrl = "https://localtools.pro";
+
+  // Build canonical URL for JSON-LD
+  const canonicalUrl = locale === "en"
+    ? `${baseUrl}/tools/${slug}`
+    : `${baseUrl}/${locale}/tools/${slug}`;
+
+  // Get localized title and description for JSON-LD
+  let jsonLdTitle = tool.title;
+  let jsonLdDescription = tool.description;
+  try {
+    const seoT = await getTranslations({ locale, namespace: "seo" });
+    const seoTitle = seoT(`${slug}.title`);
+    const seoDesc = seoT(`${slug}.description`);
+    if (seoTitle && !seoTitle.includes(`.title`)) {
+      jsonLdTitle = seoTitle;
+      jsonLdDescription = seoDesc;
+    }
+  } catch {
+    try {
+      const h1 = t(`${slug}.h1`);
+      const p1 = t(`${slug}.p1`);
+      if (h1 && !h1.includes(`.h1`)) {
+        jsonLdTitle = h1;
+        jsonLdDescription = p1;
+      }
+    } catch {
+      // Keep English fallback
+    }
+  }
+
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": `${jsonLdTitle} | Local Tools`,
+    "description": jsonLdDescription,
+    "url": canonicalUrl,
+    "applicationCategory": getApplicationCategory(slug),
+    "operatingSystem": "Any",
+    "inLanguage": locale === "jp" ? "ja" : locale === "kr" ? "ko" : locale,
+    "provider": {
+      "@type": "Organization",
+      "name": "Local Tools",
+      "url": baseUrl
+    }
+  };
 
   // Determine accepted file types based on tool slug
   let acceptedTypes: Record<string, string[]> = { "application/pdf": [".pdf"] };
@@ -271,20 +387,27 @@ export default async function ToolPage({
   };
 
   return (
-    <div className="min-h-screen">
-      <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary mb-6">
-          <Shield className="w-3 h-3" />
-          <span>{t("privacy_badge", { tool: getToolText("h1") })}</span>
-        </div>
+    <>
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
-        <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-          {getToolText("h1")}
-        </h1>
+      <div className="min-h-screen">
+        <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary mb-6">
+            <Shield className="w-3 h-3" />
+            <span>{t("privacy_badge", { tool: getToolText("h1") })}</span>
+          </div>
 
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-          {getToolText("p1")}
-        </p>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+            {getToolText("h1")}
+          </h1>
+
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+            {getToolText("p1")}
+          </p>
 
         {/* Primary CTA Area is now the Tool Interface directly */}
 
@@ -353,7 +476,8 @@ export default async function ToolPage({
         </div>
       </section>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 }

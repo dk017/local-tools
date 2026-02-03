@@ -54,9 +54,9 @@
     "Pricing": {
         "title": "한 번 결제. 무한한 프라이버시.",
         "subtitle": "추가 비용 없음. 연간 소장.",
-        "badge": "연간 라이선스",
-        "price": "$59",
-        "old_price": "$120",
+        "badge": "런칭 특가",
+        "price": "$27",
+        "old_price": "$49",
         "desc": "Windows용 오프라인 AI 툴킷 전체 액세스.",
         "cta": "지금 구매하기",
         "f1": "무제한 PDF 처리",
@@ -158,11 +158,11 @@
             "f3": "웹 최적화"
         },
         "passport-photo": {
-            "h1": "여권 사진 만들기",
-            "p1": "생체 인식 여권 사진을 만드세요.",
-            "f1": "자동 자르기",
-            "f2": "표준 사이즈",
-            "f3": "인쇄 준비 완료"
+            "h1": "여권 사진 만들기 - 21개국 지원",
+            "p1": "한국, 미국, 영국, EU, 일본, 중국, 인도, 캐나다, 브라질, 독일, 프랑스, 이탈리아, 스페인 등 21개국 규격에 맞는 여권 사진을 만드세요. 공식 사양에 자동 조정.",
+            "f1": "21개국 지원",
+            "f2": "공식 치수",
+            "f3": "인쇄 준비 완료 (300 DPI)"
         },
         "grayscale-pdf": {
             "h1": "PDF 흑백 변환",
@@ -239,60 +239,102 @@
         "screenshot_alt": "{tool} 인터페이스 스크린샷",
         "privacy_badge": "프라이버시 우선 {tool}",
         "extract-tables": {
-            "h1": "Extract Tables from PDF",
-            "p1": "Automatically identify and export tables from PDF documents into Excel or CSV.",
-            "f1": "Accurate Detection",
-            "f2": "Excel & CSV Support",
-            "f3": "Batch Processing"
+            "h1": "PDF에서 표 추출",
+            "p1": "PDF 문서에서 표를 자동으로 식별하고 Excel 또는 CSV로 내보냅니다.",
+            "f1": "정확한 감지",
+            "f2": "Excel & CSV 지원",
+            "f3": "일괄 처리"
         },
         "heic-to-jpg": {
-            "h1": "HEIC to JPG Converter",
-            "p1": "Convert iPhone photos (.heic) to standard JPG format instantly.",
-            "f1": "Maintain Metadata",
-            "f2": "High Quality",
-            "f3": "Batch Support"
+            "h1": "HEIC를 JPG로 변환",
+            "p1": "iPhone 사진(.heic)을 표준 JPG 형식으로 즉시 변환합니다.",
+            "f1": "메타데이터 유지",
+            "f2": "고품질",
+            "f3": "일괄 지원"
         },
         "pdf-diff": {
-            "h1": "Visual PDF Comparison",
-            "p1": "Visually compare two PDF documents to spot differences.",
-            "f1": "Side-by-Side Diff",
-            "f2": "Highlight Changes",
-            "f3": "Pixel Perfect"
+            "h1": "PDF 시각적 비교",
+            "p1": "두 PDF 문서를 시각적으로 비교하여 차이점을 확인합니다.",
+            "f1": "나란히 비교",
+            "f2": "변경 사항 강조",
+            "f3": "픽셀 퍼펙트"
         },
         "booklet-maker": {
-            "h1": "Create Booklet",
-            "p1": "Reorder pages for 2-up saddle-stitch printing.",
-            "f1": "Print Ready",
-            "f2": "Auto Pagination",
-            "f3": "Fold & Staple"
+            "h1": "소책자 만들기",
+            "p1": "새들 스티치 인쇄를 위해 페이지를 재정렬합니다.",
+            "f1": "인쇄 준비 완료",
+            "f2": "자동 페이지 배열",
+            "f3": "접기 & 스테이플"
         },
         "pdf-scrubber": {
-            "h1": "Privacy Scrubber",
-            "p1": "Deep clean your PDF metadata and revision history.",
-            "f1": "Remove Metadata",
-            "f2": "Drop Editing History",
-            "f3": "Linearize"
+            "h1": "프라이버시 클리너",
+            "p1": "PDF 메타데이터와 수정 기록을 완전히 삭제합니다.",
+            "f1": "메타데이터 제거",
+            "f2": "편집 기록 삭제",
+            "f3": "리니어라이즈"
         },
         "pdf-redactor": {
-            "h1": "Secure Redaction",
-            "p1": "Permanently remove sensitive text from your documents.",
-            "f1": "Search & Destroy",
-            "f2": "Permanent Removal",
-            "f3": "Sanitize Content"
+            "h1": "보안 블라인드 처리",
+            "p1": "문서에서 민감한 텍스트를 영구적으로 제거합니다.",
+            "f1": "검색 및 삭제",
+            "f2": "영구 제거",
+            "f3": "콘텐츠 정화"
         },
         "pdf-signer": {
-            "h1": "Digital Signer",
-            "p1": "Sign PDFs securely with your digital certificate (.pfx).",
-            "f1": "PAdES Standard",
-            "f2": "Certificate Support",
-            "f3": "Cryptographic Seal"
+            "h1": "디지털 서명",
+            "p1": "디지털 인증서(.pfx)로 PDF에 안전하게 서명합니다.",
+            "f1": "PAdES 표준",
+            "f2": "인증서 지원",
+            "f3": "암호화 씰"
         },
         "pdf-web-optimize": {
-            "h1": "Optimize for Web",
-            "p1": "Linearize PDF for fast streaming and web viewing.",
-            "f1": "Fast Web View",
-            "f2": "Byte Serving",
-            "f3": "Instant Load"
+            "h1": "웹용 최적화",
+            "p1": "빠른 스트리밍과 웹 보기를 위해 PDF를 리니어라이즈합니다.",
+            "f1": "빠른 웹 보기",
+            "f2": "바이트 서빙",
+            "f3": "즉시 로드"
+        },
+        "jpg-to-png": {
+            "h1": "JPG를 PNG로 변환",
+            "p1": "JPG 이미지를 투명도 지원 PNG 형식으로 변환. 빠르고, 오프라인, 안전합니다.",
+            "f1": "투명도 지원",
+            "f2": "일괄 변환",
+            "f3": "프라이버시 우선"
+        },
+        "png-to-jpg": {
+            "h1": "PNG를 JPG로 변환",
+            "p1": "PNG 이미지를 더 작은 JPG 형식으로 변환. 빠르고, 오프라인, 안전합니다.",
+            "f1": "고품질",
+            "f2": "일괄 변환",
+            "f3": "프라이버시 우선"
+        },
+        "passport-photo-maker": {
+            "h1": "여권 사진 제작기 - 21개국 지원",
+            "p1": "한국, 미국, 영국, EU, 일본, 중국, 인도, 캐나다, 브라질, 독일, 프랑스, 이탈리아, 스페인 등 21개국 규격에 맞는 여권 사진을 만드세요. 공식 사양에 자동 조정.",
+            "f1": "21개국 지원",
+            "f2": "공식 치수",
+            "f3": "인쇄 준비 완료 (300 DPI)"
+        },
+        "add-watermark": {
+            "h1": "이미지에 워터마크 추가",
+            "p1": "사진에 텍스트 또는 로고 워터마크를 추가합니다.",
+            "f1": "맞춤 텍스트",
+            "f2": "로고 지원",
+            "f3": "투명도"
+        },
+        "image-color-palette": {
+            "h1": "이미지 색상 팔레트 추출",
+            "p1": "모든 이미지에서 주요 색상을 가져옵니다.",
+            "f1": "Hex 코드",
+            "f2": "주요 색상",
+            "f3": "디자인 준비 완료"
+        },
+        "studio": {
+            "h1": "포토 스튜디오",
+            "p1": "레이어, 텍스트 및 디자인 도구가 있는 고급 사진 편집기.",
+            "f1": "레이어 지원",
+            "f2": "텍스트 도구",
+            "f3": "디자인 요소"
         },
         "word-to-pdf": {
             "h1": "Word to PDF",
@@ -580,8 +622,8 @@
             "desc": "용량 줄이기."
         },
         "passport-photo": {
-            "title": "여권 사진",
-            "desc": "ID 사진 만들기."
+            "title": "여권 사진 (21개국)",
+            "desc": "21개국 지원."
         },
         "generate-icons": {
             "title": "아이콘 생성",
@@ -702,6 +744,30 @@
         "remove-image-metadata": {
             "title": "이미지 메타데이터 제거",
             "desc": "EXIF 데이터 정리."
+        },
+        "jpg-to-png": {
+            "title": "JPG→PNG",
+            "desc": "PNG로 변환."
+        },
+        "png-to-jpg": {
+            "title": "PNG→JPG",
+            "desc": "JPG로 변환."
+        },
+        "passport-photo-maker": {
+            "title": "여권 사진 21개국",
+            "desc": "공식 ID 사진 만들기."
+        },
+        "add-watermark": {
+            "title": "이미지 워터마크",
+            "desc": "도장 추가."
+        },
+        "image-color-palette": {
+            "title": "팔레트 추출",
+            "desc": "색상 가져오기."
+        },
+        "studio": {
+            "title": "포토 스튜디오",
+            "desc": "레이어로 편집."
         }
     },
     "Common": {
@@ -713,84 +779,353 @@
         "privacy": "개인정보처리방침",
         "terms": "이용약관",
         "download": "다운로드",
-        "download_app_short": "Download App",
-        "support": "지원"
+        "download_app_short": "앱 다운로드",
+        "support": "지원",
+        "add_more": "더 추가",
+        "replace_all": "모두 교체"
     },
     "ToolProcessor": {
-        "status_uploading": "Uploading to Server...",
-        "status_processing": "Processing on safe server...",
-        "status_complete": "Processing Complete!",
-        "status_error": "Processing Failed",
-        "wait_upload": "Please wait while we upload your files.",
-        "wait_process": "Your files are being processed securely.",
-        "download": "Download File",
-        "download_zip": "Download All (ZIP)",
-        "try_again": "Try Another File",
-        "convert_now": "Convert Now",
-        "process_image": "Process Image",
-        "process_files": "Process Files",
-        "change_file": "Change File",
-        "selected": "Selected",
-        "watermark_settings": "Watermark Settings",
-        "wm_type_text": "Text Watermark",
-        "wm_type_image": "Image/Logo",
-        "wm_text_label": "Watermark Text",
-        "wm_opacity": "Opacity",
-        "wm_color": "Text Color",
-        "wm_size": "Font Size",
-        "wm_position": "Position",
-        "wm_upload_logo": "Upload Logo",
-        "pos_center": "Center",
-        "pos_tl": "Top Left",
-        "pos_tr": "Top Right",
-        "pos_bl": "Bottom Left",
-        "pos_br": "Bottom Right",
-        "pos_custom": "Custom (Drag Preview)",
-        "crop_options": "Crop Options",
-        "crop_btn": "Crop & Save",
-        "passport_country": "Passport Country",
-        "compression_level": "Compression Level",
-        "comp_low": "Low (High Quality)",
-        "comp_med": "Medium (Balanced)",
-        "comp_high": "High (Small Size)",
-        "resize_settings": "Resize Settings",
-        "resize_px": "Pixels",
-        "resize_pct": "Percentage",
-        "resize_width": "Width (px)",
-        "resize_height": "Height (px)",
-        "resize_percent": "Scale (%)",
-        "redact_settings": "Redaction Settings",
-        "redact_label": "Text to Redact (Case Sensitive)",
-        "sign_settings": "Digital Signature",
-        "sign_cert": "Certificate File (.pfx / .p12)",
-        "sign_pass": "Certificate Password",
-        "protect_settings": "Security Settings",
-        "protect_pass_label": "Set Password",
-        "protect_btn": "Protect PDF",
-        "unlock_pass_label": "PDF Password",
-        "unlock_btn": "Unlock PDF",
-        "heic_quality": "Quality",
-        "extract_palette": "Extracted Palette",
-        "copied": "Copied!",
-        "settings": "Settings",
-        "output_format": "Output Format",
-        "quality": "Quality",
-        "privacy_badge": "Want privacy?",
-        "desktop_app_promo": "Download the desktop app for 100% offline privacy.",
-        "cancel_op": "Cancel Operation"
+        "status_uploading": "서버에 업로드 중...",
+        "status_processing": "안전한 서버에서 처리 중...",
+        "status_complete": "처리 완료!",
+        "status_error": "처리 실패",
+        "wait_upload": "파일을 업로드하는 동안 기다려 주세요.",
+        "wait_process": "파일을 안전하게 처리하고 있습니다.",
+        "download": "파일 다운로드",
+        "download_zip": "전체 다운로드 (ZIP)",
+        "try_again": "다른 파일 시도",
+        "convert_now": "지금 변환",
+        "process_image": "이미지 처리",
+        "process_files": "파일 처리",
+        "change_file": "파일 변경",
+        "selected": "선택됨",
+        "watermark_settings": "워터마크 설정",
+        "wm_type_text": "텍스트 워터마크",
+        "wm_type_image": "이미지/로고",
+        "wm_text_label": "워터마크 텍스트",
+        "wm_opacity": "투명도",
+        "wm_color": "텍스트 색상",
+        "wm_size": "글꼴 크기",
+        "wm_position": "위치",
+        "wm_upload_logo": "로고 업로드",
+        "pos_center": "중앙",
+        "pos_tl": "좌상단",
+        "pos_tr": "우상단",
+        "pos_bl": "좌하단",
+        "pos_br": "우하단",
+        "pos_custom": "사용자 지정 (드래그로 미리보기)",
+        "crop_options": "자르기 옵션",
+        "crop_btn": "자르기 & 저장",
+        "passport_country": "여권 국가",
+        "compression_level": "압축 수준",
+        "comp_low": "낮음 (고품질)",
+        "comp_med": "중간 (균형)",
+        "comp_high": "높음 (작은 크기)",
+        "resize_settings": "크기 조정 설정",
+        "resize_px": "픽셀",
+        "resize_pct": "퍼센트",
+        "resize_width": "너비 (px)",
+        "resize_height": "높이 (px)",
+        "resize_percent": "배율 (%)",
+        "redact_settings": "블라인드 처리 설정",
+        "redact_label": "블라인드 처리할 텍스트 (대소문자 구분)",
+        "sign_settings": "디지털 서명",
+        "sign_cert": "인증서 파일 (.pfx / .p12)",
+        "sign_pass": "인증서 비밀번호",
+        "protect_settings": "보안 설정",
+        "protect_pass_label": "비밀번호 설정",
+        "protect_btn": "PDF 보호",
+        "unlock_pass_label": "PDF 비밀번호",
+        "unlock_btn": "PDF 잠금해제",
+        "heic_quality": "품질",
+        "extract_palette": "추출된 팔레트",
+        "copied": "복사됨!",
+        "settings": "설정",
+        "output_format": "출력 형식",
+        "quality": "품질",
+        "privacy_badge": "프라이버시가 필요하세요?",
+        "desktop_app_promo": "100% 오프라인 프라이버시를 위해 데스크톱 앱을 다운로드하세요.",
+        "cancel_op": "작업 취소"
     },
     "FileUploader": {
-        "drop_active": "Drop files here",
-        "drop_idle": "Click to upload or drag & drop",
-        "supports": "Supports PDF, PNG, JPG",
-        "limit": "Up to {count} files",
-        "file_too_large": "File is too large using the Web Version (Limit: 50MB). Download Desktop App for unlimited."
+        "drop_active": "여기에 파일을 놓으세요",
+        "drop_idle": "클릭하여 업로드하거나 드래그 앤 드롭",
+        "supports": "PDF, PNG, JPG 지원",
+        "limit": "최대 {count}개 파일",
+        "file_too_large": "파일이 웹 버전 제한을 초과합니다 (제한: {limit}). 무제한으로 처리하려면 데스크톱 앱을 다운로드하세요."
     },
     "Validation": {
-        "single_file_required": "This tool only accepts one file. Please select a single {type} file.",
-        "exactly_two_files_required": "This tool requires exactly 2 PDF files for comparison. Please select exactly 2 files.",
-        "too_many_files": "This tool accepts up to {max} files. You selected {count} files. Please select fewer files.",
-        "invalid_file_type": "Invalid file type. This tool only accepts {type} files.",
-        "file_too_large_web": "File \"{filename}\" is too large ({size}MB). Maximum size for web version is {limit}MB. Please use the desktop app for larger files."
+        "single_file_required": "이 도구는 하나의 파일만 허용합니다. {type} 파일 하나를 선택하세요.",
+        "exactly_two_files_required": "이 도구는 비교를 위해 정확히 2개의 PDF 파일이 필요합니다. 정확히 2개의 파일을 선택하세요.",
+        "too_many_files": "이 도구는 최대 {max}개의 파일을 허용합니다. {count}개의 파일을 선택했습니다. 더 적은 파일을 선택하세요.",
+        "invalid_file_type": "유효하지 않은 파일 형식입니다. 이 도구는 {type} 파일만 허용합니다.",
+        "file_too_large_web": "파일 \"{filename}\"이(가) 너무 큽니다 ({size}MB). 웹 버전의 최대 크기는 {limit}MB입니다. 더 큰 파일은 데스크톱 앱을 사용하세요."
+    },
+    "EmailCapture": {
+        "title": "출시 가격 20% 할인 받기",
+        "subtitle": "오프라인에서 민감한 문서를 처리하는 전문가에 합류하세요. 독점 할인 + 무료 PDF 워크플로우 가이드를 받으세요.",
+        "benefit1": "공개 출시 전 새로운 도구에 대한 조기 액세스",
+        "benefit2": "50페이지 무료 PDF 워크플로우 최적화 가이드 ($29 상당)",
+        "benefit3": "20% 할인 쿠폰 코드 (첫 해 $5 절약)",
+        "email_placeholder": "이메일 주소 입력",
+        "submit_button": "20% 할인 코드 받기",
+        "submitting": "제출 중...",
+        "privacy_note": "귀하의 개인정보를 존중합니다. 언제든지 구독 취소 가능. 스팸 없음.",
+        "success_title": "이메일을 확인하세요!",
+        "success_message": "20% 할인 코드와 무료 PDF 가이드를 받은편지함으로 보내드렸습니다."
+    },
+    "seo": {
+        "merge-pdf": {
+            "title": "PDF 병합 - 무료 및 안전한 온라인 도구",
+            "description": "여러 PDF 파일을 하나의 문서로 즉시 결합. 100% 오프라인 처리 가능."
+        },
+        "split-pdf": {
+            "title": "PDF 분할 - 무료 페이지 추출",
+            "description": "PDF 파일에서 특정 페이지를 안전하게 추출. 데스크톱 앱으로 업로드 없이 처리."
+        },
+        "compress-pdf": {
+            "title": "PDF 압축 - 파일 크기 줄이기",
+            "description": "이메일 및 업로드 제한을 위해 PDF 파일 크기 축소. 오프라인 압축 가능."
+        },
+        "protect-pdf": {
+            "title": "PDF 보호 - 비밀번호 암호화",
+            "description": "AES-256 암호화로 PDF 문서 보호. 오프라인 비밀번호 보호."
+        },
+        "unlock-pdf": {
+            "title": "PDF 잠금해제 - 보호 제거",
+            "description": "PDF 파일에서 비밀번호 제한을 안전하게 제거. 100% 오프라인 처리."
+        },
+        "repair-pdf": {
+            "title": "PDF 복구 - 손상된 파일 수정",
+            "description": "손상된 PDF 문서 복구 및 수리. 파일 접근 복원."
+        },
+        "grayscale-pdf": {
+            "title": "PDF 흑백 변환",
+            "description": "컬러 PDF를 인쇄용 흑백으로 변환. 잉크 절약."
+        },
+        "pdf-to-word": {
+            "title": "PDF를 Word로 변환 - 무료 온라인",
+            "description": "PDF 파일을 편집 가능한 Word 문서로 변환. OCR로 서식 유지."
+        },
+        "ocr-pdf": {
+            "title": "OCR PDF - 스캔 PDF를 검색 가능하게",
+            "description": "OCR 기술로 스캔 PDF에서 텍스트 추출."
+        },
+        "pdf-redactor": {
+            "title": "PDF 블라인드 처리 - 민감한 텍스트 제거",
+            "description": "PDF 문서에서 민감한 정보를 영구적으로 제거."
+        },
+        "pdf-signer": {
+            "title": "PDF 디지털 서명 - 문서에 서명",
+            "description": "디지털 인증서로 PDF에 서명. PAdES 호환."
+        },
+        "watermark-pdf": {
+            "title": "PDF 워터마크 추가",
+            "description": "PDF 문서에 텍스트 또는 로고 워터마크 적용."
+        },
+        "passport-photo": {
+            "title": "여권 사진 제작기 - 21개국 지원 (한국, 미국, EU)",
+            "description": "한국, 미국, EU, 영국, 일본, 중국, 인도 등 21개국 여권 사진. 공식 치수, 300 DPI."
+        },
+        "remove-image-background": {
+            "title": "이미지 배경 제거 - AI 기반",
+            "description": "AI로 사진 배경을 즉시 제거. 100% 오프라인 처리."
+        },
+        "upscale-image": {
+            "title": "AI 이미지 업스케일 - 해상도 향상",
+            "description": "AI로 이미지 해상도 향상. 2배 또는 4배 확대."
+        },
+        "compress-image": {
+            "title": "이미지 압축 - 크기 줄이기",
+            "description": "품질 손실 없이 이미지 파일 크기 축소."
+        },
+        "generate-icons": {
+            "title": "앱 아이콘 생성기 - 모든 크기 지원",
+            "description": "하나의 이미지로 iOS, Android, macOS, Windows, 웹 파비콘용 모든 크기 아이콘 생성."
+        },
+        "organize-pdf": {
+            "title": "PDF 페이지 정리 - 재정렬",
+            "description": "PDF 페이지를 원하는 순서로 정리하고 재배열. 드래그 앤 드롭 인터페이스."
+        },
+        "rotate-pdf": {
+            "title": "PDF 회전 - 페이지 돌리기",
+            "description": "PDF 페이지를 90도, 180도 또는 270도 회전. 스캔 문서 방향 수정."
+        },
+        "crop-pdf": {
+            "title": "PDF 자르기 - 여백 조정",
+            "description": "PDF 페이지를 특정 크기로 자르기. 불필요한 여백 제거."
+        },
+        "pdf-to-images": {
+            "title": "PDF를 이미지로 변환 - JPG/PNG",
+            "description": "PDF 페이지를 고품질 이미지로 변환. JPG 또는 PNG 형식으로 내보내기."
+        },
+        "images-to-pdf": {
+            "title": "이미지를 PDF로 변환 - 사진 결합",
+            "description": "여러 이미지를 하나의 PDF 문서로 결합. JPG, PNG, WebP 지원."
+        },
+        "extract-tables": {
+            "title": "PDF에서 표 추출 - Excel로 내보내기",
+            "description": "PDF 문서에서 표를 Excel 또는 CSV로 추출. 표 구조 보존."
+        },
+        "convert-image": {
+            "title": "이미지 형식 변환 - 무료",
+            "description": "이미지를 다양한 형식으로 변환. JPG, PNG, WebP, GIF 등 지원."
+        },
+        "jpg-to-png": {
+            "title": "JPG를 PNG로 변환 - 무료 온라인",
+            "description": "JPG 이미지를 투명도 지원 PNG 형식으로 변환. 고품질 변환."
+        },
+        "png-to-jpg": {
+            "title": "PNG를 JPG로 변환 - 무료 온라인",
+            "description": "PNG 이미지를 JPG 형식으로 변환. 품질 유지하면서 크기 축소."
+        },
+        "resize-image": {
+            "title": "이미지 크기 조정 - 리사이즈",
+            "description": "이미지를 특정 크기 또는 비율로 조정. 가로세로 비율 유지 옵션."
+        },
+        "crop-image": {
+            "title": "이미지 자르기 - 무료 온라인",
+            "description": "이미지를 정확한 크기로 자르기. 간단한 드래그 앤 드롭 인터페이스."
+        },
+        "watermark-image": {
+            "title": "이미지에 워터마크 추가",
+            "description": "사진에 텍스트 또는 로고 워터마크 추가. 이미지 무단 사용 방지."
+        },
+        "extract-palette": {
+            "title": "이미지에서 색상 팔레트 추출",
+            "description": "이미지에서 주요 색상 추출. 디자인용 HEX 코드 획득."
+        },
+        "heic-to-jpg": {
+            "title": "HEIC를 JPG로 변환 - 아이폰 사진",
+            "description": "아이폰 HEIC 사진을 표준 JPG 형식으로 변환. 일괄 변환 지원."
+        },
+        "pdf-diff": {
+            "title": "PDF 비교 - 시각적 차이점",
+            "description": "두 PDF를 시각적으로 비교하여 차이점 발견. 변경 사항 하이라이트."
+        },
+        "booklet-maker": {
+            "title": "PDF 소책자 만들기 - 인쇄용",
+            "description": "PDF로 인쇄 가능한 소책자 생성. 제본용 페이지 재정렬."
+        },
+        "pdf-scrubber": {
+            "title": "PDF 개인정보 클리너",
+            "description": "PDF에서 숨겨진 메타데이터와 편집 이력 제거. 개인정보 보호."
+        },
+        "pdf-web-optimize": {
+            "title": "웹용 PDF 최적화",
+            "description": "빠른 웹 보기를 위해 PDF 선형화. 온라인 배포용 최적화."
+        },
+        "word-to-pdf": {
+            "title": "Word를 PDF로 변환 - DOCX 지원",
+            "description": "Word 문서를 PDF 형식으로 변환. 서식과 레이아웃 보존."
+        },
+        "powerpoint-to-pdf": {
+            "title": "PowerPoint를 PDF로 - PPTX 변환",
+            "description": "PowerPoint 프레젠테이션을 PDF로 변환. 슬라이드 완벽 보존."
+        },
+        "excel-to-pdf": {
+            "title": "Excel을 PDF로 변환 - XLSX 지원",
+            "description": "Excel 스프레드시트를 PDF 형식으로 변환. 서식 유지."
+        },
+        "html-to-pdf": {
+            "title": "HTML을 PDF로 변환 - 웹페이지",
+            "description": "HTML 파일과 웹 페이지를 PDF 문서로 변환. 스타일 보존."
+        },
+        "pdf-to-pdfa": {
+            "title": "PDF를 PDF/A로 변환 - 아카이브 형식",
+            "description": "PDF를 장기 보존용 PDF/A 아카이브 형식으로 변환."
+        },
+        "delete-pages": {
+            "title": "PDF 페이지 삭제 - 페이지 제거",
+            "description": "PDF 문서에서 특정 페이지 삭제. 빠르고 간편한 페이지 삭제."
+        },
+        "page-numbers": {
+            "title": "PDF에 페이지 번호 추가",
+            "description": "PDF 문서에 페이지 번호 추가. 위치와 형식 사용자 정의."
+        },
+        "extract-text": {
+            "title": "PDF에서 텍스트 추출 - 텍스트 복사",
+            "description": "PDF 파일에서 모든 텍스트 내용 추출. 편집용 텍스트 복사."
+        },
+        "remove-metadata": {
+            "title": "PDF 메타데이터 제거 - 개인정보",
+            "description": "PDF 파일에서 메타데이터와 숨겨진 정보 제거. 민감한 데이터 보호."
+        },
+        "extract-metadata": {
+            "title": "PDF 메타데이터 추출 - 정보 보기",
+            "description": "PDF 메타데이터 추출 및 확인. 제목, 저자, 날짜 등 포함."
+        },
+        "extract-form-data": {
+            "title": "PDF 폼 데이터 추출",
+            "description": "PDF 양식에서 필드 데이터 추출. CSV 또는 Excel로 내보내기."
+        },
+        "reorder-pages": {
+            "title": "PDF 페이지 재정렬 - 드래그 앤 드롭",
+            "description": "드래그 앤 드롭으로 PDF 페이지 재정렬. 쉽게 문서 재구성."
+        },
+        "flatten-pdf": {
+            "title": "PDF 평면화 - 레이어 병합",
+            "description": "PDF 문서의 양식 필드와 주석 평면화. 편집 불가 사본 생성."
+        },
+        "photo-studio": {
+            "title": "포토 스튜디오 - 온라인 에디터",
+            "description": "레이어, 필터, 텍스트 기능이 있는 고급 사진 편집기. 전문적인 편집."
+        },
+        "grid-split": {
+            "title": "이미지 그리드 분할",
+            "description": "이미지를 작은 이미지 그리드로 분할. 인스타그램과 소셜 미디어에 완벽."
+        },
+        "remove-image-metadata": {
+            "title": "이미지 메타데이터 제거 - EXIF 삭제",
+            "description": "이미지에서 EXIF 및 기타 메타데이터 제거. 사진 공유 시 개인정보 보호."
+        },
+        "pdf-to-jpg": {
+            "title": "PDF를 JPG로 변환 - 무료 온라인",
+            "description": "PDF 페이지를 고품질 JPG 이미지로 변환. 빠르고 안전한 변환."
+        },
+        "pdf-to-png": {
+            "title": "PDF를 PNG로 변환 - 무료 온라인",
+            "description": "PDF 페이지를 투명도 지원 PNG 이미지로 변환. 고해상도 출력."
+        },
+        "pdf-to-csv": {
+            "title": "PDF를 CSV로 변환 - 데이터 추출",
+            "description": "PDF에서 표를 추출하여 CSV 형식으로 변환. 데이터 분석에 적합."
+        },
+        "pdf-to-excel": {
+            "title": "PDF를 Excel로 변환 - 무료 온라인",
+            "description": "PDF 표를 Excel 스프레드시트로 변환. 표 구조와 서식 보존."
+        },
+        "csv-to-pdf": {
+            "title": "CSV를 PDF로 변환 - 보고서 생성",
+            "description": "CSV 파일을 서식이 있는 PDF 문서로 변환. 전문적인 보고서 작성."
+        },
+        "txt-to-pdf": {
+            "title": "TXT를 PDF로 변환 - 텍스트를 PDF로",
+            "description": "일반 텍스트 파일을 PDF 문서로 변환. 간단하고 빠른 변환."
+        },
+        "tiff-to-pdf": {
+            "title": "TIFF를 PDF로 변환 - 다중 페이지",
+            "description": "TIFF 이미지를 PDF 문서로 변환. 다중 페이지 TIFF 파일 지원."
+        },
+        "rtf-to-pdf": {
+            "title": "RTF를 PDF로 변환 - 리치 텍스트",
+            "description": "리치 텍스트 형식 파일을 PDF로 변환. 서식과 스타일 보존."
+        },
+        "xml-to-pdf": {
+            "title": "XML을 PDF로 변환 - 데이터 형식화",
+            "description": "XML 파일을 읽기 쉬운 PDF 문서로 변환. 데이터를 아름답게 구조화."
+        },
+        "ppt-to-pdf": {
+            "title": "PPT를 PDF로 변환 - 무료 온라인",
+            "description": "PowerPoint PPT 및 PPTX를 PDF 형식으로 변환. 빠르고 안전."
+        },
+        "extract-images-from-pdf": {
+            "title": "PDF에서 이미지 추출 - 모두 저장",
+            "description": "PDF 파일에서 모든 이미지 추출. 원본 품질로 이미지 저장."
+        },
+        "pdf-to-xls": {
+            "title": "PDF를 XLS로 변환 - 무료 온라인",
+            "description": "PDF 표를 XLS 스프레드시트 형식으로 변환. PDF 파일에서 데이터 추출."
+        }
     }
 }

@@ -83,7 +83,7 @@ python -c "from modules import pdf_tools; print(pdf_tools.__file__)"
         │                      │   │                      │
         │  - Bundles Python    │   │  - Separate Python   │
         │    as sidecar        │   │    server required   │
-        │  - No size limits    │   │  - 5MB PDF / 3MB img │
+        │  - No size limits    │   │  - 20MB PDF / 20MB img │
         │  - Offline-capable   │   │  - Online only       │
         │  - File system       │   │  - Upload-based      │
         │    access            │   │                      │
@@ -190,7 +190,7 @@ const isImageTool = ... || toolSlug === "images-to-pdf";
 
 **Layer 3**: Backend validation (`python-backend/modules/security.py`)
 - Input sanitization (whitelist-based regex)
-- File size limits (3MB images, 5MB PDFs for web)
+- File size limits (20MB images, 20MB PDFs for web)
 - Page order validation (max 1000 specs, 500 pages per range)
 
 ### Input Sanitization Pattern
@@ -378,7 +378,7 @@ Current build: 943 KB JavaScript bundle. Not critical for desktop app, but consi
 ### File Size Limits
 
 - **Desktop**: No limits (validation disabled)
-- **Web**: 5MB PDF, 3MB images (configurable via env vars)
+- **Web**: 20MB PDF, 20MB images (configurable via env vars)
 - Backend enforces limits only for web requests
 
 ### Python Module Reloading

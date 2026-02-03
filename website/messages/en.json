@@ -13,7 +13,7 @@
     },
     "Hero": {
         "badge": "Desktop-First PDF & Image Suite",
-        "title": "A secure, offline desktop tool for handling PDFs and images — built for privacy.",
+        "title": "A secure, offline desktop tool for handling PDFs and images.\nBuilt for privacy.",
         "subtitle": "Run 50+ powerful file tools directly on your computer. No cloud dependency, no telemetry, no data sharing. Designed for professionals who can’t afford privacy risks.",
         "cta_primary": "🔐 Get the Desktop App",
         "cta_secondary": "See All Tools",
@@ -40,7 +40,7 @@
         "b2_title": "Instant Processing",
         "b2_desc": "No upload bars. No server queues. Process large PDFs in seconds using your own hardware. Works without internet.",
         "b3_title": "One Price, Everything Included",
-        "b3_desc": "$59/year for all 50+ tools. No per-file fees. No usage limits. Cancel anytime with 30-day money-back guarantee."
+        "b3_desc": "$27/year for all 50+ tools. No per-file fees. No usage limits. Cancel anytime with 30-day money-back guarantee."
     },
     "Process": {
         "title": "Get Started in Minutes",
@@ -69,7 +69,7 @@
     "FinalCTA": {
         "title": "Ready to Process Documents Privately?",
         "subtitle": "Download the desktop app and start processing files offline. No uploads, no cloud, no risk.",
-        "cta_primary": "Get Desktop License - $59/year",
+        "cta_primary": "Get Desktop License - $27/year",
         "cta_secondary": "Or try free web tools first"
     },
     "Features": {
@@ -99,16 +99,16 @@
         "s2_title": "Native Performance",
         "s2_desc": "Utilize 100% of your CPU/GPU. Crunch 1000 page PDFs in milliseconds.",
         "s3_title": "Simple Annual Pricing",
-        "s3_desc": "$59/year for unlimited processing. No pay-per-file. No upload limits. Cancel anytime."
+        "s3_desc": "$27/year for unlimited processing. No pay-per-file. No upload limits. Cancel anytime."
     },
     "Pricing": {
         "title": "Simple, Transparent Pricing",
-        "subtitle": "Get unlimited offline processing for less than $5/month. One annual subscription unlocks everything.",
-        "badge": "50% OFF LAUNCH PRICE",
-        "price": "$59",
+        "subtitle": "Get unlimited offline processing for just over $2/month. One annual subscription unlocks everything.",
+        "badge": "LAUNCH PRICE",
+        "price": "$27",
         "price_period": "/year",
-        "old_price": "$120",
-        "value_callout": "Less than $5/month",
+        "old_price": "$49",
+        "value_callout": "Just $2.25/month",
         "desc": "Billed annually. Cancel anytime. All tools, unlimited use, zero cloud uploads.",
         "cta": "Get Desktop License Now",
         "f1": "All 50+ PDF & image tools included",
@@ -229,11 +229,11 @@
             "f3": "Web Ready"
         },
         "passport-photo": {
-            "h1": "Passport Photo Maker",
-            "p1": "Create biometric passport photos for any country.",
-            "f1": "Auto-Crop",
-            "f2": "Standard Sizes",
-            "f3": "Print Ready"
+            "h1": "Passport Photo Maker - 21 Countries",
+            "p1": "Create compliant passport and ID photos for US, UK, EU, Japan, China, India, Canada, Brazil, Germany, France, Italy, Spain, and more. Auto-size adjustment to official specifications.",
+            "f1": "21 Countries Supported",
+            "f2": "Official Dimensions",
+            "f3": "Print Ready (300 DPI)"
         },
         "grayscale-pdf": {
             "h1": "Grayscale PDF",
@@ -655,8 +655,8 @@
             "desc": "Reduce size."
         },
         "passport-photo": {
-            "title": "Passport Photo",
-            "desc": "Make ID photos."
+            "title": "Passport Photo (21)",
+            "desc": "21 countries supported."
         },
         "generate-icons": {
             "title": "Generate Icons",
@@ -787,8 +787,8 @@
             "desc": "Convert to JPG."
         },
         "passport-photo-maker": {
-            "title": "Passport Photo",
-            "desc": "Make ID photos."
+            "title": "Passport Photo (21 Countries)",
+            "desc": "US, UK, EU, JP, CN & more."
         },
         "add-watermark": {
             "title": "Watermark Image",
@@ -899,12 +899,266 @@
         "subtitle": "Join professionals who process sensitive documents offline. Get exclusive discount + free PDF workflow guide.",
         "benefit1": "Early access to new tools before public release",
         "benefit2": "Free 50-page PDF workflow optimization guide ($29 value)",
-        "benefit3": "20% off coupon code ($24 savings on your first year)",
+        "benefit3": "20% off coupon code ($5 savings on your first year)",
         "email_placeholder": "Enter your email address",
         "submit_button": "Get My 20% Off Code",
         "submitting": "Sending...",
         "privacy_note": "We respect your privacy. Unsubscribe anytime. No spam, ever.",
         "success_title": "Check Your Email!",
         "success_message": "We've sent your 20% discount code and the free PDF guide to your inbox."
+    },
+    "seo": {
+        "merge-pdf": {
+            "title": "Merge PDF Files Online - Free & Secure",
+            "description": "Combine multiple PDF files into one document instantly. 100% offline processing available."
+        },
+        "split-pdf": {
+            "title": "Split PDF - Extract Pages Free",
+            "description": "Extract specific pages from PDF files securely. No upload required with desktop app."
+        },
+        "compress-pdf": {
+            "title": "Compress PDF - Reduce File Size",
+            "description": "Reduce PDF file size for email and upload limits. Offline compression available."
+        },
+        "protect-pdf": {
+            "title": "Protect PDF - Password Encrypt Files",
+            "description": "Secure your PDF documents with AES-256 encryption. Add password protection offline."
+        },
+        "unlock-pdf": {
+            "title": "Unlock PDF - Remove Password Protection",
+            "description": "Remove password restrictions from PDF files securely. 100% offline processing."
+        },
+        "repair-pdf": {
+            "title": "Repair PDF - Fix Corrupted Files",
+            "description": "Recover and repair damaged or corrupted PDF documents. Restore access to your files."
+        },
+        "grayscale-pdf": {
+            "title": "Convert PDF to Grayscale - Black & White",
+            "description": "Convert colored PDFs to grayscale for printing. Save ink and reduce file size."
+        },
+        "pdf-to-word": {
+            "title": "PDF to Word Converter - Free Online",
+            "description": "Convert PDF files to editable Word documents. Preserve formatting with OCR."
+        },
+        "ocr-pdf": {
+            "title": "OCR PDF - Make Scanned PDFs Searchable",
+            "description": "Extract text from scanned PDFs with optical character recognition technology."
+        },
+        "pdf-redactor": {
+            "title": "PDF Redaction Tool - Remove Sensitive Text",
+            "description": "Permanently remove sensitive information from PDF documents securely."
+        },
+        "pdf-signer": {
+            "title": "Digital PDF Signature - Sign Documents",
+            "description": "Sign PDFs with digital certificates. PAdES compliant electronic signatures."
+        },
+        "watermark-pdf": {
+            "title": "Add Watermark to PDF - Text & Logo",
+            "description": "Stamp custom text or logo watermarks on PDF documents. Protect your content."
+        },
+        "passport-photo": {
+            "title": "Passport Photo Maker - 21 Countries (US, UK, EU, Japan)",
+            "description": "Create compliant passport photos for US, UK, EU, Japan, China, India, Canada, Brazil, and 13 more countries. Official dimensions, 300 DPI."
+        },
+        "remove-image-background": {
+            "title": "Remove Image Background - AI Powered",
+            "description": "Remove backgrounds from photos instantly with AI. 100% offline processing."
+        },
+        "upscale-image": {
+            "title": "AI Image Upscaler - Enhance Resolution",
+            "description": "Increase image resolution with AI. Upscale 2x or 4x while preserving quality."
+        },
+        "compress-image": {
+            "title": "Compress Images - Reduce File Size",
+            "description": "Reduce image file size without losing quality. Web-optimized compression."
+        },
+        "generate-icons": {
+            "title": "App Icon Generator - All Sizes for iOS, Android & Web",
+            "description": "Generate app icons in all required sizes for iOS, Android, macOS, Windows, and web favicons from a single image."
+        },
+        "organize-pdf": {
+            "title": "Organize PDF Pages - Rearrange & Reorder",
+            "description": "Organize and rearrange PDF pages in any order. Drag and drop interface for easy page management."
+        },
+        "rotate-pdf": {
+            "title": "Rotate PDF Pages - Free Online Tool",
+            "description": "Rotate PDF pages by 90, 180, or 270 degrees. Fix orientation of scanned documents."
+        },
+        "crop-pdf": {
+            "title": "Crop PDF - Trim PDF Margins & Pages",
+            "description": "Crop PDF pages to specific dimensions. Remove unwanted margins and whitespace."
+        },
+        "pdf-to-images": {
+            "title": "PDF to Images - Convert PDF Pages to JPG/PNG",
+            "description": "Convert PDF pages to high-quality images. Export as JPG or PNG format."
+        },
+        "images-to-pdf": {
+            "title": "Images to PDF - Combine Pictures into PDF",
+            "description": "Combine multiple images into a single PDF document. Supports JPG, PNG, WebP."
+        },
+        "extract-tables": {
+            "title": "Extract Tables from PDF - Export to Excel/CSV",
+            "description": "Extract tables from PDF documents to Excel or CSV format. Preserve table structure."
+        },
+        "convert-image": {
+            "title": "Convert Image Format - Free Online Converter",
+            "description": "Convert images between formats. Support for JPG, PNG, WebP, GIF, and more."
+        },
+        "jpg-to-png": {
+            "title": "JPG to PNG Converter - Free Online",
+            "description": "Convert JPG images to PNG format with transparency support. High quality conversion."
+        },
+        "png-to-jpg": {
+            "title": "PNG to JPG Converter - Free Online",
+            "description": "Convert PNG images to JPG format. Reduce file size while maintaining quality."
+        },
+        "resize-image": {
+            "title": "Resize Image - Change Dimensions Online",
+            "description": "Resize images to specific dimensions or percentage. Maintain aspect ratio option."
+        },
+        "crop-image": {
+            "title": "Crop Image Online - Free Photo Cropper",
+            "description": "Crop images to exact dimensions or aspect ratios. Simple drag-and-drop interface."
+        },
+        "watermark-image": {
+            "title": "Add Watermark to Image - Text & Logo",
+            "description": "Add text or logo watermarks to your photos. Protect your images from unauthorized use."
+        },
+        "extract-palette": {
+            "title": "Extract Color Palette from Image",
+            "description": "Extract dominant colors from any image. Get hex codes for design projects."
+        },
+        "heic-to-jpg": {
+            "title": "HEIC to JPG Converter - iPhone Photos",
+            "description": "Convert iPhone HEIC photos to standard JPG format. Batch conversion supported."
+        },
+        "pdf-diff": {
+            "title": "PDF Compare - Visual Diff Tool",
+            "description": "Compare two PDFs visually to spot differences. Highlight changes between versions."
+        },
+        "booklet-maker": {
+            "title": "PDF Booklet Maker - Print Ready Layouts",
+            "description": "Create printable booklets from PDF. Reorder pages for saddle-stitch binding."
+        },
+        "pdf-scrubber": {
+            "title": "PDF Privacy Scrubber - Remove Metadata",
+            "description": "Remove hidden metadata and editing history from PDFs. Protect your privacy."
+        },
+        "pdf-web-optimize": {
+            "title": "Optimize PDF for Web - Fast Loading",
+            "description": "Linearize PDFs for fast web viewing. Optimize for online distribution."
+        },
+        "word-to-pdf": {
+            "title": "Word to PDF Converter - DOCX to PDF",
+            "description": "Convert Word documents to PDF format. Preserve formatting and layout."
+        },
+        "powerpoint-to-pdf": {
+            "title": "PowerPoint to PDF - PPTX Converter",
+            "description": "Convert PowerPoint presentations to PDF. Keep slides and animations intact."
+        },
+        "excel-to-pdf": {
+            "title": "Excel to PDF Converter - XLSX to PDF",
+            "description": "Convert Excel spreadsheets to PDF format. Maintain formatting and formulas display."
+        },
+        "html-to-pdf": {
+            "title": "HTML to PDF Converter - Web Page to PDF",
+            "description": "Convert HTML files and web pages to PDF documents. Preserve styling and images."
+        },
+        "pdf-to-pdfa": {
+            "title": "PDF to PDF/A Converter - Archival Format",
+            "description": "Convert PDFs to PDF/A archival format for long-term preservation and compliance."
+        },
+        "delete-pages": {
+            "title": "Delete PDF Pages - Remove Pages Online",
+            "description": "Remove specific pages from PDF documents. Quick and easy page deletion."
+        },
+        "page-numbers": {
+            "title": "Add Page Numbers to PDF - Free Tool",
+            "description": "Add page numbers to PDF documents. Customize position, format, and style."
+        },
+        "extract-text": {
+            "title": "Extract Text from PDF - Copy Text Online",
+            "description": "Extract all text content from PDF files. Copy text for editing or analysis."
+        },
+        "remove-metadata": {
+            "title": "Remove PDF Metadata - Privacy Tool",
+            "description": "Remove metadata and hidden information from PDF files. Protect sensitive data."
+        },
+        "extract-metadata": {
+            "title": "Extract PDF Metadata - View Document Info",
+            "description": "Extract and view PDF metadata including title, author, creation date, and more."
+        },
+        "extract-form-data": {
+            "title": "Extract PDF Form Data - Export to CSV",
+            "description": "Extract form field data from PDF forms. Export to CSV or Excel format."
+        },
+        "reorder-pages": {
+            "title": "Reorder PDF Pages - Drag & Drop",
+            "description": "Reorder PDF pages using drag-and-drop. Rearrange documents with ease."
+        },
+        "flatten-pdf": {
+            "title": "Flatten PDF - Merge Layers & Forms",
+            "description": "Flatten form fields and annotations in PDF documents. Create non-editable copies."
+        },
+        "photo-studio": {
+            "title": "Photo Studio - Online Photo Editor",
+            "description": "Advanced photo editor with layers, filters, and text. Edit images professionally."
+        },
+        "grid-split": {
+            "title": "Split Image into Grid - Photo Grid Maker",
+            "description": "Split images into a grid of smaller images. Perfect for Instagram and social media."
+        },
+        "remove-image-metadata": {
+            "title": "Remove Image Metadata - EXIF Remover",
+            "description": "Remove EXIF and other metadata from images. Protect your privacy when sharing photos."
+        },
+        "pdf-to-jpg": {
+            "title": "PDF to JPG Converter - Free Online",
+            "description": "Convert PDF pages to high-quality JPG images. Fast and secure conversion."
+        },
+        "pdf-to-png": {
+            "title": "PDF to PNG Converter - Free Online",
+            "description": "Convert PDF pages to PNG images with transparency. High resolution output."
+        },
+        "pdf-to-csv": {
+            "title": "PDF to CSV Converter - Extract Data",
+            "description": "Extract tables from PDF and convert to CSV format. Perfect for data analysis."
+        },
+        "pdf-to-excel": {
+            "title": "PDF to Excel Converter - Free Online",
+            "description": "Convert PDF tables to Excel spreadsheets. Preserve table structure and formatting."
+        },
+        "csv-to-pdf": {
+            "title": "CSV to PDF Converter - Create Reports",
+            "description": "Convert CSV files to formatted PDF documents. Create professional reports."
+        },
+        "txt-to-pdf": {
+            "title": "TXT to PDF Converter - Text to PDF",
+            "description": "Convert plain text files to PDF documents. Simple and fast conversion."
+        },
+        "tiff-to-pdf": {
+            "title": "TIFF to PDF Converter - Multi-page Support",
+            "description": "Convert TIFF images to PDF documents. Supports multi-page TIFF files."
+        },
+        "rtf-to-pdf": {
+            "title": "RTF to PDF Converter - Rich Text to PDF",
+            "description": "Convert Rich Text Format files to PDF. Preserve formatting and styling."
+        },
+        "xml-to-pdf": {
+            "title": "XML to PDF Converter - Format XML Data",
+            "description": "Convert XML files to readable PDF documents. Structure your data beautifully."
+        },
+        "ppt-to-pdf": {
+            "title": "PPT to PDF Converter - Free Online",
+            "description": "Convert PowerPoint PPT and PPTX to PDF format. Fast and secure."
+        },
+        "extract-images-from-pdf": {
+            "title": "Extract Images from PDF - Save All Images",
+            "description": "Extract all images from PDF files. Save embedded images in original quality."
+        },
+        "pdf-to-xls": {
+            "title": "PDF to XLS Converter - Free Online",
+            "description": "Convert PDF tables to XLS spreadsheet format. Extract data from PDF files."
+        }
     }
 }
