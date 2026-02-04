@@ -25,32 +25,33 @@ function checkRateLimit(ip: string): boolean {
 
 // Detect license provider based on key format
 function detectProvider(licenseKey: string): 'polar' | 'lemonsqueezy' {
-  // Polar license keys typically start with specific prefixes or have UUIDs
-  // LemonSqueezy keys have a specific format like: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-  // Adjust this logic based on actual key formats from each provider
-  if (licenseKey.startsWith('polar_') || licenseKey.startsWith('pol_')) {
+  // Polar license keys are UUIDs, optionally with custom prefix
+  // LemonSqueezy subscription IDs are numeric
+  // Check for UUID pattern (with or without prefix)
+  const uuidPattern = /^([A-Z0-9_]+-)?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
+  if (uuidPattern.test(licenseKey) || licenseKey.startsWith('POLAR_') || licenseKey.startsWith('polar_')) {
     return 'polar';
   }
   return 'lemonsqueezy';
 }
 
 async function activateWithPolar(licenseKey: string, instanceName: string) {
-  const apiKey = process.env.POLAR_ACCESS_TOKEN;
-  if (!apiKey) {
-    throw new Error('POLAR_ACCESS_TOKEN not configured');
+  const organizationId = process.env.POLAR_ORGANIZATION_ID;
+  if (!organizationId) {
+    throw new Error('POLAR_ORGANIZATION_ID not configured');
   }
 
-  // Polar uses a different API structure for license validation
-  // Check their API docs for exact endpoints
-  const response = await fetch('https://api.polar.sh/v1/licenses/activate', {
+  // Polar customer-portal endpoints don't require authentication
+  // They are safe to use from client-side/desktop apps
+  const response = await fetch('https://api.polar.sh/v1/customer-portal/license-keys/activate', {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       key: licenseKey,
+      organization_id: organizationId,
       label: instanceName || 'Desktop App',
     }),
   });
@@ -145,16 +146,22 @@ export async function POST(request: NextRequest) {
     });
 
     // Return normalized response
+    // Polar returns: { id, license_key_id, label, license_key: { status, expires_at, ... } }
+    // LemonSqueezy returns: { activated, license_key: { status, ... }, instance: { id } }
+    const isPolar = provider === 'polar';
+
     return NextResponse.json({
       success: true,
-      activated: data.activated ?? data.success ?? true,
+      activated: isPolar ? true : (data.activated ?? data.success ?? true),
       provider,
       license_key: {
         status: data.license_key?.status ?? data.status ?? 'active',
         activation_usage: data.license_key?.activation_usage ?? data.activations_count,
         activation_limit: data.license_key?.activation_limit ?? data.activations_limit,
+        expires_at: data.license_key?.expires_at,
       },
-      instance: data.instance ?? data.activation,
+      instance: isPolar ? { id: data.id, label: data.label } : (data.instance ?? data.activation),
+      activation_id: isPolar ? data.id : undefined, // Polar activation ID for validation
       meta: data.meta,
     });
 

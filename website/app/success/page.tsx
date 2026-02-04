@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, Download, Mail, ArrowRight } from "lucide-react";
+import { CheckCircle, Download, Mail, ArrowRight, ExternalLink, Key } from "lucide-react";
 import { Suspense } from "react";
 
 function SuccessContent() {
@@ -24,29 +24,45 @@ function SuccessContent() {
 
         {/* Subtitle */}
         <p className="text-muted-foreground text-lg mb-8">
-          Thank you for your purchase. Your license key will be sent to your email shortly.
+          Thank you for your purchase. Your license key has been sent to your email.
         </p>
 
         {/* Info Box */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-8 text-left">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6 text-left">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Mail className="w-5 h-5 text-primary" />
-            What happens next?
+            <Key className="w-5 h-5 text-primary" />
+            Getting Started
           </h3>
           <ol className="space-y-3 text-sm text-muted-foreground">
             <li className="flex gap-3">
               <span className="text-primary font-bold">1.</span>
-              Check your email for the license key (within 5 minutes)
+              Check your email for your license key (check spam folder too)
             </li>
             <li className="flex gap-3">
               <span className="text-primary font-bold">2.</span>
-              Download the desktop app if you haven&apos;t already
+              Download and install the desktop app
             </li>
             <li className="flex gap-3">
               <span className="text-primary font-bold">3.</span>
               Open the app and enter your license key to activate
             </li>
           </ol>
+        </div>
+
+        {/* Polar Customer Portal Link */}
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-8">
+          <p className="text-sm text-muted-foreground mb-3">
+            Can&apos;t find your email? Access your license key anytime:
+          </p>
+          <a
+            href="https://polar.sh/purchases"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            View on Polar Customer Portal
+          </a>
         </div>
 
         {/* Checkout ID */}
@@ -59,7 +75,7 @@ function SuccessContent() {
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/"
+            href="/#download"
             className="px-6 py-3 bg-primary text-black rounded-xl font-semibold hover:bg-cyan-400 transition-colors flex items-center justify-center gap-2"
           >
             <Download className="w-5 h-5" />

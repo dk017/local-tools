@@ -5,6 +5,7 @@ import hashlib
 import platform
 import urllib.request
 import urllib.error
+import re
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
@@ -13,11 +14,23 @@ logger = logging.getLogger(__name__)
 # Constants
 LEMONSQUEEZY_API_URL = "https://api.lemonsqueezy.com/v1"
 LEMONSQUEEZY_API_KEY = os.environ.get("LEMONSQUEEZY_API_KEY", "")
+
+POLAR_API_URL = "https://api.polar.sh/v1/customer-portal"
+POLAR_ORGANIZATION_ID = os.environ.get("POLAR_ORGANIZATION_ID", "")
+
 GRACE_PERIOD_DAYS = 7  # 7-day grace period for expired subscriptions
 
 # Local storage for license
 APP_DIR = os.path.join(os.path.expanduser("~"), ".offline-tools")
 LICENSE_FILE = os.path.join(APP_DIR, "license.json")
+
+def _detect_provider(license_key: str) -> str:
+    """Detect license provider based on key format."""
+    # Polar keys are UUIDs (with optional prefix)
+    uuid_pattern = r'^([A-Z0-9_]+-)?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$'
+    if re.match(uuid_pattern, license_key) or license_key.upper().startswith('POLAR_'):
+        return 'polar'
+    return 'lemonsqueezy'
 
 def _get_instance_id():
     """Generates a stable identifier for this machine."""
@@ -52,12 +65,28 @@ def check_local_license():
         with open(LICENSE_FILE, "r") as f:
             data = json.load(f)
 
-        # Check if it's a subscription (has expires_at) or legacy license
+        provider = data.get("provider", "lemonsqueezy")
         expires_at_str = data.get("expires_at")
         subscription_id = data.get("subscription_id")
+        activation_id = data.get("activation_id")
 
-        if subscription_id and expires_at_str:
-            # Subscription-based license
+        # Polar lifetime licenses (no expiry)
+        if provider == "polar" and not expires_at_str:
+            if data.get("status") == "active":
+                return {
+                    "valid": True,
+                    "data": data,
+                    "status": "active",
+                    "provider": "polar",
+                    "activation_id": activation_id,
+                    "in_grace_period": False,
+                    "lifetime": True
+                }
+            else:
+                return {"valid": False, "data": data, "status": "inactive", "provider": "polar"}
+
+        # License with expiry (subscription or time-limited)
+        if expires_at_str:
             try:
                 expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
                 now = datetime.now(expires_at.tzinfo) if expires_at.tzinfo else datetime.now()
@@ -71,6 +100,8 @@ def check_local_license():
                         "status": "active",
                         "expires_at": expires_at_str,
                         "subscription_id": subscription_id,
+                        "activation_id": activation_id,
+                        "provider": provider,
                         "in_grace_period": False
                     }
                 else:
@@ -84,6 +115,8 @@ def check_local_license():
                             "status": "grace_period",
                             "expires_at": expires_at_str,
                             "subscription_id": subscription_id,
+                            "activation_id": activation_id,
+                            "provider": provider,
                             "in_grace_period": True,
                             "grace_period_ends": grace_period_end.isoformat()
                         }
@@ -95,6 +128,8 @@ def check_local_license():
                             "status": "expired",
                             "expires_at": expires_at_str,
                             "subscription_id": subscription_id,
+                            "activation_id": activation_id,
+                            "provider": provider,
                             "in_grace_period": False
                         }
             except (ValueError, TypeError) as e:
@@ -154,10 +189,101 @@ def validate_subscription_with_api(subscription_id: str) -> Optional[Dict[str, A
         logger.error(f"Error validating subscription: {e}")
         return None
 
+def _activate_with_polar(license_key: str, instance_name: str) -> Dict[str, Any]:
+    """Activate license key with Polar API."""
+    if not POLAR_ORGANIZATION_ID:
+        return {"success": False, "error": "POLAR_ORGANIZATION_ID not configured"}
+
+    try:
+        url = f"{POLAR_API_URL}/license-keys/activate"
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        data = json.dumps({
+            "key": license_key,
+            "organization_id": POLAR_ORGANIZATION_ID,
+            "label": instance_name or platform.node()
+        }).encode("utf-8")
+
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+
+        with urllib.request.urlopen(req) as response:
+            resp_body = response.read().decode("utf-8")
+            resp_json = json.loads(resp_body)
+
+            # Polar returns: { id, license_key_id, label, license_key: { status, expires_at, ... } }
+            activation_id = resp_json.get("id")
+            license_data = resp_json.get("license_key", {})
+
+            return {
+                "success": True,
+                "activation_id": activation_id,
+                "status": license_data.get("status", "granted"),
+                "expires_at": license_data.get("expires_at"),
+                "activation_limit": license_data.get("limit"),
+                "activation_usage": license_data.get("usage"),
+            }
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else str(e)
+        logger.error(f"Polar activation error: {e.code} - {error_body}")
+        if e.code == 403:
+            return {"success": False, "error": "Activation limit reached or not supported"}
+        elif e.code == 404:
+            return {"success": False, "error": "License key not found"}
+        return {"success": False, "error": f"Activation failed: {error_body}"}
+    except Exception as e:
+        logger.error(f"Polar activation exception: {e}")
+        return {"success": False, "error": str(e)}
+
+def _validate_with_polar(license_key: str, activation_id: str = None) -> Dict[str, Any]:
+    """Validate license key with Polar API."""
+    if not POLAR_ORGANIZATION_ID:
+        return {"success": False, "error": "POLAR_ORGANIZATION_ID not configured"}
+
+    try:
+        url = f"{POLAR_API_URL}/license-keys/validate"
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "key": license_key,
+            "organization_id": POLAR_ORGANIZATION_ID,
+        }
+        if activation_id:
+            payload["activation_id"] = activation_id
+
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+
+        with urllib.request.urlopen(req) as response:
+            resp_body = response.read().decode("utf-8")
+            resp_json = json.loads(resp_body)
+
+            # Polar returns license key details
+            return {
+                "success": True,
+                "valid": True,
+                "status": resp_json.get("status", "granted"),
+                "expires_at": resp_json.get("expires_at"),
+                "activation_limit": resp_json.get("limit"),
+                "activation_usage": resp_json.get("usage"),
+            }
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else str(e)
+        logger.error(f"Polar validation error: {e.code} - {error_body}")
+        return {"success": False, "valid": False, "error": f"Validation failed: {error_body}"}
+    except Exception as e:
+        logger.error(f"Polar validation exception: {e}")
+        return {"success": False, "valid": False, "error": str(e)}
+
 def activate_license(license_key: str, instance_name: str = None):
     """
-    Activates the license key with LemonSqueezy.
-    For subscriptions, license_key should be the subscription_id.
+    Activates the license key with the appropriate provider (Polar or LemonSqueezy).
+    Auto-detects provider based on key format.
     """
     init_licensing()
     instance_id = _get_instance_id()
@@ -167,33 +293,70 @@ def activate_license(license_key: str, instance_name: str = None):
     if not license_key:
         return {"success": False, "error": "No license key provided"}
 
+    # Detect provider
+    provider = _detect_provider(license_key)
+    logger.info(f"Detected license provider: {provider}")
+
     # MOCK MODE - Only available when explicitly enabled via environment variable
-    # This prevents accidental mock activation in production when API key is missing
-    if not LEMONSQUEEZY_API_KEY:
-        # Check if mock mode is explicitly enabled for development
-        if os.environ.get("DEV_MOCK_LICENSE") == "true":
-            logger.warning("DEV: Mock license activation enabled via DEV_MOCK_LICENSE")
-            if license_key.startswith("test_"):
-                # Mock subscription activation
-                expires_at = (datetime.now() + timedelta(days=365)).isoformat()
-                mock_data = {
-                    "status": "active",
-                    "key": license_key,
-                    "subscription_id": license_key,
-                    "instance_id": instance_id,
-                    "activated_at": datetime.now().isoformat(),
-                    "expires_at": expires_at,
-                    "type": "subscription"
-                }
-                with open(LICENSE_FILE, "w") as f:
-                    json.dump(mock_data, f)
-                return {"success": True, "message": "Mock activation successful", "data": mock_data}
-            else:
-                return {"success": False, "error": "Mock Activation Failed: Key must start with 'test_'"}
+    if os.environ.get("DEV_MOCK_LICENSE") == "true":
+        logger.warning("DEV: Mock license activation enabled via DEV_MOCK_LICENSE")
+        if license_key.startswith("test_"):
+            expires_at = (datetime.now() + timedelta(days=365)).isoformat()
+            mock_data = {
+                "status": "active",
+                "key": license_key,
+                "subscription_id": license_key,
+                "instance_id": instance_id,
+                "activated_at": datetime.now().isoformat(),
+                "expires_at": expires_at,
+                "type": "subscription",
+                "provider": "mock"
+            }
+            with open(LICENSE_FILE, "w") as f:
+                json.dump(mock_data, f)
+            return {"success": True, "message": "Mock activation successful", "data": mock_data}
         else:
-            # Production: API key is required
-            logger.error("License activation failed: LEMONSQUEEZY_API_KEY is not configured")
-            return {"success": False, "error": "License service is not configured. Please contact support."}
+            return {"success": False, "error": "Mock Activation Failed: Key must start with 'test_'"}
+
+    # POLAR ACTIVATION
+    if provider == 'polar':
+        if not POLAR_ORGANIZATION_ID:
+            return {"success": False, "error": "Polar license service is not configured. Please contact support."}
+
+        result = _activate_with_polar(license_key, instance_name)
+        if result.get("success"):
+            # Parse expiry date
+            expires_at = result.get("expires_at")
+            if expires_at:
+                try:
+                    expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                    expires_at_str = expires_dt.isoformat()
+                except:
+                    expires_at_str = None
+            else:
+                expires_at_str = None  # Polar lifetime licenses may not have expiry
+
+            license_data = {
+                "status": "active",
+                "key": license_key,
+                "activation_id": result.get("activation_id"),
+                "instance_id": instance_id,
+                "activated_at": datetime.now().isoformat(),
+                "expires_at": expires_at_str,
+                "type": "license",
+                "provider": "polar",
+                "activation_limit": result.get("activation_limit"),
+                "activation_usage": result.get("activation_usage"),
+            }
+            with open(LICENSE_FILE, "w") as f:
+                json.dump(license_data, f)
+            return {"success": True, "message": "License activated successfully", "data": license_data}
+        else:
+            return result
+
+    # LEMONSQUEEZY ACTIVATION
+    if not LEMONSQUEEZY_API_KEY:
+        return {"success": False, "error": "License service is not configured. Please contact support."}
 
     # REAL ACTIVATION - For subscriptions, validate with API
     try:
@@ -226,6 +389,7 @@ def activate_license(license_key: str, instance_name: str = None):
                     "activated_at": datetime.now().isoformat(),
                     "expires_at": expires_at_str,
                     "type": "subscription",
+                    "provider": "lemonsqueezy",
                     "customer_id": subscription_data.get("customer_id")
                 }
                 with open(LICENSE_FILE, "w") as f:

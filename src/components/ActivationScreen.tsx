@@ -48,7 +48,7 @@ export default function ActivationScreen({
       } else {
         setStatus("error");
         setErrorMessage(
-          result.error || "Activation failed. Please check your subscription ID."
+          result.error || "Activation failed. Please check your license key."
         );
       }
     } catch (e: any) {
@@ -79,12 +79,12 @@ export default function ActivationScreen({
           </p>
           <div className="mb-6 px-6 py-4 bg-primary/10 border border-primary/20 rounded-xl">
             <div className="flex items-baseline justify-center gap-2 mb-1">
-              <span className="text-4xl font-bold text-white">$59</span>
+              <span className="text-4xl font-bold text-white">$27</span>
               <span className="text-lg text-white/70">/year</span>
-              <span className="ml-2 text-white/50 line-through text-sm">$120</span>
+              <span className="ml-2 text-white/50 line-through text-sm">$49</span>
             </div>
             <p className="text-xs text-white/60 text-center">
-              50% off launch price • Less than $5/month
+              Launch price • Just $2.25/month
             </p>
           </div>
 
@@ -97,7 +97,7 @@ export default function ActivationScreen({
                 type="text"
                 value={licenseKey}
                 onChange={(e) => setLicenseKey(e.target.value)}
-                placeholder="Enter subscription ID"
+                placeholder="Enter your license key"
                 className="block w-full pl-10 pr-3 py-3 border border-white/10 rounded-xl leading-5 bg-black/20 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 sm:text-sm transition-all shadow-inner"
               />
             </div>
@@ -137,17 +137,17 @@ export default function ActivationScreen({
 
             <div className="mt-6 pt-4 border-t border-white/10 space-y-2">
               <p className="text-xs text-white/40">
-                Don't have a subscription yet?
+                Don't have a license yet?
               </p>
               <button
                 onClick={() => {
                   // Open pricing page in default browser
                   const { open } = require('@tauri-apps/plugin-opener');
-                  open(process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL || 'https://yourdomain.com/#pricing');
+                  open('https://localtools.pro/#pricing');
                 }}
                 className="w-full py-2.5 px-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-medium text-white transition-all"
               >
-                Get Your Subscription - $59/year
+                Get Your License - $27/year
               </button>
               <p className="text-xs text-white/30 text-center">
                 Cancel anytime • 30-day money back guarantee

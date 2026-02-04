@@ -25,28 +25,32 @@ function checkRateLimit(ip: string): boolean {
 
 // Detect license provider based on key format
 function detectProvider(licenseKey: string): 'polar' | 'lemonsqueezy' {
-  if (licenseKey.startsWith('polar_') || licenseKey.startsWith('pol_')) {
+  // Polar license keys are UUIDs, optionally with custom prefix
+  // LemonSqueezy subscription IDs are numeric
+  const uuidPattern = /^([A-Z0-9_]+-)?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
+  if (uuidPattern.test(licenseKey) || licenseKey.startsWith('POLAR_') || licenseKey.startsWith('polar_')) {
     return 'polar';
   }
   return 'lemonsqueezy';
 }
 
-async function validateWithPolar(licenseKey: string, instanceId?: string) {
-  const apiKey = process.env.POLAR_ACCESS_TOKEN;
-  if (!apiKey) {
-    throw new Error('POLAR_ACCESS_TOKEN not configured');
+async function validateWithPolar(licenseKey: string, activationId?: string) {
+  const organizationId = process.env.POLAR_ORGANIZATION_ID;
+  if (!organizationId) {
+    throw new Error('POLAR_ORGANIZATION_ID not configured');
   }
 
-  const response = await fetch('https://api.polar.sh/v1/licenses/validate', {
+  // Polar customer-portal endpoints don't require authentication
+  const response = await fetch('https://api.polar.sh/v1/customer-portal/license-keys/validate', {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       key: licenseKey,
-      activation_id: instanceId || undefined,
+      organization_id: organizationId,
+      activation_id: activationId || undefined,
     }),
   });
 
@@ -90,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     const body = await request.json();
-    const { license_key, instance_id, provider: explicitProvider } = body;
+    const { license_key, instance_id, activation_id, provider: explicitProvider } = body;
 
     if (!license_key || typeof license_key !== 'string') {
       return NextResponse.json(
@@ -106,7 +110,8 @@ export async function POST(request: NextRequest) {
 
     try {
       if (provider === 'polar') {
-        response = await validateWithPolar(license_key, instance_id);
+        // Polar uses activation_id for validation
+        response = await validateWithPolar(license_key, activation_id);
       } else {
         response = await validateWithLemonSqueezy(license_key, instance_id);
       }
