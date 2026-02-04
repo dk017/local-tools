@@ -7,12 +7,13 @@ import { useTranslations } from "next-intl";
 export function Pricing() {
   const t = useTranslations("Pricing");
 
-  // Get checkout URL - Polar.sh checkout via API route
-  // Format: /api/checkout?products=PRODUCT_ID
+  // Get checkout URL - prefer direct Polar checkout link, fallback to API route
+  const polarCheckoutUrl = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL;
   const polarProductId = process.env.NEXT_PUBLIC_POLAR_PRODUCT_ID;
-  const checkoutUrl = polarProductId
-    ? `/api/checkout?products=${polarProductId}`
-    : (process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL || "#");
+  const checkoutUrl = polarCheckoutUrl
+    || (polarProductId ? `/api/checkout?products=${polarProductId}` : null)
+    || process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL
+    || "#";
 
   return (
     <section className="py-20 px-6 max-w-7xl mx-auto" id="pricing">
