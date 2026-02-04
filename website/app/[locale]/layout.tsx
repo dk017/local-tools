@@ -9,8 +9,27 @@ import { getMessages } from 'next-intl/server';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Local Tools - AI-Powered Privacy Toolkit",
-  description: "The first offline AI toolkit. Merge, split, and edit PDFs with neural processing on your device.",
+  metadataBase: new URL("https://localtools.pro"),
+  title: {
+    default: "Local Tools - AI-Powered Privacy Toolkit",
+    template: "%s | Local Tools",
+  },
+  description: "The first offline AI toolkit. Merge, split, and edit PDFs with neural processing on your device. 50+ tools, 100% offline, zero cloud uploads.",
+  keywords: [
+    "offline PDF tools",
+    "PDF editor offline",
+    "merge PDF",
+    "split PDF",
+    "compress PDF",
+    "PDF to Word",
+    "image background remover",
+    "privacy PDF tools",
+    "local PDF processing",
+    "no upload PDF tools",
+  ],
+  authors: [{ name: "Local Tools" }],
+  creator: "Local Tools",
+  publisher: "Local Tools",
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -24,14 +43,44 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Local Tools - AI-Powered Privacy Toolkit",
-    description: "The first offline AI toolkit. Merge, split, and edit PDFs with neural processing on your device.",
+    description: "The first offline AI toolkit. Merge, split, and edit PDFs with neural processing on your device. 50+ tools, 100% offline.",
+    url: "https://localtools.pro",
     siteName: "Local Tools",
     type: "website",
+    locale: "en_US",
+    // TODO: Add OG image when created
+    // Place og-image.png (1200x630) in website/public/ then uncomment:
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Local Tools - Offline PDF & Image Processing Toolkit",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Local Tools - AI-Powered Privacy Toolkit",
     description: "The first offline AI toolkit. Merge, split, and edit PDFs with neural processing on your device.",
+    // TODO: Add Twitter image when OG image is created
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    // TODO: Add verification codes when setting up Search Console
+    // google: "your-google-verification-code",
+    // yandex: "your-yandex-verification-code",
   },
 };
 
