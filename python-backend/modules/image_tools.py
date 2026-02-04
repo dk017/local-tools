@@ -337,14 +337,30 @@ def create_passport_photos(payload):
     MM_TO_INCH = 0.0393701
     
     standards = {
-        "US": {"w_mm": 51, "h_mm": 51, "name": "US 2x2 inch"}, # 2x2 inches
-        "UK": {"w_mm": 35, "h_mm": 45, "name": "UK/EU 35x45mm"},
-        "EU": {"w_mm": 35, "h_mm": 45, "name": "UK/EU 35x45mm"},
+        # Americas
+        "US": {"w_mm": 51, "h_mm": 51, "name": "US 2x2 inch"},  # 2x2 inches
+        "CA": {"w_mm": 50, "h_mm": 70, "name": "Canada 50x70mm"},
+        "MX": {"w_mm": 35, "h_mm": 45, "name": "Mexico 35x45mm"},
+        "BR": {"w_mm": 50, "h_mm": 70, "name": "Brazil 50x70mm"},
+        # Europe
+        "UK": {"w_mm": 35, "h_mm": 45, "name": "UK 35x45mm"},
+        "EU": {"w_mm": 35, "h_mm": 45, "name": "EU 35x45mm"},
+        "DE": {"w_mm": 35, "h_mm": 45, "name": "Germany 35x45mm"},
+        "FR": {"w_mm": 35, "h_mm": 45, "name": "France 35x45mm"},
+        "IT": {"w_mm": 35, "h_mm": 45, "name": "Italy 35x45mm"},
+        "ES": {"w_mm": 30, "h_mm": 40, "name": "Spain 30x40mm"},
+        "RU": {"w_mm": 35, "h_mm": 45, "name": "Russia 35x45mm"},
+        # Asia-Pacific
         "AU": {"w_mm": 35, "h_mm": 45, "name": "Australia 35x45mm"},
         "JP": {"w_mm": 35, "h_mm": 45, "name": "Japan 35x45mm"},
         "CN": {"w_mm": 33, "h_mm": 48, "name": "China 33x48mm"},
         "IN": {"w_mm": 35, "h_mm": 45, "name": "India 35x45mm"},
-        "CA": {"w_mm": 50, "h_mm": 70, "name": "Canada 50x70mm"},
+        "KR": {"w_mm": 35, "h_mm": 45, "name": "South Korea 35x45mm"},
+        "SG": {"w_mm": 35, "h_mm": 45, "name": "Singapore 35x45mm"},
+        "ID": {"w_mm": 30, "h_mm": 40, "name": "Indonesia 30x40mm"},
+        "TH": {"w_mm": 35, "h_mm": 45, "name": "Thailand 35x45mm"},
+        "VN": {"w_mm": 40, "h_mm": 60, "name": "Vietnam 40x60mm"},
+        "PH": {"w_mm": 35, "h_mm": 45, "name": "Philippines 35x45mm"},
     }
     
     spec = standards.get(country, standards["US"])
