@@ -13,6 +13,9 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-52428800}
       - MAX_TOTAL_SIZE=${MAX_TOTAL_SIZE:-104857600}
+      # Polar.sh (Primary)
+      - POLAR_ORGANIZATION_ID=${POLAR_ORGANIZATION_ID}
+      # LemonSqueezy (Legacy)
       - LEMONSQUEEZY_API_KEY=${LEMONSQUEEZY_API_KEY}
       - BACKEND_URL=${BACKEND_URL:-http://backend:8000}
     tmpfs:
@@ -26,6 +29,10 @@ services:
       context: ./website
       dockerfile: Dockerfile
       args:
+        # Polar.sh (Primary)
+        - NEXT_PUBLIC_POLAR_CHECKOUT_URL=${NEXT_PUBLIC_POLAR_CHECKOUT_URL}
+        - NEXT_PUBLIC_POLAR_PRODUCT_ID=${NEXT_PUBLIC_POLAR_PRODUCT_ID}
+        # LemonSqueezy (Legacy fallback)
         - NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL=${NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL}
         - NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID=${NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID:-1167418}
     container_name: tools-frontend
@@ -36,6 +43,11 @@ services:
       - backend
     environment:
       - NODE_ENV=production
+      # Polar.sh (Primary)
+      - POLAR_ACCESS_TOKEN=${POLAR_ACCESS_TOKEN}
+      - POLAR_WEBHOOK_SECRET=${POLAR_WEBHOOK_SECRET}
+      - POLAR_ORGANIZATION_ID=${POLAR_ORGANIZATION_ID}
+      # LemonSqueezy (Legacy fallback)
       - NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL=${NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL}
       - NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID=${NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID:-1167418}
       - LEMONSQUEEZY_WEBHOOK_SECRET=${LEMONSQUEEZY_WEBHOOK_SECRET}
