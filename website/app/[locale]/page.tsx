@@ -21,7 +21,7 @@ const organizationSchema = {
   "description": "Privacy-first offline PDF and image processing tools for professionals.",
   "contactPoint": {
     "@type": "ContactPoint",
-    "email": "support@localtools.pro",
+    "url": "https://x.com/dk_r017",
     "contactType": "customer support"
   }
 };
@@ -107,7 +107,7 @@ const faqSchema = {
       "name": "How do I get support?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Email us at support@localtools.pro. Priority support is included with every license—we typically respond within 24 hours."
+        "text": "Contact us on X (Twitter) @dk_r017. Priority support is included with every license—we typically respond within 24 hours."
       }
     }
   ]
