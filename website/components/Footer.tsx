@@ -109,7 +109,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/#download"
+                  href="/download"
                   className="hover:text-primary transition-colors"
                 >
                   {t("download")}

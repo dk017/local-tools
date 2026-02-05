@@ -3,28 +3,39 @@ import { headers } from 'next/headers';
 
 // Detect license provider based on key format
 function detectProvider(licenseKey: string): 'polar' | 'lemonsqueezy' {
-  if (licenseKey.startsWith('polar_') || licenseKey.startsWith('pol_')) {
+  // Polar license keys are UUIDs, optionally with custom prefix
+  const uuidPattern = /^([A-Z0-9_]+-)?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
+  if (uuidPattern.test(licenseKey) || licenseKey.startsWith('POLAR_') || licenseKey.startsWith('polar_')) {
     return 'polar';
   }
   return 'lemonsqueezy';
 }
 
-async function deactivateWithPolar(licenseKey: string, instanceId: string) {
-  const apiKey = process.env.POLAR_ACCESS_TOKEN;
-  if (!apiKey) {
-    throw new Error('POLAR_ACCESS_TOKEN not configured');
+// Determine Polar API base URL (sandbox vs production)
+function getPolarApiBase(): string {
+  const isSandbox = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL?.includes('sandbox') ||
+                    process.env.POLAR_ACCESS_TOKEN?.startsWith('polar_oat_');
+  return isSandbox ? 'https://sandbox-api.polar.sh/v1' : 'https://api.polar.sh/v1';
+}
+
+async function deactivateWithPolar(licenseKey: string, activationId: string) {
+  const organizationId = process.env.POLAR_ORGANIZATION_ID;
+  if (!organizationId) {
+    throw new Error('POLAR_ORGANIZATION_ID not configured');
   }
 
-  const response = await fetch('https://api.polar.sh/v1/licenses/deactivate', {
+  // Polar customer-portal deactivate endpoint is public (no auth required)
+  const apiBase = getPolarApiBase();
+  const response = await fetch(`${apiBase}/customer-portal/license-keys/deactivate`, {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       key: licenseKey,
-      activation_id: instanceId,
+      organization_id: organizationId,
+      activation_id: activationId,
     }),
   });
 

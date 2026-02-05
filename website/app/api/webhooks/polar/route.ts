@@ -5,18 +5,27 @@ import crypto from "crypto";
  * Polar.sh Webhook Handler
  *
  * Handles subscription/order events from Polar:
- * - checkout.created
- * - checkout.updated
- * - subscription.created
- * - subscription.updated
- * - subscription.canceled
- * - order.created
+ * - checkout.created / checkout.updated
+ * - subscription.created / subscription.updated / subscription.canceled
+ * - order.created / order.paid
+ * - benefit.granted / benefit.revoked (License Keys!)
  *
  * Webhook URL: https://yourdomain.com/api/webhooks/polar
  * Configure this in Polar Dashboard → Settings → Webhooks
  */
 
 const POLAR_WEBHOOK_SECRET = process.env.POLAR_WEBHOOK_SECRET;
+const POLAR_ACCESS_TOKEN = process.env.POLAR_ACCESS_TOKEN;
+const POLAR_ORGANIZATION_ID = process.env.POLAR_ORGANIZATION_ID;
+
+// Determine if we're in sandbox mode
+const isSandbox =
+  process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL?.includes("sandbox") ||
+  process.env.POLAR_ACCESS_TOKEN?.startsWith("polar_oat_");
+
+const POLAR_API_BASE = isSandbox
+  ? "https://sandbox-api.polar.sh/v1"
+  : "https://api.polar.sh/v1";
 
 function verifyWebhookSignature(payload: string, signature: string): boolean {
   if (!POLAR_WEBHOOK_SECRET) {
@@ -72,9 +81,59 @@ async function updateSubscriptionInBackend(
   }
 }
 
+/**
+ * Fetch the actual license key from Polar API when benefit is granted
+ */
+async function fetchLicenseKeyForCustomer(
+  customerId: string,
+  benefitId: string
+): Promise<{ key: string; expires_at: string | null } | null> {
+  if (!POLAR_ACCESS_TOKEN || !POLAR_ORGANIZATION_ID) {
+    console.error("Missing Polar API credentials");
+    return null;
+  }
+
+  try {
+    const url = new URL(`${POLAR_API_BASE}/license-keys/`);
+    url.searchParams.set("organization_id", POLAR_ORGANIZATION_ID);
+    url.searchParams.set("customer_id", customerId);
+    url.searchParams.set("benefit_id", benefitId);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${POLAR_ACCESS_TOKEN}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch license keys: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const items = data.items || [];
+
+    if (items.length > 0) {
+      const licenseKey = items[0];
+      return {
+        key: licenseKey.key,
+        expires_at: licenseKey.expires_at,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching license key:", error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const signature = request.headers.get("webhook-signature") || request.headers.get("x-polar-signature");
+    const signature =
+      request.headers.get("webhook-signature") ||
+      request.headers.get("x-polar-signature");
     const rawBody = await request.text();
 
     if (!signature) {
@@ -105,19 +164,20 @@ export async function POST(request: NextRequest) {
         break;
       }
 
-      case "order.created": {
-        // One-time purchase completed
+      case "order.created":
+      case "order.paid": {
+        // Order created or payment confirmed
         const order = data;
         if (order) {
-          console.log("Order created:", {
+          console.log("Order event:", {
             id: order.id,
-            amount: order.amount,
+            status: order.status,
+            amount: order.amount || order.total_amount,
             currency: order.currency,
+            customer_id: order.customer_id,
             customer_email: order.customer?.email,
+            subscription_id: order.subscription_id,
           });
-
-          // For one-time purchases, you might generate a license key here
-          // or the license key might come from Polar's license key feature
         }
         break;
       }
@@ -140,6 +200,7 @@ export async function POST(request: NextRequest) {
             id: subscriptionId,
             status,
             ends_at: currentPeriodEnd,
+            customer_id: subscription.customer_id,
           });
         }
         break;
@@ -163,22 +224,83 @@ export async function POST(request: NextRequest) {
       }
 
       case "benefit.granted": {
-        // License key benefit granted
-        const benefit = data;
-        console.log("Benefit granted:", benefit);
-        // If using Polar's license key feature, the key would be here
+        // License key benefit granted to customer
+        const benefitGrant = data;
+
+        if (benefitGrant) {
+          const customerId = benefitGrant.customer_id;
+          const benefitId = benefitGrant.benefit_id;
+          const benefitType = benefitGrant.benefit?.type;
+          const subscriptionId = benefitGrant.subscription_id;
+
+          console.log("Benefit granted:", {
+            id: benefitGrant.id,
+            customer_id: customerId,
+            benefit_id: benefitId,
+            benefit_type: benefitType,
+            subscription_id: subscriptionId,
+          });
+
+          // If this is a license_keys benefit, fetch the actual key
+          if (benefitType === "license_keys" && customerId && benefitId) {
+            const licenseKeyData = await fetchLicenseKeyForCustomer(
+              customerId,
+              benefitId
+            );
+
+            if (licenseKeyData) {
+              console.log("License key granted:", {
+                customer_id: customerId,
+                key_preview: `****-${licenseKeyData.key.slice(-6)}`,
+                expires_at: licenseKeyData.expires_at,
+              });
+
+              // Update backend with the license key
+              if (subscriptionId) {
+                await updateSubscriptionInBackend(
+                  subscriptionId,
+                  "active",
+                  licenseKeyData.expires_at || undefined,
+                  licenseKeyData.key
+                );
+              }
+            }
+          }
+        }
         break;
       }
 
       case "benefit.revoked": {
         // License key benefit revoked
-        const benefit = data;
-        console.log("Benefit revoked:", benefit);
+        const benefitGrant = data;
+
+        if (benefitGrant) {
+          console.log("Benefit revoked:", {
+            id: benefitGrant.id,
+            customer_id: benefitGrant.customer_id,
+            benefit_id: benefitGrant.benefit_id,
+            subscription_id: benefitGrant.subscription_id,
+          });
+
+          // If subscription exists, mark it as inactive
+          if (benefitGrant.subscription_id) {
+            await updateSubscriptionInBackend(
+              benefitGrant.subscription_id,
+              "revoked"
+            );
+          }
+        }
+        break;
+      }
+
+      case "benefit.updated": {
+        // Benefit was updated (e.g., activation count changed)
+        console.log("Benefit updated:", data);
         break;
       }
 
       default:
-        console.log(`Unhandled webhook event: ${eventType}`);
+        console.log(`Unhandled webhook event: ${eventType}`, data);
     }
 
     return NextResponse.json({ received: true });
@@ -196,5 +318,6 @@ export async function GET() {
   return NextResponse.json({
     message: "Polar webhook endpoint is active",
     timestamp: new Date().toISOString(),
+    sandbox: isSandbox,
   });
 }

@@ -35,6 +35,13 @@ function detectProvider(licenseKey: string): 'polar' | 'lemonsqueezy' {
   return 'lemonsqueezy';
 }
 
+// Determine Polar API base URL (sandbox vs production)
+function getPolarApiBase(): string {
+  const isSandbox = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL?.includes('sandbox') ||
+                    process.env.POLAR_ACCESS_TOKEN?.startsWith('polar_oat_');
+  return isSandbox ? 'https://sandbox-api.polar.sh/v1' : 'https://api.polar.sh/v1';
+}
+
 async function activateWithPolar(licenseKey: string, instanceName: string) {
   const organizationId = process.env.POLAR_ORGANIZATION_ID;
   if (!organizationId) {
@@ -43,7 +50,8 @@ async function activateWithPolar(licenseKey: string, instanceName: string) {
 
   // Polar customer-portal endpoints don't require authentication
   // They are safe to use from client-side/desktop apps
-  const response = await fetch('https://api.polar.sh/v1/customer-portal/license-keys/activate', {
+  const apiBase = getPolarApiBase();
+  const response = await fetch(`${apiBase}/customer-portal/license-keys/activate`, {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
