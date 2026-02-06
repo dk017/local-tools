@@ -18,6 +18,9 @@ LEMONSQUEEZY_API_KEY = os.environ.get("LEMONSQUEEZY_API_KEY", "")
 POLAR_API_URL = "https://api.polar.sh/v1/customer-portal"
 POLAR_ORGANIZATION_ID = os.environ.get("POLAR_ORGANIZATION_ID", "")
 
+# Web API for desktop license operations (keeps secrets on server)
+WEB_API_BASE = os.environ.get("LICENSE_API_URL", "https://localtools.pro")
+
 GRACE_PERIOD_DAYS = 7  # 7-day grace period for expired subscriptions
 
 # Local storage for license
@@ -190,67 +193,62 @@ def validate_subscription_with_api(subscription_id: str) -> Optional[Dict[str, A
         return None
 
 def _activate_with_polar(license_key: str, instance_name: str) -> Dict[str, Any]:
-    """Activate license key with Polar API."""
-    if not POLAR_ORGANIZATION_ID:
-        return {"success": False, "error": "POLAR_ORGANIZATION_ID not configured"}
-
+    """Activate license key via web API (which calls Polar)."""
     try:
-        url = f"{POLAR_API_URL}/license-keys/activate"
+        # Use web API to activate - this keeps Polar credentials on the server
+        url = f"{WEB_API_BASE}/api/desktop/activate-license"
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json"
         }
         data = json.dumps({
-            "key": license_key,
-            "organization_id": POLAR_ORGANIZATION_ID,
-            "label": instance_name or platform.node()
+            "license_key": license_key,
+            "instance_name": instance_name or platform.node()
         }).encode("utf-8")
 
         req = urllib.request.Request(url, data=data, headers=headers, method="POST")
 
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=30) as response:
             resp_body = response.read().decode("utf-8")
             resp_json = json.loads(resp_body)
 
-            # Polar returns: { id, license_key_id, label, license_key: { status, expires_at, ... } }
-            activation_id = resp_json.get("id")
-            license_data = resp_json.get("license_key", {})
-
-            return {
-                "success": True,
-                "activation_id": activation_id,
-                "status": license_data.get("status", "granted"),
-                "expires_at": license_data.get("expires_at"),
-                "activation_limit": license_data.get("limit"),
-                "activation_usage": license_data.get("usage"),
-            }
+            if resp_json.get("success"):
+                return {
+                    "success": True,
+                    "activation_id": resp_json.get("activation_id"),
+                    "status": resp_json.get("status", "granted"),
+                    "expires_at": resp_json.get("expires_at"),
+                    "activation_limit": resp_json.get("limit"),
+                    "activation_usage": resp_json.get("usage"),
+                }
+            else:
+                return {"success": False, "error": resp_json.get("error", "Activation failed")}
 
     except urllib.error.HTTPError as e:
         error_body = e.read().decode() if e.fp else str(e)
-        logger.error(f"Polar activation error: {e.code} - {error_body}")
-        if e.code == 403:
-            return {"success": False, "error": "Activation limit reached or not supported"}
-        elif e.code == 404:
-            return {"success": False, "error": "License key not found"}
-        return {"success": False, "error": f"Activation failed: {error_body}"}
+        logger.error(f"Web API activation error: {e.code} - {error_body}")
+        try:
+            error_json = json.loads(error_body)
+            return {"success": False, "error": error_json.get("error", f"Activation failed: {e.code}")}
+        except:
+            return {"success": False, "error": f"Activation failed: {e.code}"}
+    except urllib.error.URLError as e:
+        logger.error(f"Network error during activation: {e}")
+        return {"success": False, "error": "Network error. Please check your internet connection."}
     except Exception as e:
-        logger.error(f"Polar activation exception: {e}")
+        logger.error(f"Activation exception: {e}")
         return {"success": False, "error": str(e)}
 
 def _validate_with_polar(license_key: str, activation_id: str = None) -> Dict[str, Any]:
-    """Validate license key with Polar API."""
-    if not POLAR_ORGANIZATION_ID:
-        return {"success": False, "error": "POLAR_ORGANIZATION_ID not configured"}
-
+    """Validate license key via web API (which calls Polar)."""
     try:
-        url = f"{POLAR_API_URL}/license-keys/validate"
+        url = f"{WEB_API_BASE}/api/desktop/validate-license"
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json"
         }
         payload = {
-            "key": license_key,
-            "organization_id": POLAR_ORGANIZATION_ID,
+            "license_key": license_key,
         }
         if activation_id:
             payload["activation_id"] = activation_id
@@ -258,15 +256,14 @@ def _validate_with_polar(license_key: str, activation_id: str = None) -> Dict[st
         data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(url, data=data, headers=headers, method="POST")
 
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=30) as response:
             resp_body = response.read().decode("utf-8")
             resp_json = json.loads(resp_body)
 
-            # Polar returns license key details
             return {
                 "success": True,
-                "valid": True,
-                "status": resp_json.get("status", "granted"),
+                "valid": resp_json.get("valid", False),
+                "status": resp_json.get("status", "unknown"),
                 "expires_at": resp_json.get("expires_at"),
                 "activation_limit": resp_json.get("limit"),
                 "activation_usage": resp_json.get("usage"),
@@ -274,10 +271,13 @@ def _validate_with_polar(license_key: str, activation_id: str = None) -> Dict[st
 
     except urllib.error.HTTPError as e:
         error_body = e.read().decode() if e.fp else str(e)
-        logger.error(f"Polar validation error: {e.code} - {error_body}")
-        return {"success": False, "valid": False, "error": f"Validation failed: {error_body}"}
+        logger.error(f"Web API validation error: {e.code} - {error_body}")
+        return {"success": False, "valid": False, "error": f"Validation failed: {e.code}"}
+    except urllib.error.URLError as e:
+        logger.error(f"Network error during validation: {e}")
+        return {"success": False, "valid": False, "error": "Network error. Please check your internet connection."}
     except Exception as e:
-        logger.error(f"Polar validation exception: {e}")
+        logger.error(f"Validation exception: {e}")
         return {"success": False, "valid": False, "error": str(e)}
 
 def activate_license(license_key: str, instance_name: str = None):
@@ -318,11 +318,8 @@ def activate_license(license_key: str, instance_name: str = None):
         else:
             return {"success": False, "error": "Mock Activation Failed: Key must start with 'test_'"}
 
-    # POLAR ACTIVATION
+    # POLAR ACTIVATION (via web API)
     if provider == 'polar':
-        if not POLAR_ORGANIZATION_ID:
-            return {"success": False, "error": "Polar license service is not configured. Please contact support."}
-
         result = _activate_with_polar(license_key, instance_name)
         if result.get("success"):
             # Parse expiry date
