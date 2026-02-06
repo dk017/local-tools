@@ -99,6 +99,19 @@ export default async function RootLayout({
   return (
     <html lang={locale} className="dark scroll-smooth">
       <head>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-DV79G2RMWL"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-DV79G2RMWL');
+          `}
+        </Script>
         {/* Plausible Analytics - Privacy-friendly, no cookies */}
         <Script
           defer
