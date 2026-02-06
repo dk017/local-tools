@@ -13,8 +13,9 @@ function detectProvider(licenseKey: string): 'polar' | 'lemonsqueezy' {
 
 // Determine Polar API base URL (sandbox vs production)
 function getPolarApiBase(): string {
-  const isSandbox = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL?.includes('sandbox') ||
-                    process.env.POLAR_ACCESS_TOKEN?.startsWith('polar_oat_');
+  // Only check checkout URL for sandbox detection
+  // polar_oat_ tokens are used in both sandbox AND production
+  const isSandbox = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL?.includes('sandbox');
   return isSandbox ? 'https://sandbox-api.polar.sh/v1' : 'https://api.polar.sh/v1';
 }
 
